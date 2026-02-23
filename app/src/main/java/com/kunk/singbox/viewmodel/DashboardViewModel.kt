@@ -21,7 +21,6 @@ import com.kunk.singbox.model.FilterMode
 import com.kunk.singbox.model.NodeFilter
 import com.kunk.singbox.model.NodeSortType
 import com.kunk.singbox.model.NodeUi
-import com.kunk.singbox.model.PingResultCode
 import com.kunk.singbox.model.ProfileUi
 import com.kunk.singbox.repository.SettingsRepository
 import com.kunk.singbox.ipc.SingBoxRemote
@@ -50,21 +49,17 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "DashboardViewModel"
-        private const val PING_FAILED_TIMEOUT = PingResultCode.FAILED_TIMEOUT
-        private const val PING_UNAVAILABLE = PingResultCode.UNAVAILABLE
     }
 
     private val configRepository = ConfigRepository.getInstance(application)
@@ -158,9 +153,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = ConnectionStats(0, 0, 0, 0, 0)
     )
-
-    // 褰撳墠鑺傜偣鐨勫疄鏃跺欢杩燂紙VPN鍚姩鍚庢祴寰楃殑锛?    private val _currentNodePing = MutableStateFlow<Long?>(null)
-    val currentNodePing: StateFlow<Long?> = _currentNodePing.asStateFlow()
 
     // Ping 娴嬭瘯鐘舵€侊細true = 姝ｅ湪娴嬭瘯涓?
     private val _isPingTesting = MutableStateFlow(false)
@@ -356,7 +348,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 .distinctUntilChanged()
                 .collect {
                     stopPingTest()
-                    _currentNodePing.value = null
                 }
         }
     }
@@ -519,7 +510,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             stopTrafficMonitor()
             stopPingTest()
             _statsBase.value = ConnectionStats(0, 0, 0, 0, 0)
-            _currentNodePing.value = null
         }
     }
 
@@ -991,7 +981,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         _connectionState.value = ConnectionState.Idle
         _connectedAtElapsedMs.value = null
         _statsBase.value = ConnectionStats(0, 0, 0, 0, 0)
-        _currentNodePing.value = null
 
         val mode = VpnStateStore.getMode()
         val intent = when (mode) {
@@ -1005,98 +994,29 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         context.startService(intent)
     }
 
-    private suspend fun resolvePingDelay(activeNodeId: String, nodeName: String): Long {
-        return configRepository.testNodeLatency(activeNodeId)
-    }
     private fun startPingTest() {
-        if (shouldSkipPingRetest()) {
+        if (_connectionState.value != ConnectionState.Connected) return
+        if (_isPingTesting.value) return
+
+        val targetNodeId = activeNodeId.value
+        if (targetNodeId.isNullOrBlank()) {
+            Log.w(TAG, "No active node to test ping")
             return
         }
 
         stopPingTest()
-
-        _isPingTesting.value = true
-        _currentNodePing.value = null
-
         pingTestJob = viewModelScope.launch {
+            _isPingTesting.value = true
             try {
-                _isPingTesting.value = true
-                _currentNodePing.value = null
-                delay(1000)
-
-                if (!isPingContextReady()) {
-                    return@launch
-                }
-
-                val target = resolvePingTargetNode()
-                if (target == null) {
-                    _currentNodePing.value = PING_FAILED_TIMEOUT
-                    return@launch
-                }
-
-                val delay = resolvePingDelay(activeNodeId = target.first, nodeName = target.second)
-                if (_connectionState.value == ConnectionState.Connected && pingTestJob?.isActive == true) {
-                    applyPingResult(delay)
-                }
+                configRepository.testAllNodesLatency(targetNodeIds = listOf(targetNodeId))
             } catch (e: Exception) {
                 Log.e(TAG, "Error during ping test", e)
-                _currentNodePing.value = PING_FAILED_TIMEOUT
             } finally {
                 _isPingTesting.value = false
             }
         }
     }
 
-    private fun shouldSkipPingRetest(): Boolean {
-        val ping = _currentNodePing.value
-        return _connectionState.value == ConnectionState.Connected &&
-            ping != null &&
-            ping > 0 &&
-            !_isPingTesting.value
-    }
-
-    private fun isPingContextReady(): Boolean {
-        return _connectionState.value == ConnectionState.Connected
-    }
-
-    private suspend fun resolvePingTargetNode(): Pair<String, String>? {
-        val nodeId = activeNodeId.value ?: withTimeoutOrNull(1500L) {
-            this@DashboardViewModel.activeNodeId.filterNotNull().first()
-        }
-        if (nodeId.isNullOrBlank()) {
-            Log.w(TAG, "No active node to test ping")
-            return null
-        }
-
-        val nodeName = configRepository.getNodeById(nodeId)?.name
-        if (nodeName.isNullOrBlank()) {
-            Log.w(TAG, "Node name not found for id: $nodeId")
-            return null
-        }
-        return nodeId to nodeName
-    }
-
-    private fun applyPingResult(delay: Long?) {
-        when {
-            delay != null && delay > 0 -> {
-                _currentNodePing.value = delay
-            }
-
-            delay == PING_UNAVAILABLE -> {
-                _currentNodePing.value = PING_UNAVAILABLE
-                Log.w(TAG, "Ping data unavailable: no bg cache hit and local fallback unavailable")
-            }
-
-            else -> {
-                _currentNodePing.value = PING_FAILED_TIMEOUT
-                Log.w(TAG, "Ping test failed or timed out")
-            }
-        }
-    }
-
-    /**
-     * 鍋滄寤惰繜娴嬭瘯
-     */
     private fun stopPingTest() {
         pingTestJob?.cancel()
         pingTestJob = null
@@ -1104,10 +1024,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun retestCurrentNodePing() {
-        if (_connectionState.value != ConnectionState.Connected) return
-        if (_isPingTesting.value) return
-        // Force test by clearing previous value to bypass the check in startPingTest
-        _currentNodePing.value = null
         startPingTest()
     }
 
@@ -1169,7 +1085,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 val nowElapsed = SystemClock.elapsedRealtime()
 
                 // 鍙屾簮娴侀噺缁熻: 浼樺厛浣跨敤 BoxWrapper (鍐呮牳绾?, 鍥為€€鍒?TrafficStats (绯荤粺绾?
-                val (tx, rx, totalTx, totalRx) = if (BoxWrapperManager.isAvailable()) {
+                val sample = if (BoxWrapperManager.isAvailable()) {
                     // 浣跨敤 BoxWrapper 鍐呮牳绾ф祦閲忕粺璁?(鏇村噯纭?
                     val wrapperUp = BoxWrapperManager.getUploadTotal()
                     val wrapperDown = BoxWrapperManager.getDownloadTotal()
@@ -1192,8 +1108,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 }
 
                 val dtMs = (nowElapsed - lastTrafficSampleAtElapsedMs).coerceAtLeast(1L)
-                val dTx = (tx - lastTrafficTxBytes).coerceAtLeast(0L)
-                val dRx = (rx - lastTrafficRxBytes).coerceAtLeast(0L)
+                val dTx = (sample.tx - lastTrafficTxBytes).coerceAtLeast(0L)
+                val dRx = (sample.rx - lastTrafficRxBytes).coerceAtLeast(0L)
 
                 val up = (dTx * 1000L) / dtMs
                 val down = (dRx * 1000L) / dtMs
@@ -1215,13 +1131,13 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     current.copy(
                         uploadSpeed = smoothedUp,
                         downloadSpeed = smoothedDown,
-                        uploadTotal = totalTx,
-                        downloadTotal = totalRx
+                        uploadTotal = sample.totalTx,
+                        downloadTotal = sample.totalRx
                     )
                 }
 
-                lastTrafficTxBytes = tx
-                lastTrafficRxBytes = rx
+                lastTrafficTxBytes = sample.tx
+                lastTrafficRxBytes = sample.rx
                 lastTrafficSampleAtElapsedMs = nowElapsed
             }
         }

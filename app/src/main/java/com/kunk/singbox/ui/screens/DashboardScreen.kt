@@ -90,7 +90,6 @@ fun DashboardScreen(
     val activeProfileId by viewModel.activeProfileId.collectAsState()
     val activeNodeId by viewModel.activeNodeId.collectAsState()
     val activeNodeLatency by viewModel.activeNodeLatency.collectAsState()
-    val currentNodePing by viewModel.currentNodePing.collectAsState()
     val isPingTesting by viewModel.isPingTesting.collectAsState()
     val nodes by viewModel.nodes.collectAsState()
     val settings by settingsViewModel.settings.collectAsState()
@@ -447,9 +446,8 @@ fun DashboardScreen(
             ) {
                 // Always show InfoCard but with placeholder data when not connected
                 val isConnected = connectionState == ConnectionState.Connected
-                // 首页延迟优先与节点列表保持一致（activeNodeLatency），currentNodePing 仅作兜底
-                // currentNodePing: null = 未测试, -1 = 超时/失败, >0 = 实际延迟
-                val displayPing = activeNodeLatency ?: currentNodePing
+                // 首页延迟直接使用节点列表同源数据，避免双状态不一致
+                val displayPing = activeNodeLatency
                 // 使用明确的 isPingTesting 状态来控制加载动画
                 val isPingLoading = isConnected && isPingTesting
                 // 格式化延迟显示：超时显示"超时"，未测试显示"-"
