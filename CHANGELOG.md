@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.10.0](https://github.com/roseforljh/KunBox/compare/v2.9.0...v2.10.0) (2026-02-23)
+
+
+### Features
+
+* add ConfigRepository for managing SingBox configurations, profiles, and subscriptions. ([b435cd9](https://github.com/roseforljh/KunBox/commit/b435cd943d8ccb1de0dc55615f17eaea704b1a58))
+* Add DashboardScreen and ViewModel for VPN connection management, statistics display, and profile/node selection. ([a54464d](https://github.com/roseforljh/KunBox/commit/a54464d0f812dc5af276437eb49c31ed2e6bd923))
+* Add initial application structure, core UI for dashboard and node management, connection logic, and comprehensive settings with localization. ([a90a493](https://github.com/roseforljh/KunBox/commit/a90a49382da46e511ded8031ab3486ad07c8060e))
+* add NodeDetailScreen for managing Singbox node configurations. ([25da274](https://github.com/roseforljh/KunBox/commit/25da2749c1652ba299b9d5226417d490e0508549))
+* Implement initial SingBox integration with IPC, configuration fixing, latency probing, and dashboard UI. ([3c01657](https://github.com/roseforljh/KunBox/commit/3c0165766ef5f55316020ae269ba37e2fad7eb29))
+* introduce core SingBox integration, IPC, services, and initial dashboard UI with localization. ([af6b302](https://github.com/roseforljh/KunBox/commit/af6b302930032f6cdb97274b6d72b2f6cd763bf0))
+* Introduce core SingBox services, managers, repositories, and a diagnostics view model for initial application setup. ([e6157ea](https://github.com/roseforljh/KunBox/commit/e6157ea0d00040e3052fab6c6478a46af314a2ee))
+
 ## [2.9.0](https://github.com/roseforljh/KunBox/compare/v2.8.1...v2.9.0) (2026-02-21)
 
 
