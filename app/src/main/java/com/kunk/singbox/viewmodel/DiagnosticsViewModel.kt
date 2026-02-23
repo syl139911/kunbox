@@ -77,10 +77,10 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
             _resultTitle.value = "Running Config (running_config.json)"
             try {
                 val configResult = generateRunningConfig()
-                if (configResult?.path.isNullOrBlank()) {
+                val realPath = configResult?.path
+                if (realPath.isNullOrBlank()) {
                     _resultMessage.value = "Failed to generate running config: no profile selected or generation failed."
                 } else {
-                    val realPath = configResult!!.path
                     val runConfig = loadRunConfig(realPath)
 
                     val settings = withContext(Dispatchers.IO) { settingsRepository.settings.first() }
@@ -206,10 +206,11 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
             _resultTitle.value = getApplication<Application>().getString(R.string.diagnostics_export_config)
             try {
                 val configResult = withContext(Dispatchers.IO) { configRepository.generateConfigFile() }
-                if (configResult?.path.isNullOrBlank()) {
+                val configPath = configResult?.path
+                if (configPath.isNullOrBlank()) {
                     _resultMessage.value = "Export failed: no profile selected or generation failed."
                 } else {
-                    val src = File(configResult!!.path)
+                    val src = File(configPath)
                     val outBase = getApplication<Application>().getExternalFilesDir(null)
                     if (outBase == null) {
                         _resultMessage.value = "Export failed: externalFilesDir unavailable."

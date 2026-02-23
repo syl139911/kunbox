@@ -10,32 +10,35 @@ import com.kunk.singbox.repository.SettingsRepository
 object OutboundFixer {
 
     // TCP Keepalive 配置缓存
-    private var cachedTcpKeepAliveEnabled: Boolean? = null
-    private var cachedTcpKeepAliveInterval: String? = null
-    private var cachedConnectTimeout: String? = null
+    @Volatile private var cachedTcpKeepAliveEnabled: Boolean? = null
+    @Volatile private var cachedTcpKeepAliveInterval: String? = null
+    @Volatile private var cachedConnectTimeout: String? = null
 
     /**
      * 获取 TCP Keepalive 配置
      * 从 SettingsRepository 读取并缓存
      */
     private fun getTcpKeepAliveConfig(context: android.content.Context): Triple<Boolean, String?, String?> {
-        // 如果已缓存，直接返回
-        if (cachedTcpKeepAliveEnabled != null) {
-            return Triple(cachedTcpKeepAliveEnabled!!, cachedTcpKeepAliveInterval, cachedConnectTimeout)
+        cachedTcpKeepAliveEnabled?.let { enabled ->
+            return Triple(enabled, cachedTcpKeepAliveInterval, cachedConnectTimeout)
         }
 
-        // 从 SettingsRepository 读取
-        val settings = SettingsRepository.getInstance(context).settings.value
-        val enabled = settings.tcpKeepAliveEnabled
-        val interval = if (enabled) "${settings.tcpKeepAliveInterval}s" else null
-        val timeout = if (enabled) "${settings.connectTimeout}s" else null
+        synchronized(this) {
+            cachedTcpKeepAliveEnabled?.let { enabled ->
+                return Triple(enabled, cachedTcpKeepAliveInterval, cachedConnectTimeout)
+            }
 
-        // 缓存配置
-        cachedTcpKeepAliveEnabled = enabled
-        cachedTcpKeepAliveInterval = interval
-        cachedConnectTimeout = timeout
+            val settings = SettingsRepository.getInstance(context).settings.value
+            val enabled = settings.tcpKeepAliveEnabled
+            val interval = if (enabled) "${settings.tcpKeepAliveInterval}s" else null
+            val timeout = if (enabled) "${settings.connectTimeout}s" else null
 
-        return Triple(enabled, interval, timeout)
+            cachedTcpKeepAliveEnabled = enabled
+            cachedTcpKeepAliveInterval = interval
+            cachedConnectTimeout = timeout
+
+            return Triple(enabled, interval, timeout)
+        }
     }
 
     /**
@@ -43,9 +46,11 @@ object OutboundFixer {
      * 当设置变更时调用
      */
     fun clearTcpKeepAliveCache() {
-        cachedTcpKeepAliveEnabled = null
-        cachedTcpKeepAliveInterval = null
-        cachedConnectTimeout = null
+        synchronized(this) {
+            cachedTcpKeepAliveEnabled = null
+            cachedTcpKeepAliveInterval = null
+            cachedConnectTimeout = null
+        }
     }
 
     // 正则表达式常量

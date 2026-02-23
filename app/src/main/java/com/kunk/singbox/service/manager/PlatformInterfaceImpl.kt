@@ -568,8 +568,9 @@ class PlatformInterfaceImpl(
             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
             .build()
 
+        val defaultCallback = networkCallback ?: return
         try {
-            cm.registerNetworkCallback(request, networkCallback!!)
+            cm.registerNetworkCallback(request, defaultCallback)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to register network callback", e)
         }
@@ -647,8 +648,9 @@ class PlatformInterfaceImpl(
             .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
             .build()
 
+        val vpnCallback = vpnNetworkCallback ?: return
         try {
-            cm.registerNetworkCallback(vpnRequest, vpnNetworkCallback!!)
+            cm.registerNetworkCallback(vpnRequest, vpnCallback)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to register VPN network callback", e)
         }

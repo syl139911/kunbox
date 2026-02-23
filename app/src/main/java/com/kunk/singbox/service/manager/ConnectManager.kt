@@ -109,7 +109,8 @@ class ConnectManager(
                 }
             }
 
-            cm.registerNetworkCallback(request, networkCallback!!)
+            val callback = networkCallback ?: return@runCatching
+            cm.registerNetworkCallback(request, callback)
             Log.i(TAG, "Network callback registered")
         }
     }

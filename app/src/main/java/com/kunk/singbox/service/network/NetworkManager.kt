@@ -276,8 +276,9 @@ class NetworkManager(
             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
             .build()
 
+        val callback = networkCallback ?: return
         try {
-            cm.registerNetworkCallback(request, networkCallback!!)
+            cm.registerNetworkCallback(request, callback)
             Log.i(TAG, "Network callback registered")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to register network callback", e)

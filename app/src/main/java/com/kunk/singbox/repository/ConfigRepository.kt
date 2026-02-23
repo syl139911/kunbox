@@ -2214,7 +2214,12 @@ class ConfigRepository(private val context: Context) {
             val oldNodeNames = oldNodes.map { it.name }.toSet()
 
             // 使用智能 User-Agent 切换策略获取订阅
-            val fetchResult = fetchAndParseSubscription(profile.url!!) { /* 静默更新，不显示进度 */ }
+            val profileUrl = profile.url
+            if (profileUrl.isNullOrBlank()) {
+                return@withContext SubscriptionUpdateResult.Failed(profile.name, "订阅地址为空")
+            }
+
+            val fetchResult = fetchAndParseSubscription(profileUrl) { /* 静默更新，不显示进度 */ }
                 ?: return@withContext SubscriptionUpdateResult.Failed(profile.name, "无法解析配置")
 
             val config = fetchResult.config

@@ -242,8 +242,9 @@ class ProxyOnlyService : Service() {
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
                 .build()
 
+            val callback = networkCallback ?: return
             runCatching {
-                connectivityManager?.registerNetworkCallback(request, networkCallback!!)
+                connectivityManager?.registerNetworkCallback(request, callback)
             }
 
             val activeNet = connectivityManager?.activeNetwork
@@ -531,7 +532,7 @@ class ProxyOnlyService : Service() {
                             val nm = getSystemService(android.app.NotificationManager::class.java)
                             nm?.cancel(NOTIFICATION_ID)
                         }
-                        Thread.sleep(50)
+                        delay(50)
                         android.os.Process.killProcess(android.os.Process.myPid())
                     }
                 }
@@ -659,7 +660,7 @@ class ProxyOnlyService : Service() {
                                 val nm = getSystemService(android.app.NotificationManager::class.java)
                                 nm?.cancel(NOTIFICATION_ID)
                             }
-                            Thread.sleep(50)
+                            delay(50)
                             android.os.Process.killProcess(android.os.Process.myPid())
                         }
                     } else {
