@@ -179,6 +179,12 @@ class NetworkSwitchManager(
             cb.setUnderlyingNetworks(arrayOf(network))
             cb.setLastKnownNetwork(network)
             Log.i(TAG, "Switched underlying network to $network (interface=$interfaceName)")
+
+            if (typeChanged) {
+                cb.setUnderlyingNetworks(null)
+                cb.setUnderlyingNetworks(arrayOf(network))
+                Log.i(TAG, "Forced underlying network rebind for type change")
+            }
         }
 
         if (interfaceName.isNotEmpty()) {

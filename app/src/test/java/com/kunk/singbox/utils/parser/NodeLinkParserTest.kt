@@ -127,6 +127,48 @@ class NodeLinkParserTest {
         assertEquals("grpc-service", outbound?.transport?.serviceName)
     }
 
+    @Test
+    fun testParseVMessWithXhttpExtendedParams() {
+        val vmessJson = """
+            {
+              "v":"2",
+              "ps":"xhttp vmess",
+              "add":"vmess.example.com",
+              "port":"443",
+              "id":"uuid-1000",
+              "aid":"0",
+              "net":"xhttp",
+              "host":"h1.example.com,h2.example.com",
+              "path":"/xhttp",
+              "mode":"auto",
+              "xPaddingBytes":"100-200",
+              "scMaxEachPostBytes":"1048576",
+              "scMinPostsIntervalMs":"30",
+              "scMaxBufferedPosts":"64",
+              "noGRPCHeader":"1",
+              "noSSEHeader":"true",
+              "tls":"tls",
+              "sni":"vmess.example.com"
+            }
+        """.trimIndent()
+        val encoded = java.util.Base64.getEncoder().encodeToString(vmessJson.toByteArray())
+        val link = "vmess://$encoded"
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("xhttp", outbound?.transport?.type)
+        assertEquals(listOf("h1.example.com", "h2.example.com"), outbound?.transport?.host)
+        assertEquals("/xhttp", outbound?.transport?.path)
+        assertEquals("auto", outbound?.transport?.mode)
+        assertEquals("100-200", outbound?.transport?.xPaddingBytes)
+        assertEquals(1048576L, outbound?.transport?.scMaxEachPostBytes)
+        assertEquals(30L, outbound?.transport?.scMinPostsIntervalMs)
+        assertEquals(64L, outbound?.transport?.scMaxBufferedPosts)
+        assertEquals(true, outbound?.transport?.noGRPCHeader)
+        assertEquals(true, outbound?.transport?.noSSEHeader)
+    }
+
     // ==================== VLESS ====================
 
     @Test
@@ -185,6 +227,28 @@ class NodeLinkParserTest {
         assertEquals("my-service", outbound?.transport?.serviceName)
     }
 
+    @Test
+    fun testParseVLessWithXhttpExtendedParams() {
+        val link =
+            "vless://uuid@xhttp.example.com:443?security=tls&type=xhttp&host=h1.example.com,h2.example.com" +
+                "&path=%2Fxhttp&mode=auto&xPaddingBytes=100-200&scMaxEachPostBytes=1048576" +
+                "&scMinPostsIntervalMs=30&scMaxBufferedPosts=64&noGRPCHeader=1&noSSEHeader=true#XHTTPNode"
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("xhttp", outbound?.transport?.type)
+        assertEquals(listOf("h1.example.com", "h2.example.com"), outbound?.transport?.host)
+        assertEquals("/xhttp", outbound?.transport?.path)
+        assertEquals("auto", outbound?.transport?.mode)
+        assertEquals("100-200", outbound?.transport?.xPaddingBytes)
+        assertEquals(1048576L, outbound?.transport?.scMaxEachPostBytes)
+        assertEquals(30L, outbound?.transport?.scMinPostsIntervalMs)
+        assertEquals(64L, outbound?.transport?.scMaxBufferedPosts)
+        assertEquals(true, outbound?.transport?.noGRPCHeader)
+        assertEquals(true, outbound?.transport?.noSSEHeader)
+    }
+
     // ==================== Trojan ====================
 
     @Test
@@ -209,6 +273,40 @@ class NodeLinkParserTest {
 
         assertNotNull(outbound)
         assertEquals(443, outbound?.serverPort)
+    }
+
+    @Test
+    fun testParseTrojanWithXhttpExtendedParams() {
+        val link =
+            "trojan://password@trojan.example.com:443?security=tls&type=xhttp&host=h1.example.com,h2.example.com" +
+                "&path=%2Fxhttp&mode=auto&xPaddingBytes=100-200&scMaxEachPostBytes=1048576" +
+                "&scMinPostsIntervalMs=30&scMaxBufferedPosts=64&noGRPCHeader=1&noSSEHeader=true" +
+                "&sni=sni.example.com&fp=chrome&alpn=h2,http%2F1.1&allowInsecure=1#TrojanXHTTP"
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("trojan", outbound?.type)
+        assertEquals("TrojanXHTTP", outbound?.tag)
+        assertEquals("trojan.example.com", outbound?.server)
+        assertEquals(443, outbound?.serverPort)
+        assertEquals("password", outbound?.password)
+        assertEquals(true, outbound?.tls?.enabled)
+        assertEquals("sni.example.com", outbound?.tls?.serverName)
+        assertEquals(true, outbound?.tls?.insecure)
+        assertEquals("chrome", outbound?.tls?.utls?.fingerprint)
+        assertEquals(listOf("h2", "http/1.1"), outbound?.tls?.alpn)
+
+        assertEquals("xhttp", outbound?.transport?.type)
+        assertEquals("/xhttp", outbound?.transport?.path)
+        assertEquals(listOf("h1.example.com", "h2.example.com"), outbound?.transport?.host)
+        assertEquals("auto", outbound?.transport?.mode)
+        assertEquals("100-200", outbound?.transport?.xPaddingBytes)
+        assertEquals(1048576L, outbound?.transport?.scMaxEachPostBytes)
+        assertEquals(30L, outbound?.transport?.scMinPostsIntervalMs)
+        assertEquals(64L, outbound?.transport?.scMaxBufferedPosts)
+        assertEquals(true, outbound?.transport?.noGRPCHeader)
+        assertEquals(true, outbound?.transport?.noSSEHeader)
     }
 
     // ==================== Hysteria2 ====================

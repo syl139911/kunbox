@@ -12,7 +12,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetSocketAddress
-import java.net.Socket
 
 /**
  * VPN 链路探测管理器
@@ -104,6 +103,11 @@ object ProbeManager {
         val allSuccess: Boolean get() = successCount == totalCount
     }
 
+    data class QuickProbeResult(
+        val firstSuccess: ProbeResult.Success?,
+        val allFailedByBindPermission: Boolean
+    )
+
     /**
      * 通过 VPN 网络探测单个目标
      *
@@ -119,17 +123,17 @@ object ProbeManager {
     ): ProbeResult = withContext(Dispatchers.IO) {
         Log.i(TAG, "probeViaVpn: starting probe to ${target.name}")
 
-        val vpnNetwork = findVpnNetwork(context)
-        if (vpnNetwork == null) {
-            Log.w(TAG, "probeViaVpn: VPN network not found")
+        val probeNetwork = findProbeNetwork(context)
+        if (probeNetwork == null) {
+            Log.w(TAG, "probeViaVpn: probe network not found")
             return@withContext ProbeResult.Error(
                 target = target,
-                error = "VPN network not found"
+                error = "Probe network not found"
             )
         }
 
-        Log.d(TAG, "probeViaVpn: found VPN network $vpnNetwork")
-        probeTarget(vpnNetwork, target, timeoutMs)
+        Log.d(TAG, "probeViaVpn: found probe network $probeNetwork")
+        probeTarget(probeNetwork, target, timeoutMs)
     }
 
     /**
@@ -147,13 +151,13 @@ object ProbeManager {
     ): BatchProbeResult = withContext(Dispatchers.IO) {
         Log.i(TAG, "probeAllViaVpn: starting batch probe for ${targets.size} targets")
 
-        val vpnNetwork = findVpnNetwork(context)
-        if (vpnNetwork == null) {
-            Log.w(TAG, "probeAllViaVpn: VPN network not found")
+        val probeNetwork = findProbeNetwork(context)
+        if (probeNetwork == null) {
+            Log.w(TAG, "probeAllViaVpn: probe network not found")
             val errorResults = targets.map { target ->
                 ProbeResult.Error(
                     target = target,
-                    error = "VPN network not found"
+                    error = "Probe network not found"
                 )
             }
             return@withContext BatchProbeResult(
@@ -164,13 +168,13 @@ object ProbeManager {
             )
         }
 
-        Log.d(TAG, "probeAllViaVpn: found VPN network $vpnNetwork")
+        Log.d(TAG, "probeAllViaVpn: found probe network $probeNetwork")
 
         // 并行探测所有目标
         val results = coroutineScope {
             targets.map { target ->
                 async {
-                    probeTarget(vpnNetwork, target, timeoutMs)
+                    probeTarget(probeNetwork, target, timeoutMs)
                 }
             }.map { it.await() }
         }
@@ -204,40 +208,45 @@ object ProbeManager {
         context: Context,
         targets: List<ProbeTarget> = DEFAULT_PROBE_TARGETS,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS
-    ): ProbeResult.Success? = withContext(Dispatchers.IO) {
+    ): ProbeResult.Success? {
+        return probeFirstSuccessViaVpnDetailed(context, targets, timeoutMs).firstSuccess
+    }
+
+    suspend fun probeFirstSuccessViaVpnDetailed(
+        context: Context,
+        targets: List<ProbeTarget> = DEFAULT_PROBE_TARGETS,
+        timeoutMs: Long = DEFAULT_TIMEOUT_MS
+    ): QuickProbeResult = withContext(Dispatchers.IO) {
         Log.i(TAG, "probeFirstSuccessViaVpn: starting quick probe (parallel)")
 
-        val vpnNetwork = findVpnNetwork(context)
-        if (vpnNetwork == null) {
-            Log.w(TAG, "probeFirstSuccessViaVpn: VPN network not found")
-            return@withContext null
+        val probeNetwork = findProbeNetwork(context)
+        if (probeNetwork == null) {
+            Log.w(TAG, "probeFirstSuccessViaVpn: probe network not found")
+            return@withContext QuickProbeResult(null, false)
         }
 
-        // 2026-fix: 并行探测所有目标，任一成功即返回
-        // 避免串行探测时前面的目标超时导致整体耗时过长
-        val result = coroutineScope {
-            val deferred = targets.map { target ->
-                async { probeTarget(vpnNetwork, target, timeoutMs) }
-            }
-            var firstSuccess: ProbeResult.Success? = null
-            for (d in deferred) {
-                val r = d.await()
-                if (r is ProbeResult.Success) {
-                    firstSuccess = r
-                    // 取消剩余探测
-                    deferred.forEach { it.cancel() }
-                    break
-                }
-            }
-            firstSuccess
+        val results = coroutineScope {
+            targets.map { target ->
+                async { probeTarget(probeNetwork, target, timeoutMs) }
+            }.map { it.await() }
         }
 
-        if (result != null) {
-            Log.i(TAG, "probeFirstSuccessViaVpn: success on ${result.target.name}, latency=${result.latencyMs}ms")
+        val success = results.filterIsInstance<ProbeResult.Success>().firstOrNull()
+        if (success != null) {
+            Log.i(TAG, "probeFirstSuccessViaVpn: success on ${success.target.name}, latency=${success.latencyMs}ms")
+            return@withContext QuickProbeResult(success, false)
+        }
+
+        val errors = results.filterIsInstance<ProbeResult.Error>()
+        val allFailedByBindPermission = errors.isNotEmpty() && errors.all { isPermissionError(it) }
+
+        if (allFailedByBindPermission) {
+            Log.w(TAG, "probeFirstSuccessViaVpn: all targets failed by permission error, probe unavailable")
         } else {
             Log.w(TAG, "probeFirstSuccessViaVpn: all targets failed")
         }
-        result
+
+        QuickProbeResult(null, allFailedByBindPermission)
     }
 
     /**
@@ -255,39 +264,48 @@ object ProbeManager {
     }
 
     /**
-     * 查找 VPN 网络
-     *
-     * @param context Android Context
-     * @return VPN Network 对象，未找到返回 null
+     * 查找探测网络（优先物理默认网络，避免绑定 VPN Network 导致 EPERM）
      */
-    private fun findVpnNetwork(context: Context): Network? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            Log.w(TAG, "findVpnNetwork: API level < 23, not supported")
-            return null
-        }
-
+    private fun findProbeNetwork(context: Context): Network? {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-        if (cm == null) {
-            Log.e(TAG, "findVpnNetwork: ConnectivityManager not available")
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || cm == null) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                Log.w(TAG, "findProbeNetwork: API level < 23, not supported")
+            }
+            if (cm == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Log.e(TAG, "findProbeNetwork: ConnectivityManager not available")
+            }
             return null
         }
 
-        return try {
+        val activeCandidate = cm.activeNetwork?.takeIf { active ->
+            isValidPhysicalNetwork(cm.getNetworkCapabilities(active))
+        }
+
+        val fallbackCandidate = runCatching {
             @Suppress("DEPRECATION")
             cm.allNetworks.firstOrNull { network ->
-                val caps = cm.getNetworkCapabilities(network) ?: return@firstOrNull false
-                caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                val caps = cm.getNetworkCapabilities(network)
+                isValidPhysicalNetwork(caps)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "findVpnNetwork: failed to enumerate networks", e)
-            null
-        }
+        }.onFailure { e ->
+            Log.e(TAG, "findProbeNetwork: failed to enumerate networks", e)
+        }.getOrNull()
+
+        return activeCandidate ?: fallbackCandidate
+    }
+
+    private fun isValidPhysicalNetwork(caps: NetworkCapabilities?): Boolean {
+        if (caps == null) return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
     }
 
     /**
      * 探测单个目标
      *
-     * @param network 要使用的网络 (VPN 网络)
+     * @param network 要使用的物理网络
      * @param target 探测目标
      * @param timeoutMs 超时时间 (毫秒)
      * @return 探测结果
@@ -303,25 +321,17 @@ object ProbeManager {
 
         val result = withTimeoutOrNull(timeoutMs) {
             try {
-                val socket = Socket()
-                try {
-                    // 将 socket 绑定到 VPN 网络
-                    network.bindSocket(socket)
-                    Log.d(TAG, "probeTarget: socket bound to VPN network")
-
-                    // 连接到目标
+                network.socketFactory.createSocket().use { socket ->
                     socket.connect(
                         InetSocketAddress(target.host, target.port),
                         timeoutMs.toInt()
                     )
-
-                    val latencyMs = System.currentTimeMillis() - startTime
-                    Log.i(TAG, "probeTarget: ${target.name} connected, latency=${latencyMs}ms")
-
-                    ProbeResult.Success(target, latencyMs)
-                } finally {
-                    runCatching { socket.close() }
                 }
+
+                val latencyMs = System.currentTimeMillis() - startTime
+                Log.i(TAG, "probeTarget: ${target.name} connected, latency=${latencyMs}ms")
+
+                ProbeResult.Success(target, latencyMs)
             } catch (e: Exception) {
                 val elapsed = System.currentTimeMillis() - startTime
                 Log.w(TAG, "probeTarget: ${target.name} failed after ${elapsed}ms: ${e.message}")
@@ -340,6 +350,14 @@ object ProbeManager {
         } else {
             result
         }
+    }
+
+    private fun isPermissionError(error: ProbeResult.Error): Boolean {
+        val message = error.error.lowercase()
+        return message.contains("eperm") ||
+            message.contains("operation not permitted") ||
+            message.contains("permission denied") ||
+            (error.exception is SecurityException)
     }
 
     /**

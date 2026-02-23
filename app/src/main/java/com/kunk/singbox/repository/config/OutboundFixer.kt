@@ -138,8 +138,58 @@ object OutboundFixer {
 
         // Fix ALPN for WebSocket + TLS
         val tlsAfterSni = result.tls
-        if (result.transport?.type == "ws" && tlsAfterSni?.enabled == true && (tlsAfterSni.alpn == null || tlsAfterSni.alpn.isEmpty())) {
+        if (
+            result.transport?.type == "ws" &&
+            tlsAfterSni?.enabled == true &&
+            (tlsAfterSni.alpn == null || tlsAfterSni.alpn.isEmpty())
+        ) {
             result = result.copy(tls = tlsAfterSni.copy(alpn = listOf("http/1.1")))
+        }
+
+        if (transport?.type == "xhttp") {
+            val rawPath = transport.path ?: "/"
+            val normalizedPath = normalizeXhttpPath(rawPath)
+
+            val xhttpHost = transport.host?.firstOrNull()
+            val tlsForXhttp = result.tls?.takeIf { it.enabled == true }
+            val xhttpSni = tlsForXhttp?.serverName?.trim().orEmpty()
+            val server = result.server?.trim().orEmpty()
+            val shouldFixXhttpSni = tlsForXhttp != null &&
+                !xhttpHost.isNullOrBlank() &&
+                !isIpLiteral(xhttpHost) &&
+                (
+                    xhttpSni.isBlank() ||
+                        isIpLiteral(xhttpSni) ||
+                        (server.isNotBlank() && xhttpSni.equals(server, ignoreCase = true))
+                    )
+
+            val currentAlpn = tlsForXhttp?.alpn
+            val shouldFixXhttpAlpn = tlsForXhttp != null &&
+                (currentAlpn == null || currentAlpn.isEmpty() || currentAlpn != listOf("h2"))
+
+            if (normalizedPath != rawPath || shouldFixXhttpSni || shouldFixXhttpAlpn) {
+                var updated = result.copy(
+                    transport = transport.copy(path = normalizedPath)
+                )
+                
+                var tlsUpdated = tlsForXhttp
+                if (shouldFixXhttpSni && tlsUpdated != null) {
+                    tlsUpdated = tlsUpdated.copy(serverName = xhttpHost)
+                }
+                if (shouldFixXhttpAlpn && tlsUpdated != null) {
+                    tlsUpdated = tlsUpdated.copy(alpn = listOf("h2"))
+                }
+                
+                if (tlsUpdated != result.tls) {
+                    updated = updated.copy(tls = tlsUpdated)
+                }
+                
+                result = updated
+            }
+
+            if (result.packetEncoding == "xudp") {
+                result = result.copy(packetEncoding = "")
+            }
         }
 
         // Fix User-Agent and path for WS
@@ -433,6 +483,14 @@ object OutboundFixer {
             return v.split(".").all { it.toIntOrNull()?.let { n -> n in 0..255 } == true }
         }
         return v.contains(":") && REGEX_IPV6.matches(v)
+    }
+
+    private fun normalizeXhttpPath(path: String): String {
+        val trimmed = path.trim().ifEmpty { "/" }
+        val withLeadingSlash = if (trimmed.startsWith("/")) trimmed else "/$trimmed"
+        // 不添加尾部斜杠：Xray-core 服务端按原始路径匹配，
+        // 多余的 "/" 会导致 Download GET 返回 400 Bad Request
+        return withLeadingSlash
     }
 
     /**

@@ -21,6 +21,7 @@ import com.kunk.singbox.model.FilterMode
 import com.kunk.singbox.model.NodeFilter
 import com.kunk.singbox.model.NodeSortType
 import com.kunk.singbox.model.NodeUi
+import com.kunk.singbox.model.PingResultCode
 import com.kunk.singbox.model.ProfileUi
 import com.kunk.singbox.repository.SettingsRepository
 import com.kunk.singbox.ipc.SingBoxRemote
@@ -62,6 +63,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     companion object {
         private const val TAG = "DashboardViewModel"
+        private const val PING_FAILED_TIMEOUT = PingResultCode.FAILED_TIMEOUT
+        private const val PING_UNAVAILABLE = PingResultCode.UNAVAILABLE
     }
 
     private val configRepository = ConfigRepository.getInstance(application)
@@ -157,7 +160,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     )
 
     // 当前节点的实时延迟（VPN启动后测得的）
-    // null = 未测试, -1 = 测试失败/超时, >0 = 实际延迟
     private val _currentNodePing = MutableStateFlow<Long?>(null)
     val currentNodePing: StateFlow<Long?> = _currentNodePing.asStateFlow()
 
@@ -534,10 +536,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             // Phase 1: 即时恢复 (< 1ms，从 MMKV 读状态 + 异步验证 IPC)
             SingBoxRemote.instantRecovery(context)
 
-            // 2026-fix: 如果 VPN 正在运行，立即强制 rebind + 通知前台
-            // 这样可以更快触发 :bg 进程的网络恢复，减少加载等待时间
+            // 统一前台恢复入口：由 AppLifecycleObserver -> IPC -> :bg 网关处理
+            // 这里不再主动 rebind，避免与生命周期通知竞争导致重复恢复/状态抖动
             if (VpnStateStore.getActive()) {
-                SingBoxRemote.rebindAndNotifyForeground(context)
+                SingBoxRemote.notifyAppLifecycle(isForeground = true)
             }
 
             // 立即从 MMKV 状态更新 UI（不等 IPC）
@@ -993,82 +995,148 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         context.startService(intent)
     }
 
+    private suspend fun loadCachedPingFromBgCandidates(candidateTags: List<String>): Long {
+        val tags = candidateTags.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+        if (tags.isEmpty()) return PING_UNAVAILABLE
+
+        for (attempt in 0 until 10) {
+            for (tag in tags) {
+                val d = com.kunk.singbox.ipc.SingBoxRemote.getCachedUrlTestDelay(tag)
+                if (d != null && d > 0) {
+                    return d.toLong()
+                }
+            }
+            if (attempt < 9) delay(300)
+        }
+
+        tags.forEach { tag ->
+            val debug = com.kunk.singbox.ipc.SingBoxRemote.getCachedUrlTestDelayDebug(tag)
+            if (!debug.isNullOrBlank()) {
+                Log.w(TAG, "BG cached ping miss detail: $debug")
+            } else {
+                Log.w(TAG, "BG cached ping miss detail unavailable for tag='$tag'")
+            }
+        }
+        return PING_UNAVAILABLE
+    }
+
+    private suspend fun resolvePingDelay(activeNodeId: String, nodeName: String): Long {
+        if (!VpnStateStore.getActive()) {
+            return configRepository.testNodeLatency(activeNodeId)
+        }
+
+        SingBoxRemote.ensureBound(getApplication())
+
+        val candidateTags = buildList {
+            add(nodeName)
+            val activeLabel = SingBoxRemote.activeLabel.value
+            if (activeLabel.isNotBlank() && !activeLabel.equals(nodeName, ignoreCase = true)) {
+                add(activeLabel)
+            }
+        }
+
+        val cachedDelay = loadCachedPingFromBgCandidates(candidateTags)
+        if (cachedDelay > 0) {
+            return cachedDelay
+        }
+
+        if (!BoxWrapperManager.isAvailable()) {
+            Log.w(
+                TAG,
+                "Cached delay unavailable in UI process, mark as unavailable while VPN is active. tags=$candidateTags"
+            )
+            return PING_UNAVAILABLE
+        }
+
+        return configRepository.testNodeLatency(activeNodeId)
+    }
+
     /**
      * 启动当前节点的延迟测试
      * 使用5秒超时限制，测不出来就终止并显示超时状态
      */
     private fun startPingTest() {
-        // Prevent redundant testing if we already have a valid ping result
-        // This stops the test from re-running every time the dashboard is opened/recomposed
-        // UNLESS the ping is currently null (not tested) or being manually refreshed
-        if (_connectionState.value == ConnectionState.Connected &&
-            _currentNodePing.value != null &&
-            _currentNodePing.value != -1L &&
-            !_isPingTesting.value) {
+        if (shouldSkipPingRetest()) {
             return
         }
 
         stopPingTest()
 
         _isPingTesting.value = true
-        // Only clear current ping if we are manually retesting or it was failed/null.
-        // If it was valid, keep showing old value until new one arrives?
-        // No, UI usually shows spinner. Let's clear to indicate "refreshing".
         _currentNodePing.value = null
 
         pingTestJob = viewModelScope.launch {
             try {
-                // 设置测试中状态
                 _isPingTesting.value = true
                 _currentNodePing.value = null
-
-                // 等待一小段时间确保 VPN 完全启动
                 delay(1000)
 
-                // 检查 VPN 是否还在运行
-                if (_connectionState.value != ConnectionState.Connected) {
-                    _isPingTesting.value = false
+                if (!isPingContextReady()) {
                     return@launch
                 }
 
-                val activeNodeId = activeNodeId.value ?: withTimeoutOrNull(1500L) {
-                    this@DashboardViewModel.activeNodeId.filterNotNull().first()
-                }
-                if (activeNodeId.isNullOrBlank()) {
-                    Log.w(TAG, "No active node to test ping")
-                    _isPingTesting.value = false
-                    _currentNodePing.value = -1L // 标记为失败
+                val target = resolvePingTargetNode()
+                if (target == null) {
+                    _currentNodePing.value = PING_FAILED_TIMEOUT
                     return@launch
                 }
 
-                val nodeName = configRepository.getNodeById(activeNodeId)?.name
-                if (nodeName == null) {
-                    Log.w(TAG, "Node name not found for id: $activeNodeId")
-                    _isPingTesting.value = false
-                    _currentNodePing.value = -1L // 标记为失败
-                    return@launch
-                }
-
-                // 使用5秒超时包装整个测试过程
-                val delay = configRepository.testNodeLatency(activeNodeId)
-
-                // 测试完成，更新状态
-                _isPingTesting.value = false
-
-                // 再次检查 VPN 是否还在运行（测试可能需要一些时间）
+                val delay = resolvePingDelay(activeNodeId = target.first, nodeName = target.second)
                 if (_connectionState.value == ConnectionState.Connected && pingTestJob?.isActive == true) {
-                    if (delay != null && delay > 0) {
-                        _currentNodePing.value = delay
-                    } else {
-                        // 超时或失败，设置为 -1 表示超时
-                        _currentNodePing.value = -1L
-                        Log.w(TAG, "Ping test failed or timed out")
-                    }
+                    applyPingResult(delay)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error during ping test", e)
+                _currentNodePing.value = PING_FAILED_TIMEOUT
+            } finally {
                 _isPingTesting.value = false
-                _currentNodePing.value = -1L // 标记为失败
+            }
+        }
+    }
+
+    private fun shouldSkipPingRetest(): Boolean {
+        val ping = _currentNodePing.value
+        return _connectionState.value == ConnectionState.Connected &&
+            ping != null &&
+            ping > 0 &&
+            !_isPingTesting.value
+    }
+
+    private fun isPingContextReady(): Boolean {
+        return _connectionState.value == ConnectionState.Connected
+    }
+
+    private suspend fun resolvePingTargetNode(): Pair<String, String>? {
+        val nodeId = activeNodeId.value ?: withTimeoutOrNull(1500L) {
+            this@DashboardViewModel.activeNodeId.filterNotNull().first()
+        }
+        if (nodeId.isNullOrBlank()) {
+            Log.w(TAG, "No active node to test ping")
+            return null
+        }
+
+        val nodeName = configRepository.getNodeById(nodeId)?.name
+        if (nodeName.isNullOrBlank()) {
+            Log.w(TAG, "Node name not found for id: $nodeId")
+            return null
+        }
+        return nodeId to nodeName
+    }
+
+    private fun applyPingResult(delay: Long?) {
+        when {
+            delay != null && delay > 0 -> {
+                _currentNodePing.value = delay
+            }
+
+            delay == PING_UNAVAILABLE -> {
+                _currentNodePing.value = PING_UNAVAILABLE
+                Log.w(TAG, "Ping data unavailable: no bg cache hit and local fallback unavailable")
+            }
+
+            else -> {
+                _currentNodePing.value = PING_FAILED_TIMEOUT
+                Log.w(TAG, "Ping test failed or timed out")
             }
         }
     }

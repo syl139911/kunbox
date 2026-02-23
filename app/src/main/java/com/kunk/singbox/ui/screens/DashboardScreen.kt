@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.kunk.singbox.model.ConnectionState
+import com.kunk.singbox.model.PingDisplayText
 import com.kunk.singbox.model.RoutingMode
 import com.kunk.singbox.ui.navigation.Screen
 import com.kunk.singbox.viewmodel.DashboardViewModel
@@ -457,12 +458,13 @@ fun DashboardScreen(
                 val isPingLoading = isConnected && isPingTesting
                 // 格式化延迟显示：超时显示"超时"，未测试显示"-"
                 val timeoutMsg = stringResource(R.string.common_timeout)
-                val pingText = when {
-                    !isConnected -> "-"
-                    displayPing != null && displayPing > 0 -> "$displayPing ms"
-                    displayPing == -1L -> timeoutMsg
-                    else -> "-"
-                }
+                val unavailableMsg = stringResource(R.string.common_unavailable)
+                val pingText = PingDisplayText.resolve(
+                    isConnected = isConnected,
+                    displayPing = displayPing,
+                    timeoutText = timeoutMsg,
+                    unavailableText = unavailableMsg
+                )
                 InfoCard(
                     uploadSpeed = if (isConnected) "${formatBytes(stats.uploadSpeed)}/s" else "-/s",
                     downloadSpeed = if (isConnected) "${formatBytes(stats.downloadSpeed)}/s" else "-/s",

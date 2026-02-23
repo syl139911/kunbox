@@ -31,6 +31,15 @@ class BackgroundPowerManager(
 
         /** 恢复触发最小离开时长: 1 秒（降低以更快响应网络变化） */
         private const val MIN_RECOVERY_AWAY_MS = 1_000L
+
+        /** App 回前台时超过该离开时长后走强制恢复，跳过恢复防抖 */
+        private const val FORCE_RECOVERY_AWAY_MS_APP_FOREGROUND = 3_000L
+
+        /** 仅屏幕点亮时的强制恢复阈值（更保守，避免与 AppForeground 重叠） */
+        private const val FORCE_RECOVERY_AWAY_MS_SCREEN_ON = 8_000L
+
+        /** 前台返回事件合并窗口，避免 screen_on/app_foreground 短时重复触发 */
+        private const val RETURN_RECOVERY_COALESCE_MS = 2_500L
     }
 
     /**
@@ -76,6 +85,12 @@ class BackgroundPowerManager(
 
     @Volatile
     private var backgroundStartTimeMs: Long = 0L
+
+    @Volatile
+    private var lastReturnRecoveryAtMs: Long = 0L
+
+    @Volatile
+    private var lastReturnRecoverySource: String = ""
 
     private val logRepo by lazy { LogRepository.getInstance() }
 
@@ -222,36 +237,58 @@ class BackgroundPowerManager(
         awayDurationMs: Long
     ) {
         val cb = callbacks
-        if (cb == null) {
-            logState("$eventLabel after ${eventDurationMs / 1000}s, skip recovery: callbacks is null")
+        val skipReason = when {
+            cb == null -> "callbacks is null"
+            !cb.isVpnRunning -> "vpn not running"
+            awayDurationMs < MIN_RECOVERY_AWAY_MS -> {
+                "away ${awayDurationMs}ms < ${MIN_RECOVERY_AWAY_MS}ms"
+            }
+            shouldCoalesceReturnRecovery(source) -> {
+                "coalesced_with=$lastReturnRecoverySource within ${RETURN_RECOVERY_COALESCE_MS}ms"
+            }
+            else -> null
+        }
+
+        if (skipReason != null) {
+            logState("$eventLabel after ${eventDurationMs / 1000}s, skip recovery: $skipReason")
             return
         }
 
-        if (!cb.isVpnRunning) {
-            logState("$eventLabel after ${eventDurationMs / 1000}s, skip recovery: vpn not running")
-            return
+        val forceThreshold = when (source) {
+            "app_foreground" -> FORCE_RECOVERY_AWAY_MS_APP_FOREGROUND
+            "screen_on" -> FORCE_RECOVERY_AWAY_MS_SCREEN_ON
+            else -> FORCE_RECOVERY_AWAY_MS_SCREEN_ON
         }
+        val forceRecovery = awayDurationMs > forceThreshold
 
-        if (awayDurationMs < MIN_RECOVERY_AWAY_MS) {
-            logState(
-                "$eventLabel after ${eventDurationMs / 1000}s, skip recovery: " +
-                    "away ${awayDurationMs}ms < ${MIN_RECOVERY_AWAY_MS}ms"
-            )
-            return
-        }
+        markReturnRecovery(source)
 
         logState(
             "$eventLabel after ${eventDurationMs / 1000}s, " +
-                "request recovery(source=$source, force=${awayDurationMs > 15_000L}, away=${awayDurationMs}ms)"
+                "request recovery(source=$source, force=$forceRecovery, " +
+                "away=${awayDurationMs}ms, threshold=${forceThreshold}ms)"
         )
-        // 离开超过 15 秒，强制恢复（跳过所有防抖），避免恢复被合并/跳过
-        val forceRecovery = awayDurationMs > 15_000L
-        cb.requestCoreNetworkRecovery(source, force = forceRecovery)
+        cb?.requestCoreNetworkRecovery(source, force = forceRecovery)
     }
 
     /**
      * 评估用户状态（仅状态记录）
      */
+    private fun shouldCoalesceReturnRecovery(source: String): Boolean {
+        val lastAt = lastReturnRecoveryAtMs
+        val elapsed = SystemClock.elapsedRealtime() - lastAt
+        val withinWindow = lastAt > 0L && elapsed in 0 until RETURN_RECOVERY_COALESCE_MS
+        if (!withinWindow) return false
+
+        val preferAppForeground = lastReturnRecoverySource == "screen_on" && source == "app_foreground"
+        return !preferAppForeground
+    }
+
+    private fun markReturnRecovery(source: String) {
+        lastReturnRecoveryAtMs = SystemClock.elapsedRealtime()
+        lastReturnRecoverySource = source
+    }
+
     private fun evaluateUserPresence() {
         if (isUserAway) {
             if (userAwayAtMs == 0L) {
@@ -321,6 +358,8 @@ class BackgroundPowerManager(
         isScreenOff = false
         userAwayAtMs = 0L
         backgroundStartTimeMs = 0L
+        lastReturnRecoveryAtMs = 0L
+        lastReturnRecoverySource = ""
         callbacks = null
         Log.i(TAG, "BackgroundPowerManager cleaned up")
     }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.withLock
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Command Server/Client 管理器
@@ -26,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - 连接追踪
  * - 节点组管理
  *
- * libbox v1.12.20 API:
+ * libbox 当前版本 API:
  * - BoxService 通过 Libbox.newService(configContent, platformInterface) 创建
  * - BoxService.start() 启动服务
  * - BoxService.close() 关闭服务
@@ -120,7 +121,7 @@ class CommandManager(
             override fun setSystemProxyEnabled(isEnabled: Boolean) {}
         }
 
-        // 创建 CommandServer (v1.12.20 API: newCommandServer(handler, maxLines))
+        // 创建 CommandServer (当前版本 API: newCommandServer(handler, maxLines))
         val server = Libbox.newCommandServer(serverHandler, MAX_LOG_LINES)
         commandServer = server
         Log.i(TAG, "CommandServer created")
@@ -141,7 +142,7 @@ class CommandManager(
     }
 
     /**
-     * 启动服务配置 (v1.12.20: 使用 BoxService)
+     * 启动服务配置 (当前版本: 使用 BoxService)
      */
     fun startService(configContent: String, platformInterface: PlatformInterface): Result<Unit> = runCatching {
         // 创建并启动 BoxService
@@ -177,7 +178,7 @@ class CommandManager(
         clientHandler = handler
 
         // 启动 CommandClient (Status + Group)
-        // v1.12.20: 需要订阅 Group 命令才能接收 URL 测试结果
+        // 当前版本: 需要订阅 Group 命令才能接收 URL 测试结果
         val optionsStatus = CommandClientOptions()
         optionsStatus.command = Libbox.CommandStatus
         optionsStatus.statusInterval = 3000L * 1000L * 1000L // 3s
@@ -396,7 +397,7 @@ class CommandManager(
      * 使用 CommandClient.urlTest(groupTag) API 触发测试
      * 结果通过 writeGroups 回调异步返回
      *
-     * v1.12.20: urlTest 是异步的，需要轮询等待结果
+     * 当前版本: urlTest 是异步的，需要轮询等待结果
      *
      * @param groupTag 要测试的 group 标签 (如 "PROXY")
      * @param timeoutMs 等待结果的超时时间
@@ -408,34 +409,22 @@ class CommandManager(
 
         return urlTestMutex.withLock {
             try {
-                // 清空之前的结果
-                urlTestResults.clear()
                 pendingUrlTestGroupTag = groupTag
+                val latestGroupResults = AtomicReference<Map<String, Int>>(emptyMap())
+                urlTestCompletionCallback = { results ->
+                    latestGroupResults.set(results)
+                }
 
                 // 触发 URL 测试
                 Log.i(TAG, "Triggering URL test for group: $groupTag")
                 client.urlTest(groupTag)
 
-                // 等待测试完成 - 轮询检查结果
-                val startTime = System.currentTimeMillis()
-                val pollInterval = 500L
-                var lastResultCount = 0
+                waitForStableUrlTestResults(
+                    latestGroupResults = latestGroupResults,
+                    timeoutMs = timeoutMs
+                )
 
-                while (System.currentTimeMillis() - startTime < timeoutMs) {
-                    delay(pollInterval)
-
-                    val currentCount = urlTestResults.size
-                    if (currentCount > 0) {
-                        // 如果结果数量稳定了（连续两次相同），认为测试完成
-                        if (currentCount == lastResultCount) {
-                            Log.i(TAG, "URL test completed with $currentCount results")
-                            break
-                        }
-                        lastResultCount = currentCount
-                    }
-                }
-
-                val results = urlTestResults.toMap()
+                val results = latestGroupResults.get().ifEmpty { urlTestResults.toMap() }
                 if (results.isEmpty()) {
                     Log.w(TAG, "URL test timeout or no results for group: $groupTag")
                 }
@@ -450,12 +439,121 @@ class CommandManager(
         }
     }
 
-    /**
-     * 获取缓存的 URL 测试结果
-     * @param tag 节点标签
-     * @return 延迟值 (ms)，未测试返回 null
-     */
-    fun getCachedUrlTestDelay(tag: String): Int? = urlTestResults[tag]
+    private suspend fun waitForStableUrlTestResults(
+        latestGroupResults: AtomicReference<Map<String, Int>>,
+        timeoutMs: Long
+    ) {
+        val startTime = System.currentTimeMillis()
+        val pollInterval = 300L
+        var lastResultCount = -1
+        var stableCount = 0
+
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            delay(pollInterval)
+            val currentCount = latestGroupResults.get().size
+            if (currentCount <= 0) {
+                continue
+            }
+
+            stableCount = if (currentCount == lastResultCount) {
+                stableCount + 1
+            } else {
+                lastResultCount = currentCount
+                0
+            }
+
+            if (stableCount >= 2) {
+                Log.i(TAG, "URL test completed with $currentCount results")
+                break
+            }
+        }
+    }
+
+    fun getCachedUrlTestDelay(tag: String): Int? {
+        val snapshot = snapshotUrlTestKeys()
+        val aliasSources = buildDelayAliasSourceMap()
+        val aliasTags = buildDelayAliasTags(tag, aliasSources)
+        val rawAliasSummary = aliasSources.entries.joinToString(", ") { (source, value) ->
+            "$source='${value.orEmpty()}'"
+        }
+        Log.w(
+            TAG,
+            "getCachedUrlTestDelay queryTag='$tag', normalized='${UrlTestTagMatcher.normalizeTag(tag)}', " +
+                "aliasSources={$rawAliasSummary}, aliases=${aliasTags.joinToString(prefix = "[", postfix = "]")}, " +
+                "keysCount=${snapshot.size}, keys=${snapshot.joinToString(prefix = "[", postfix = "]")}"
+        )
+
+        val matched = UrlTestTagMatcher.resolveDelayDetail(
+            results = urlTestResults,
+            queryTag = tag,
+            aliasTags = aliasTags
+        )
+
+        if (matched != null) {
+            Log.w(
+                TAG,
+                "getCachedUrlTestDelay ${matched.matchType} hit: tag='$tag', " +
+                    "matchedKey='${matched.matchedKey}', delay=${matched.delay}"
+            )
+            return matched.delay
+        }
+        Log.w(TAG, "getCachedUrlTestDelay miss: tag='$tag'")
+        return null
+    }
+
+    fun getCachedUrlTestDelayDebug(tag: String): String {
+        val snapshot = snapshotUrlTestKeys()
+        val aliasSources = buildDelayAliasSourceMap()
+        val aliasTags = buildDelayAliasTags(tag, aliasSources)
+        val matched = UrlTestTagMatcher.resolveDelayDetail(
+            results = urlTestResults,
+            queryTag = tag,
+            aliasTags = aliasTags
+        )
+
+        val rawAliasSummary = aliasSources.entries.joinToString(", ") { (source, value) ->
+            "$source='${value.orEmpty()}'"
+        }
+        val keySummary = snapshot.joinToString(prefix = "[", postfix = "]")
+
+        return if (matched != null) {
+            "HIT type=${matched.matchType}, query='$tag', matchedKey='${matched.matchedKey}', " +
+                "delay=${matched.delay}, aliases=${aliasTags.joinToString(prefix = "[", postfix = "]")}, " +
+                "aliasSources={$rawAliasSummary}, keysCount=${snapshot.size}, keys=$keySummary"
+        } else {
+            "MISS query='$tag', normalized='${UrlTestTagMatcher.normalizeTag(tag)}', " +
+                "aliases=${aliasTags.joinToString(prefix = "[", postfix = "]")}, " +
+                "aliasSources={$rawAliasSummary}, keysCount=${snapshot.size}, keys=$keySummary"
+        }
+    }
+
+    private fun snapshotUrlTestKeys(limit: Int = 20): List<String> {
+        return urlTestResults.keys
+            .sorted()
+            .take(limit)
+    }
+
+    private fun buildDelayAliasSourceMap(): Map<String, String?> {
+        return linkedMapOf(
+            "groupSelectedOutbounds[PROXY]" to groupSelectedOutbounds["PROXY"],
+            "realTimeNodeName" to realTimeNodeName,
+            "activeConnectionNode" to activeConnectionNode,
+            "activeConnectionLabel" to activeConnectionLabel,
+            "vpnStateStore.activeLabel" to VpnStateStore.getActiveLabel()
+        )
+    }
+
+    private fun buildDelayAliasTags(
+        queryTag: String,
+        aliasSources: Map<String, String?> = buildDelayAliasSourceMap()
+    ): List<String> {
+        return buildList {
+            aliasSources.values.forEach { add(it) }
+        }
+            .map { it?.trim().orEmpty() }
+            .filter { it.isNotBlank() && !it.equals(queryTag, ignoreCase = true) }
+            .distinct()
+    }
 
     private fun createClientHandler(): CommandClientHandler = object : CommandClientHandler {
         override fun connected() {}
@@ -649,9 +747,10 @@ class CommandManager(
             itemCount++
             if (!itemTag.isNullOrBlank() && delay > 0) {
                 delayCount++
+                // Always persist delay results for getCachedUrlTestDelay()
+                urlTestResults[itemTag] = delay
                 if (pendingGroup != null && tag.equals(pendingGroup, ignoreCase = true)) {
                     testResults[itemTag] = delay
-                    urlTestResults[itemTag] = delay
                 }
             }
         }
@@ -813,7 +912,7 @@ class CommandManager(
 
         try {
             val optionsLog = CommandClientOptions()
-            // v1.12.20: 使用 command 属性而不是 addCommand 方法
+            // 当前版本: 使用 command 属性而不是 addCommand 方法
             optionsLog.command = Libbox.CommandLog
             optionsLog.statusInterval = 1500L * 1000L * 1000L
             commandClientLogs = Libbox.newCommandClient(handler, optionsLog)
@@ -825,7 +924,7 @@ class CommandManager(
 
         try {
             val optionsConn = CommandClientOptions()
-            // v1.12.20: 使用 command 属性而不是 addCommand 方法
+            // 当前版本: 使用 command 属性而不是 addCommand 方法
             optionsConn.command = Libbox.CommandConnections
             optionsConn.statusInterval = 5000L * 1000L * 1000L
             commandClientConnections = Libbox.newCommandClient(handler, optionsConn)

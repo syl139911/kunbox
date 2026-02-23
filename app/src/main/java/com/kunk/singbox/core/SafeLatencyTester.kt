@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * 安全延迟测试器 - 保护主网络连接不受测试影响
  *
- * v1.12.20 适配:
+ * 当前版本 适配:
  * - 使用 CommandClient.urlTest(groupTag) 触发整组测试
  * - 通过 CommandManager.urlTestGroup() 获取结果
  * - 不再支持单节点测试，改为整组测试
@@ -35,7 +35,7 @@ class SafeLatencyTester private constructor() {
         private const val CIRCUIT_BREAKER_THRESHOLD = 3
         private const val CIRCUIT_BREAKER_COOLDOWN_MS = 10000L
 
-        /** v1.12.20 中不再使用并发测试，保留兼容 */
+        /** 当前版本 中不再使用并发测试，保留兼容 */
         const val DEFAULT_CONCURRENCY = 1
 
         @Volatile
@@ -58,14 +58,14 @@ class SafeLatencyTester private constructor() {
 
     /**
      * 安全的批量延迟测试
-     * v1.12.20: 使用 CommandClient.urlTest(groupTag) 触发整组测试
+     * 当前版本: 使用 CommandClient.urlTest(groupTag) 触发整组测试
      *
      * @param outbounds 待测试的节点列表
-     * @param targetUrl 测试 URL (v1.12.20 中忽略，使用配置中的 URL)
+     * @param targetUrl 测试 URL (当前版本 中忽略，使用配置中的 URL)
      * @param timeoutMs 超时时间
      * @param onResult 每个节点测试完成的回调
      */
-    @Suppress("UNUSED_PARAMETER")
+    @Suppress("UNUSED_PARAMETER", "CyclomaticComplexMethod", "CognitiveComplexMethod")
     suspend fun testOutboundsLatencySafe(
         outbounds: List<Outbound>,
         targetUrl: String,
@@ -81,8 +81,12 @@ class SafeLatencyTester private constructor() {
         }
 
         if (!isTestingActive.compareAndSet(false, true)) {
-            Log.w(TAG, "Another test is in progress, skipping")
-            outbounds.forEach { onResult(it.tag, -1L) }
+            Log.w(TAG, "Another test is in progress, waiting for cached results")
+            val reusedResults = waitForCachedResults(outbounds, URL_TEST_TIMEOUT_MS)
+            outbounds.forEach { outbound ->
+                val delay = reusedResults[outbound.tag]
+                onResult(outbound.tag, if (delay != null && delay > 0) delay.toLong() else -1L)
+            }
             return
         }
 
@@ -148,6 +152,28 @@ class SafeLatencyTester private constructor() {
             Log.e(TAG, "URL test error: ${e.message}")
             emptyMap()
         }
+    }
+
+    private suspend fun waitForCachedResults(
+        outbounds: List<Outbound>,
+        timeoutMs: Long
+    ): Map<String, Int> {
+        val service = SingBoxService.instance ?: return emptyMap()
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val result = mutableMapOf<String, Int>()
+            outbounds.forEach { outbound ->
+                val delay = service.getCachedUrlTestDelay(outbound.tag)
+                if (delay != null && delay > 0) {
+                    result[outbound.tag] = delay
+                }
+            }
+            if (result.isNotEmpty()) {
+                return result
+            }
+            delay(200)
+        }
+        return emptyMap()
     }
 
     /**

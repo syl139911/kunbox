@@ -2356,29 +2356,29 @@ class ConfigRepository(private val context: Context) {
                 throw Exception("Config validation failed: $msg", e)
             }
 
-            // 写入临时配置文件
-            val configFile = File(context.filesDir, "running_config.json")
-            configFile.writeText(gson.toJson(runConfig))
-
             // 收集所有 Outbound 的 tag
             val allTags = runConfig.outbounds?.map { it.tag }?.toSet() ?: emptySet()
 
             // 解析当前选中的节点在运行配置中的实际 Tag
-            // 关键修复：确保 resolvedTag 指向一个实际存在的 outbound
+            // 不再自动回退到其它可用节点，避免“用户选 A，实际连 B”
             val candidateTag = activeNodeId?.let { outboundsContext.nodeTagMap[it] }
                 ?: activeNode?.name
 
-            val resolvedTag = if (candidateTag != null && allTags.contains(candidateTag)) {
-                candidateTag
-            } else {
-                // 跨配置节点加载失败，回退到 PROXY selector 的 default
-                val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
-                val fallback = proxySelector?.default ?: proxySelector?.outbounds?.firstOrNull()
-                if (candidateTag != null) {
-                    Log.w(TAG, "Selected node tag '$candidateTag' not found in outbounds, falling back to: $fallback")
+            val resolvedTag = when {
+                candidateTag == null -> {
+                    val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
+                    proxySelector?.default ?: proxySelector?.outbounds?.firstOrNull()
                 }
-                fallback
+                allTags.contains(candidateTag) -> candidateTag
+                else -> {
+                    Log.e(TAG, "Selected node tag '$candidateTag' not found in runtime outbounds, aborting switch")
+                    throw IllegalStateException("Selected node is not available in runtime outbounds: $candidateTag")
+                }
             }
+
+            // 写入临时配置文件
+            val configFile = File(context.filesDir, "running_config.json")
+            configFile.writeText(gson.toJson(runConfig))
 
             ConfigGenerationResult(configFile.absolutePath, resolvedTag, allTags)
         } catch (e: Exception) {

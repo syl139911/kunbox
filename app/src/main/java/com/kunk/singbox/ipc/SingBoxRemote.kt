@@ -626,6 +626,25 @@ object SingBoxRemote {
         const val IPC_ERROR = 4
     }
 
+    fun getCachedUrlTestDelay(tag: String): Int? {
+        val s = service ?: return null
+        if (!connectionActive || !bound) return null
+
+        return runCatching {
+            val delay = s.getCachedUrlTestDelay(tag)
+            if (delay > 0) delay else null
+        }.getOrNull()
+    }
+
+    fun getCachedUrlTestDelayDebug(tag: String): String? {
+        val s = service ?: return null
+        if (!connectionActive || !bound) return null
+
+        return runCatching {
+            s.getCachedUrlTestDelayDebug(tag)
+        }.getOrNull()
+    }
+
     fun hotReloadConfig(configContent: String): Int {
         val s = service
         if (s == null || !connectionActive || !bound) {

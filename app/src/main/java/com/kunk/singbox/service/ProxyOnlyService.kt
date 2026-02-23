@@ -155,7 +155,7 @@ class ProxyOnlyService : Service() {
             return procPaths.all { path -> hasUidHeader(path) }
         }
 
-        // v1.12.20: findConnectionOwner 返回 Int (UID) 而不是 ConnectionOwner
+        // 当前版本: findConnectionOwner 返回 Int (UID) 而不是 ConnectionOwner
         override fun findConnectionOwner(
             ipProtocol: Int,
             sourceAddress: String?,
@@ -196,7 +196,7 @@ class ProxyOnlyService : Service() {
             }
         }
 
-        // v1.12.20: 新增 packageNameByUid 方法
+        // 当前版本: 新增 packageNameByUid 方法
         override fun packageNameByUid(uid: Int): String {
             return try {
                 val pm = packageManager
@@ -207,7 +207,7 @@ class ProxyOnlyService : Service() {
             }
         }
 
-        // v1.12.20: 新增 uidByPackageName 方法
+        // 当前版本: 新增 uidByPackageName 方法
         override fun uidByPackageName(packageName: String): Int {
             return try {
                 val pm = packageManager
@@ -317,7 +317,7 @@ class ProxyOnlyService : Service() {
 
         override fun systemCertificates(): StringIterator? = null
 
-        // v1.12.20: 新增 writeLog 方法
+        // 当前版本: 新增 writeLog 方法
         override fun writeLog(message: String?) {
             if (message.isNullOrBlank()) return
             runCatching {
@@ -537,7 +537,7 @@ class ProxyOnlyService : Service() {
                     }
                 }
 
-                // v1.12.20: 使用 postServiceClose 替代 serviceStop，移除 writeDebugMessage
+                // 当前版本: 使用 postServiceClose 替代 serviceStop，移除 writeDebugMessage
                 val serverHandler = object : CommandServerHandler {
                     override fun postServiceClose() {
                         Log.i(TAG, "postServiceClose requested")
@@ -549,12 +549,12 @@ class ProxyOnlyService : Service() {
                     override fun setSystemProxyEnabled(isEnabled: Boolean) {}
                 }
 
-                // v1.12.20: newCommandServer(handler, maxLines) 签名
+                // 当前版本: newCommandServer(handler, maxLines) 签名
                 val server = Libbox.newCommandServer(serverHandler, 100)
                 commandServer = server
                 server.start()
 
-                // v1.12.20: 使用 BoxService 模式
+                // 当前版本: 使用 BoxService 模式
                 val service = Libbox.newService(configContent, platformInterface)
                 service.start()
                 boxService = service
@@ -641,7 +641,7 @@ class ProxyOnlyService : Service() {
                 Log.i(TAG, "Closing BoxService and CommandServer...")
                 val closeStart = SystemClock.elapsedRealtime()
                 try {
-                    // v1.12.20: 先关闭 BoxService，再关闭 CommandServer
+                    // 当前版本: 先关闭 BoxService，再关闭 CommandServer
                     serviceToClose?.close()
                     serverToClose?.close()
 

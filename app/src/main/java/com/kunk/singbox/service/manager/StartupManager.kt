@@ -359,6 +359,26 @@ class StartupManager(
         val configContent = patchConfig(rawConfigContent, settings)
         log("[parallelInit] patchConfig: ${SystemClock.elapsedRealtime() - stepStart}ms")
 
+        // Debug: dump XHTTP transport config
+        try {
+            val debugConfig = gson.fromJson(configContent, SingBoxConfig::class.java)
+            debugConfig.outbounds?.forEach { ob ->
+                if (ob.transport != null) {
+                    Log.w(TAG, "[DEBUG] Outbound '${ob.tag}' type=${ob.type} transport=${gson.toJson(ob.transport)}")
+                }
+                if (ob.type == "vless") {
+                    Log.w(
+                        TAG,
+                        "[DEBUG] VLESS outbound '${ob.tag}': server=${ob.server}:${ob.serverPort}, " +
+                            "flow=${ob.flow}, tls=${ob.tls != null}, packet_encoding=${ob.packetEncoding}, " +
+                            "transport_type=${ob.transport?.type}, transport_mode=${ob.transport?.mode}"
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "[DEBUG] Failed to dump config: ${e.message}")
+        }
+
         // 等待所有并行任务完成
         val network = networkDeferred.await()
         val ruleSetReady = ruleSetDeferred.await()

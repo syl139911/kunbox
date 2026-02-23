@@ -227,6 +227,15 @@ object SingBoxIpcHub {
      * @param configContent 新的配置内容 (JSON)
      * @return 热重载结果码 (HotReloadResult)
      */
+    fun getCachedUrlTestDelay(tag: String): Int? {
+        return ServiceStateHolder.instance?.getCachedUrlTestDelay(tag)
+    }
+
+    fun getCachedUrlTestDelayDebug(tag: String): String {
+        return ServiceStateHolder.instance?.getCachedUrlTestDelayDebug(tag)
+            ?: "SERVICE_UNAVAILABLE"
+    }
+
     fun hotReloadConfig(configContent: String): Int {
         log("[HotReload] IPC request received")
 

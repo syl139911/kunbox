@@ -740,6 +740,10 @@ class SingBoxService : VpnService() {
         return commandManager.getCachedUrlTestDelay(tag)
     }
 
+    fun getCachedUrlTestDelayDebug(tag: String): String {
+        return commandManager.getCachedUrlTestDelayDebug(tag)
+    }
+
     private fun closeRecentConnectionsBestEffort(reason: String) {
         val ids = recentConnectionIds
         if (ids.isEmpty()) return

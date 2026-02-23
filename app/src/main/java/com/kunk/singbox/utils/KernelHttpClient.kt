@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 /**
  * 内核级 HTTP 客户端
  *
- * v1.12.20: 使用 Libbox.newHTTPClient() API 通过本地 SOCKS5 代理发起请求
+ * 当前版本: 使用 Libbox.newHTTPClient() API 通过本地 SOCKS5 代理发起请求
  *
  * 使用场景:
  * - 订阅更新 (需要翻墙的订阅源)
@@ -80,10 +80,10 @@ object KernelHttpClient {
 
     /**
      * 使用运行中的 VPN 服务发起请求
-     * v1.12.20: 使用 Libbox.newHTTPClient() 通过本地 SOCKS5 代理
+     * 当前版本: 使用 Libbox.newHTTPClient() 通过本地 SOCKS5 代理
      *
      * @param url 请求 URL
-     * @param outboundTag 使用的出站标签 (已忽略，v1.12.20 不支持指定出站)
+     * @param outboundTag 使用的出站标签 (已忽略，当前版本 不支持指定出站)
      * @param timeoutMs 超时时间 (毫秒)
      * @return HttpResult
      */
@@ -109,7 +109,7 @@ object KernelHttpClient {
 
     /**
      * 使用运行中的 VPN 服务发起请求 (带自定义 Headers)
-     * v1.12.20: 使用 Libbox.newHTTPClient() 支持自定义 Headers
+     * 当前版本: 使用 Libbox.newHTTPClient() 支持自定义 Headers
      *
      * @param url 请求 URL
      * @param headers 请求头 Map
@@ -140,7 +140,7 @@ object KernelHttpClient {
 
     /**
      * 智能请求 - 自动选择最佳方式
-     * v1.12.20: VPN 运行时优先使用内核 HTTP 客户端
+     * 当前版本: VPN 运行时优先使用内核 HTTP 客户端
      *
      * @param url 请求 URL
      * @param preferKernel 是否优先使用内核
@@ -295,7 +295,7 @@ object KernelHttpClient {
 
     /**
      * 检查内核 Fetch 是否可用
-     * v1.12.20: 当 VPN 运行时返回 true
+     * 当前版本: 当 VPN 运行时返回 true
      */
     fun isKernelFetchAvailable(): Boolean {
         // 检查 VPN 是否运行中

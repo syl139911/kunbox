@@ -30,7 +30,7 @@ import java.io.File
  * 负责完整的 VPN 生命周期管理
  * 使用 Result<T> 返回值模式
  *
- * v1.12.20 libbox API:
+ * 当前版本 libbox API:
  * - BoxService 通过 Libbox.newService(configContent, platformInterface) 创建
  * - BoxService.start() 启动服务
  * - BoxService.close() 关闭服务
@@ -52,7 +52,7 @@ class CoreManager(
     @Volatile var commandServer: CommandServer? = null
         private set
 
-    // v1.12.20: 添加 BoxService 字段
+    // 当前版本: 添加 BoxService 字段
     @Volatile var boxService: BoxService? = null
         private set
 
@@ -242,7 +242,7 @@ class CoreManager(
     }
 
     /**
-     * 启动 Libbox 服务 (v1.12.20: 使用 BoxService 模式)
+     * 启动 Libbox 服务 (当前版本: 使用 BoxService 模式)
      */
     suspend fun startLibbox(configContent: String): StartResult {
         if (isStarting) {
@@ -267,7 +267,7 @@ class CoreManager(
             val serviceStartTime = android.os.SystemClock.elapsedRealtime()
 
             withContext(Dispatchers.IO) {
-                // v1.12.20: 使用 BoxService 模式
+                // 当前版本: 使用 BoxService 模式
                 val service = Libbox.newService(configContent, pi)
                 service.start()
                 boxService = service
@@ -301,7 +301,7 @@ class CoreManager(
 
     /**
      * 停止服务 (保留 TUN 用于跨配置切换)
-     * v1.12.20: 使用 BoxService.close() 替代 CommandServer.closeService()
+     * 当前版本: 使用 BoxService.close() 替代 CommandServer.closeService()
      */
     suspend fun stopService(): Result<Unit> {
         return runCatching {
@@ -312,7 +312,7 @@ class CoreManager(
                 // 清除 SelectorManager 状态
                 SelectorManager.clear()
 
-                // v1.12.20: 关闭 BoxService
+                // 当前版本: 关闭 BoxService
                 boxService?.close()
                 boxService = null
 
@@ -458,12 +458,12 @@ class CoreManager(
 
     fun setVpnInterface(pfd: ParcelFileDescriptor?) { vpnInterface = pfd }
 
-    // v1.12.20: 检查 boxService 是否存在
+    // 当前版本: 检查 boxService 是否存在
     fun isServiceRunning(): Boolean = boxService != null
 
     fun isVpnInterfaceValid(): Boolean = vpnInterface?.fileDescriptor?.valid() == true
 
-    // v1.12.20: 使用 BoxWrapperManager.resume() 替代 CommandServer.wake()
+    // 当前版本: 使用 BoxWrapperManager.resume() 替代 CommandServer.wake()
     suspend fun wakeService(): Result<Unit> {
         return runCatching {
             withContext(Dispatchers.IO) {
@@ -473,7 +473,7 @@ class CoreManager(
         }
     }
 
-    // v1.12.20: 使用 BoxWrapperManager.resetNetwork() 替代 CommandServer.resetNetwork()
+    // 当前版本: 使用 BoxWrapperManager.resetNetwork() 替代 CommandServer.resetNetwork()
     suspend fun resetNetwork(): Result<Unit> {
         return runCatching {
             withContext(Dispatchers.IO) {
@@ -485,7 +485,7 @@ class CoreManager(
 
     /**
      * Hot reload config without destroying VPN service
-     * v1.12.20: 需要关闭旧 BoxService 并创建新的
+     * 当前版本: 需要关闭旧 BoxService 并创建新的
      * Returns true if hot reload succeeded, false if fallback to full restart is needed
      */
     @Suppress("UNUSED_PARAMETER")
@@ -497,7 +497,7 @@ class CoreManager(
 
                 Log.i(TAG, "Attempting hot reload...")
 
-                // v1.12.20: 关闭旧服务，创建新服务
+                // 当前版本: 关闭旧服务，创建新服务
                 boxService?.close()
 
                 val newService = Libbox.newService(configContent, pi)

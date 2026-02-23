@@ -116,7 +116,9 @@ class SingBoxCore private constructor(private val context: Context) {
 
     private fun initLibbox(): Boolean {
         return try {
-            Libbox.version() // Simple check
+            val coreVersion = Libbox.version() // Simple check
+            val kunBoxVersion = runCatching { Libbox.getKunBoxVersion() }.getOrDefault("unknown")
+            Log.i(TAG, "Libbox version=$coreVersion, KunBox extension version=$kunBoxVersion")
             ensureLibboxSetup(context)
             true
         } catch (e: Exception) {
@@ -258,7 +260,7 @@ class SingBoxCore private constructor(private val context: Context) {
         timeoutMs: Int,
         dependencyOutbounds: List<Outbound> = emptyList()
     ): Long {
-        // v1.12.20: urlTestOutbound API 已移除，直接使用本地 HTTP 代理测速
+        // 当前版本: urlTestOutbound API 已移除，直接使用本地 HTTP 代理测速
 
         val port = allocateLocalPort()
         val inbound = com.kunk.singbox.model.Inbound(
@@ -271,7 +273,7 @@ class SingBoxCore private constructor(private val context: Context) {
         // 关键修复: 在 VPN 未运行时,将进程绑定到默认网络
         // 这样 sing-box 创建的所有 socket 都会使用物理网络,而不是尝试 auto-detect
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val vpnRunning = com.kunk.singbox.service.SingBoxService.instance != null
+        val vpnRunning = com.kunk.singbox.service.SingBoxService.instance != null || VpnStateStore.getActive()
         var previousNetwork: Network? = null
 
         if (!vpnRunning) {
@@ -355,11 +357,11 @@ class SingBoxCore private constructor(private val context: Context) {
                 ensureLibboxSetup(context)
                 val platformInterface = TestPlatformInterface(context)
                 val serverHandler = TestCommandServerHandler()
-                // v1.12.20: newCommandServer(handler, maxLines) 签名
+                // 当前版本: newCommandServer(handler, maxLines) 签名
                 commandServer = Libbox.newCommandServer(serverHandler, 100)
                 commandServer.start()
 
-                // v1.12.20: 使用 BoxService 模式
+                // 当前版本: 使用 BoxService 模式
                 boxService = Libbox.newService(configJson, platformInterface)
                 boxService.start()
                 commandServer.setService(boxService)
@@ -391,7 +393,7 @@ class SingBoxCore private constructor(private val context: Context) {
                 }
             } finally {
                 try {
-                    // v1.12.20: 先关闭 BoxService，再关闭 CommandServer
+                    // 当前版本: 先关闭 BoxService，再关闭 CommandServer
                     boxService?.close()
                     commandServer?.close()
                 } catch (e: Exception) { Log.w(TAG, "Failed to close command server", e) }
@@ -423,7 +425,7 @@ class SingBoxCore private constructor(private val context: Context) {
      * - URLTestOutbound: VPN 运行时，使用当前 BoxService 实例测试
      * - URLTestStandalone: VPN 未运行时，创建临时实例测试
      *
-     * v1.12.20: urlTestOutbound API 已移除，始终返回 -1 触发回退
+     * 当前版本: urlTestOutbound API 已移除，始终返回 -1 触发回退
      *
      * @return 延迟时间(毫秒), -1 表示不支持或测试失败
      */
@@ -434,8 +436,8 @@ class SingBoxCore private constructor(private val context: Context) {
         timeoutMs: Int,
         method: LatencyTestMethod
     ): Long = withContext(Dispatchers.IO) {
-        // v1.12.20: urlTestOutbound API 已移除，始终返回 -1 触发回退到本地测试
-        Log.d(TAG, "Native URLTest not available in v1.12.20, returning -1")
+        // 当前版本: urlTestOutbound API 已移除，始终返回 -1 触发回退到本地测试
+        Log.d(TAG, "Native URLTest not available in 当前版本, returning -1")
         return@withContext -1L
     }
 
@@ -532,11 +534,11 @@ class SingBoxCore private constructor(private val context: Context) {
             ensureLibboxSetup(context)
             val platformInterface = TestPlatformInterface(context)
             val serverHandler = TestCommandServerHandler()
-            // v1.12.20: newCommandServer(handler, maxLines) 签名
+            // 当前版本: newCommandServer(handler, maxLines) 签名
             commandServer = Libbox.newCommandServer(serverHandler, 100)
             commandServer.start()
 
-            // v1.12.20: 使用 BoxService 模式
+            // 当前版本: 使用 BoxService 模式
             boxService = Libbox.newService(configJson, platformInterface)
             boxService.start()
             commandServer.setService(boxService)
@@ -553,7 +555,7 @@ class SingBoxCore private constructor(private val context: Context) {
             Log.e(TAG, "Batch test failed", e)
             batchOutbounds.forEach { onResult(it.tag, -1L) }
         } finally {
-            // v1.12.20: 先关闭 BoxService，再关闭 CommandServer
+            // 当前版本: 先关闭 BoxService，再关闭 CommandServer
             runCatching { boxService?.close() }
             runCatching { commandServer?.close() }
         }
@@ -757,6 +759,7 @@ class SingBoxCore private constructor(private val context: Context) {
     ): Long = withContext(Dispatchers.IO) {
         val settings = SettingsRepository.getInstance(context).settings.first()
         val timeoutMs = settings.latencyTestTimeout
+        val serviceRunning = com.kunk.singbox.service.SingBoxService.instance != null || VpnStateStore.getActive()
 
         val dependencyOutbounds = if (allOutbounds.isNotEmpty()) {
             resolveDependencyOutbounds(outbound, allOutbounds)
@@ -764,7 +767,7 @@ class SingBoxCore private constructor(private val context: Context) {
             emptyList()
         }
 
-        if (VpnStateStore.getActive()) {
+        if (serviceRunning) {
             val isNativeUrlTestSupported = BoxWrapperManager.isAvailable()
             if (libboxAvailable && isNativeUrlTestSupported) {
                 val url = adjustUrlForMode(settings.latencyTestUrl, settings.latencyTestMethod)
@@ -781,23 +784,16 @@ class SingBoxCore private constructor(private val context: Context) {
                 if (safeLatency > 0) {
                     return@withContext safeLatency
                 }
-                Log.w(TAG, "Safe single-node latency test failed for ${outbound.tag}, fallback to legacy path")
+                Log.w(TAG, "Safe single-node latency test failed for ${outbound.tag}, use native single test once")
                 return@withContext testOutboundLatencyWithLibbox(outbound, settings, dependencyOutbounds)
             }
 
-            val url = adjustUrlForMode(settings.latencyTestUrl, settings.latencyTestMethod)
-            var temporaryServiceLatency = -1L
-            testOutboundsLatencyOfflineWithTemporaryService(
-                outbounds = listOf(outbound),
-                targetUrl = url,
-                timeoutMs = timeoutMs,
-                method = settings.latencyTestMethod
-            ) { tag, latency ->
-                if (tag == outbound.tag) {
-                    temporaryServiceLatency = latency
-                }
-            }
-            return@withContext temporaryServiceLatency
+            Log.w(
+                TAG,
+                "VPN is active but native URL test is unavailable in current process, " +
+                    "skipping temporary test-in"
+            )
+            return@withContext -1L
         }
 
         val url = adjustUrlForMode(settings.latencyTestUrl, settings.latencyTestMethod)
@@ -1099,7 +1095,7 @@ class SingBoxCore private constructor(private val context: Context) {
         override fun usePlatformAutoDetectInterfaceControl(): Boolean = true
         override fun useProcFS(): Boolean = false
 
-        // v1.12.20: findConnectionOwner 返回 Int (UID) 而不是 ConnectionOwner
+        // 当前版本: findConnectionOwner 返回 Int (UID) 而不是 ConnectionOwner
         override fun findConnectionOwner(
             p0: Int,
             p1: String?,
@@ -1111,7 +1107,7 @@ class SingBoxCore private constructor(private val context: Context) {
             return -1
         }
 
-        // v1.12.20: 新增 packageNameByUid 方法
+        // 当前版本: 新增 packageNameByUid 方法
         override fun packageNameByUid(uid: Int): String {
             return try {
                 val pm = context.packageManager
@@ -1121,7 +1117,7 @@ class SingBoxCore private constructor(private val context: Context) {
             }
         }
 
-        // v1.12.20: 新增 uidByPackageName 方法
+        // 当前版本: 新增 uidByPackageName 方法
         override fun uidByPackageName(packageName: String): Int {
             return try {
                 val pm = context.packageManager
@@ -1142,7 +1138,7 @@ class SingBoxCore private constructor(private val context: Context) {
         }
         override fun systemCertificates(): StringIterator? = null
 
-        // v1.12.20: 新增 writeLog 方法
+        // 当前版本: 新增 writeLog 方法
         override fun writeLog(message: String?) {
             if (message.isNullOrBlank()) return
             Log.d(TAG, "TestPlatformInterface: $message")
@@ -1152,7 +1148,7 @@ class SingBoxCore private constructor(private val context: Context) {
 /**
      * 测速服务用的 CommandServerHandler 实现
      * 仅提供必要的空实现，因为测速服务不需要处理任何命令回调
-     * v1.12.20: 使用 postServiceClose 替代 serviceStop，移除 writeDebugMessage
+     * 当前版本: 使用 postServiceClose 替代 serviceStop，移除 writeDebugMessage
      */
     private class TestCommandServerHandler : io.nekohasekai.libbox.CommandServerHandler {
         override fun postServiceClose() {}
@@ -1193,12 +1189,12 @@ class SingBoxCore private constructor(private val context: Context) {
 
     /**
      * 关闭指定应用的连接
-     * v1.12.20: Libbox.closeConnectionsForApp() 已移除，使用 BoxWrapperManager 替代
+     * 当前版本: Libbox.closeConnectionsForApp() 已移除，使用 BoxWrapperManager 替代
      */
     fun closeConnectionsForApp(packageName: String): Int {
         if (!libboxAvailable) return 0
 
-        // v1.12.20: 使用 BoxWrapperManager 的实现
+        // 当前版本: 使用 BoxWrapperManager 的实现
         return BoxWrapperManager.closeConnectionsForApp(packageName)
     }
 

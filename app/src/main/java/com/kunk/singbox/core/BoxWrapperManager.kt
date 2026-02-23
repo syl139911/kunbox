@@ -79,7 +79,7 @@ object BoxWrapperManager {
 
     /**
      * 检查服务是否可用
-     * v1.12.20: Libbox.isRunning() 已移除，改为检查 commandServer 是否存在
+     * 当前版本: Libbox.isRunning() 已移除，改为检查 commandServer 是否存在
      */
     fun isAvailable(): Boolean {
         return commandServer != null
@@ -217,12 +217,12 @@ object BoxWrapperManager {
 
     /**
      * 从睡眠中唤醒 - 设备退出空闲 (Doze) 模式时调用
-     * v1.12.20: CommandServer.wake() 已移除，使用 Libbox.resumeService() 替代
+     * 当前版本: CommandServer.wake() 已移除，使用 Libbox.resumeService() 替代
      *
      * @return true 如果成功
      */
     fun wake(): Boolean {
-        // v1.12.20: 直接使用 resume() 实现唤醒功能
+        // 当前版本: 直接使用 resume() 实现唤醒功能
         return resume()
     }
 
@@ -329,16 +329,24 @@ object BoxWrapperManager {
         startTime: Long
     ): SmartRecoveryResult? {
         Log.i(TAG, "[$source] smartRecover: Level 1 (PROBE)")
-        val probeResult = ProbeManager.probeFirstSuccessViaVpn(context, timeoutMs = 1500L)
+        val probeResult = ProbeManager.probeFirstSuccessViaVpnDetailed(context, timeoutMs = 1500L)
 
-        if (probeResult != null) {
+        if (probeResult.firstSuccess != null) {
             val elapsed = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[$source] PROBE success (${probeResult.latencyMs}ms), total: ${elapsed}ms")
+            Log.i(TAG, "[$source] PROBE success (${probeResult.firstSuccess.latencyMs}ms), total: ${elapsed}ms")
             return SmartRecoveryResult(
-                RecoveryLevel.PROBE, true, "VPN link healthy",
-                probeLatencyMs = probeResult.latencyMs
+                RecoveryLevel.PROBE,
+                true,
+                "VPN link healthy",
+                probeLatencyMs = probeResult.firstSuccess.latencyMs
             )
         }
+
+        if (probeResult.allFailedByBindPermission) {
+            Log.w(TAG, "[$source] PROBE unavailable due to permission error, skip escalation")
+            return SmartRecoveryResult(RecoveryLevel.PROBE, true, "probe unavailable by permission")
+        }
+
         Log.w(TAG, "[$source] PROBE failed, escalating to SELECTIVE")
         return null
     }
@@ -350,22 +358,56 @@ object BoxWrapperManager {
     ): SmartRecoveryResult {
         Log.i(TAG, "[$source] smartRecover: Level 2 (SELECTIVE)")
         wake()
-        // Phase 2: 优先关闭空闲连接，保留活跃连接
-        val closedCount = closeIdleConnections(maxIdleSeconds = 30)
+
+        val closedIdle = closeIdleConnections(maxIdleSeconds = 30)
+        val shouldForceCloseTracked = source.equals("network_type_changed", ignoreCase = true)
+        val closedTracked = if (shouldForceCloseTracked) closeAllTrackedConnections() else 0
+
+        var autoRecoverOk: Boolean? = null
+        if (shouldForceCloseTracked) {
+            resetAllConnections(true)
+            autoRecoverOk = recoverNetworkAuto()
+        }
         resetNetwork()
-        Log.i(TAG, "[$source] SELECTIVE closed=$closedCount")
+
+        val closedCount = closedIdle + closedTracked
+        Log.i(
+            TAG,
+            "[$source] SELECTIVE closedIdle=$closedIdle closedTracked=$closedTracked autoRecover=$autoRecoverOk"
+        )
 
         kotlinx.coroutines.delay(300)
-        val verifyResult = ProbeManager.probeFirstSuccessViaVpn(context, timeoutMs = 1500L)
+        val verifyResult = ProbeManager.probeFirstSuccessViaVpnDetailed(context, timeoutMs = 1500L)
 
-        if (verifyResult != null) {
+        if (verifyResult.firstSuccess != null) {
             val elapsed = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[$source] SELECTIVE success, verify=${verifyResult.latencyMs}ms, total: ${elapsed}ms")
+            Log.i(
+                TAG,
+                "[$source] SELECTIVE success, verify=${verifyResult.firstSuccess.latencyMs}ms, total: ${elapsed}ms"
+            )
             return SmartRecoveryResult(
-                RecoveryLevel.SELECTIVE, true, "SELECTIVE succeeded",
-                closedConnections = closedCount, probeLatencyMs = verifyResult.latencyMs
+                RecoveryLevel.SELECTIVE,
+                true,
+                "SELECTIVE succeeded",
+                closedConnections = closedCount,
+                probeLatencyMs = verifyResult.firstSuccess.latencyMs
             )
         }
+
+        if (verifyResult.allFailedByBindPermission) {
+            val elapsed = System.currentTimeMillis() - startTime
+            Log.w(
+                TAG,
+                "[$source] SELECTIVE verify unavailable by permission, keep SELECTIVE result, total: ${elapsed}ms"
+            )
+            return SmartRecoveryResult(
+                RecoveryLevel.SELECTIVE,
+                true,
+                "verify unavailable by permission",
+                closedConnections = closedCount
+            )
+        }
+
         Log.w(TAG, "[$source] SELECTIVE verify failed, escalating to NUCLEAR")
         return SmartRecoveryResult(RecoveryLevel.SELECTIVE, false, "verify failed", closedCount)
     }
@@ -462,10 +504,10 @@ object BoxWrapperManager {
 
     /**
      * 重置网络
-     * v1.12.20: CommandServer.resetNetwork() 已移除，使用 Libbox.resetAllConnections() 替代
+     * 当前版本: CommandServer.resetNetwork() 已移除，使用 Libbox.resetAllConnections() 替代
      */
     fun resetNetwork(): Boolean {
-        // v1.12.20: 使用 resetAllConnections 作为替代方案
+        // 当前版本: 使用 resetAllConnections 作为替代方案
         return try {
             Libbox.resetAllConnections(false)
             Log.i(TAG, "resetNetwork() success (via resetAllConnections)")
@@ -610,12 +652,12 @@ object BoxWrapperManager {
 
     /**
      * URL 测试单个节点
-     * v1.12.20: Libbox.urlTestOutbound() 已移除，返回 -1 表示不支持
+     * 当前版本: Libbox.urlTestOutbound() 已移除，返回 -1 表示不支持
      * 注意: 单节点测试需要使用 OkHttp 回退方案，因为 CommandClient.urlTest() 是针对整个 group 的
      */
     @Suppress("UNUSED_PARAMETER")
     fun urlTestOutbound(outboundTag: String, url: String, timeoutMs: Int): Int {
-        // v1.12.20: urlTestOutbound API 已移除，返回 -1 触发回退到本地测试
+        // 当前版本: urlTestOutbound API 已移除，返回 -1 触发回退到本地测试
         // CommandClient.urlTest() 是针对整个 group 的，不支持单节点测试
         Log.d(TAG, "urlTestOutbound: using fallback for single node test")
         return -1
@@ -623,7 +665,7 @@ object BoxWrapperManager {
 
     /**
      * 批量 URL 测试 (同步版本)
-     * v1.12.20: 使用 CommandClient.urlTest(groupTag) 实现
+     * 当前版本: 使用 CommandClient.urlTest(groupTag) 实现
      * 注意: 这是同步方法，如果需要异步测试请使用 urlTestGroupAsync()
      */
     @Suppress("UNUSED_PARAMETER")
@@ -633,7 +675,7 @@ object BoxWrapperManager {
         timeoutMs: Int,
         concurrency: Int
     ): Map<String, Int> {
-        // v1.12.20: 同步方法无法使用异步的 CommandClient.urlTest()
+        // 当前版本: 同步方法无法使用异步的 CommandClient.urlTest()
         // 返回空 Map 触发回退到 OkHttp 方案
         Log.d(TAG, "urlTestBatch: sync method, returning empty map to trigger fallback")
         return emptyMap()
@@ -641,7 +683,7 @@ object BoxWrapperManager {
 
     /**
      * 异步 URL 测试整个 group
-     * v1.12.20: 使用 CommandClient.urlTest(groupTag) API
+     * 当前版本: 使用 CommandClient.urlTest(groupTag) API
      *
      * @param groupTag 要测试的 group 标签 (如 "PROXY")
      * @param timeoutMs 等待结果的超时时间
@@ -675,11 +717,11 @@ object BoxWrapperManager {
 
     /**
      * 通知内核主流量正在活跃
-     * v1.12.20: Libbox.notifyMainTrafficActive() 已移除，空实现
+     * 当前版本: Libbox.notifyMainTrafficActive() 已移除，空实现
      */
     fun notifyMainTrafficActive() {
-        // v1.12.20: notifyMainTrafficActive API 已移除，空实现
-        Log.d(TAG, "notifyMainTrafficActive not available in v1.12.20")
+        // 当前版本: notifyMainTrafficActive API 已移除，空实现
+        Log.d(TAG, "notifyMainTrafficActive not available in 当前版本")
     }
 
     // ==================== Per-Outbound Traffic ====================
@@ -710,12 +752,12 @@ object BoxWrapperManager {
 
     /**
      * 关闭指定应用的连接
-     * v1.12.20: Libbox.closeConnectionsForApp() 已移除，返回 0
+     * 当前版本: Libbox.closeConnectionsForApp() 已移除，返回 0
      */
     @Suppress("UNUSED_PARAMETER")
     fun closeConnectionsForApp(packageName: String): Int {
-        // v1.12.20: closeConnectionsForApp API 已移除
-        Log.d(TAG, "closeConnectionsForApp not available in v1.12.20")
+        // 当前版本: closeConnectionsForApp API 已移除
+        Log.d(TAG, "closeConnectionsForApp not available in 当前版本")
         return 0
     }
 }

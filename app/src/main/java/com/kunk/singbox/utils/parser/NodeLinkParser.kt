@@ -15,6 +15,39 @@ import com.google.gson.Gson
  */
 class NodeLinkParser(private val gson: Gson) {
 
+    private fun firstParam(params: Map<String, String>, vararg keys: String): String? {
+        return keys.firstNotNullOfOrNull { key ->
+            params.entries.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value
+        }
+    }
+
+    private fun parseBooleanFlag(value: String?): Boolean? {
+        val normalized = value?.trim()?.lowercase() ?: return null
+        return when (normalized) {
+            "1", "true", "yes", "on" -> true
+            "0", "false", "no", "off" -> false
+            else -> null
+        }
+    }
+
+    private fun parseHostList(value: String?): List<String>? {
+        if (value.isNullOrBlank()) return null
+        val hosts = value.split(',').map { it.trim() }.filter { it.isNotBlank() }
+        return hosts.takeIf { it.isNotEmpty() }
+    }
+
+    private fun parseQueryParams(query: String?): Map<String, String> {
+        if (query.isNullOrBlank()) return emptyMap()
+        val params = mutableMapOf<String, String>()
+        query.split("&").forEach { param ->
+            val parts = param.split("=", limit = 2)
+            if (parts.size == 2) {
+                params[parts[0]] = java.net.URLDecoder.decode(parts[1], "UTF-8")
+            }
+        }
+        return params
+    }
+
     /**
      * 预处理 URI 字符串，清理常见格式问题
      * - 对 fragment 和 query 中的空格进行 URL 编码
@@ -355,7 +388,17 @@ class NodeLinkParser(private val gson: Gson) {
                 "xhttp", "splithttp" -> TransportConfig(
                     type = "xhttp",
                     path = if (path.isBlank()) "/" else path,
-                    host = if (host.isNotBlank()) listOf(host) else null
+                    host = parseHostList(host),
+                    mode = json["mode"] as? String,
+                    xPaddingBytes = json["xPaddingBytes"] as? String,
+                    scMaxEachPostBytes = (json["scMaxEachPostBytes"] as? String)?.toLongOrNull()
+                        ?: (json["scMaxEachPostBytes"] as? Double)?.toLong(),
+                    scMinPostsIntervalMs = (json["scMinPostsIntervalMs"] as? String)?.toLongOrNull()
+                        ?: (json["scMinPostsIntervalMs"] as? Double)?.toLong(),
+                    scMaxBufferedPosts = (json["scMaxBufferedPosts"] as? String)?.toLongOrNull()
+                        ?: (json["scMaxBufferedPosts"] as? Double)?.toLong(),
+                    noGRPCHeader = parseBooleanFlag(json["noGRPCHeader"]?.toString()),
+                    noSSEHeader = parseBooleanFlag(json["noSSEHeader"]?.toString())
                 )
                 else -> null
             }
@@ -398,14 +441,16 @@ class NodeLinkParser(private val gson: Gson) {
                 }
             }
 
-            val security = params["security"] ?: "none"
-            val sni = params["sni"] ?: params["host"] ?: server
-            val transportType = params["type"] ?: "tcp"
-            val insecure = params["allowInsecure"] == "1" || params["insecure"] == "1"
-            val fingerprint = params["fp"]?.takeIf { it.isNotBlank() }
-            val alpnList = params["alpn"]?.split(",")?.filter { it.isNotBlank() }
-            val flow = params["flow"]?.takeIf { it.isNotBlank() }
-            val packetEncoding = params["packetEncoding"]?.takeIf { it.isNotBlank() }
+            val security = firstParam(params, "security") ?: "none"
+            val hostParam = firstParam(params, "host")
+            val sni = firstParam(params, "sni") ?: hostParam ?: server
+            val transportType = firstParam(params, "type") ?: "tcp"
+            val insecure = parseBooleanFlag(firstParam(params, "allowInsecure", "insecure")) == true
+            val fingerprint = firstParam(params, "fp")?.takeIf { it.isNotBlank() }
+            val alpnList = firstParam(params, "alpn")?.split(",")?.filter { it.isNotBlank() }
+            val flow = firstParam(params, "flow")?.takeIf { it.isNotBlank() }
+            val packetEncoding = firstParam(params, "packetEncoding", "packet-encoding")
+                ?.takeIf { it.isNotBlank() }
 
             val tlsConfig = when (security) {
                 "tls" -> TlsConfig(
@@ -422,8 +467,8 @@ class NodeLinkParser(private val gson: Gson) {
                     alpn = alpnList,
                     reality = RealityConfig(
                         enabled = true,
-                        publicKey = params["pbk"],
-                        shortId = params["sid"]
+                        publicKey = firstParam(params, "pbk"),
+                        shortId = firstParam(params, "sid")
                         // Note: spiderX (spx) is Xray-core specific, not supported by sing-box
                     ),
                     utls = (fingerprint ?: "chrome").let { UtlsConfig(enabled = true, fingerprint = it) }
@@ -434,19 +479,24 @@ class NodeLinkParser(private val gson: Gson) {
             val transport = when (transportType) {
                 "ws" -> TransportConfig(
                     type = "ws",
-                    path = params["path"] ?: "/",
-                    headers = params["host"]?.let { mapOf("Host" to it) }
+                    path = firstParam(params, "path") ?: "/",
+                    headers = hostParam?.let { mapOf("Host" to it) }
                 )
                 "grpc" -> TransportConfig(
                     type = "grpc",
-                    serviceName = params["serviceName"] ?: params["sn"] ?: ""
+                    serviceName = firstParam(params, "serviceName", "sn") ?: ""
                 )
                 "xhttp", "splithttp" -> TransportConfig(
                     type = "xhttp",
-                    path = params["path"] ?: "/",
-                    host = params["host"]?.let { listOf(it) },
-                    mode = params["mode"],
-                    xPaddingBytes = params["xPaddingBytes"]
+                    path = firstParam(params, "path") ?: "/",
+                    host = parseHostList(hostParam),
+                    mode = firstParam(params, "mode"),
+                    xPaddingBytes = firstParam(params, "xPaddingBytes", "x-padding-bytes"),
+                    scMaxEachPostBytes = firstParam(params, "scMaxEachPostBytes")?.toLongOrNull(),
+                    scMinPostsIntervalMs = firstParam(params, "scMinPostsIntervalMs")?.toLongOrNull(),
+                    scMaxBufferedPosts = firstParam(params, "scMaxBufferedPosts")?.toLongOrNull(),
+                    noGRPCHeader = parseBooleanFlag(firstParam(params, "noGRPCHeader")),
+                    noSSEHeader = parseBooleanFlag(firstParam(params, "noSSEHeader"))
                 )
                 else -> null
             }
@@ -476,13 +526,22 @@ class NodeLinkParser(private val gson: Gson) {
             val server = uri.host
             val port = if (uri.port > 0) uri.port else 443
 
-            val params = mutableMapOf<String, String>()
-            uri.query?.split("&")?.forEach { param ->
-                val parts = param.split("=", limit = 2)
-                if (parts.size == 2) {
-                    params[parts[0]] = java.net.URLDecoder.decode(parts[1], "UTF-8")
-                }
-            }
+            val params = parseQueryParams(uri.query)
+
+            val hostParam = firstParam(params, "host")
+            val sni = firstParam(params, "sni") ?: hostParam ?: server
+            val insecure = parseBooleanFlag(firstParam(params, "allowInsecure", "insecure")) == true
+            val fingerprint = firstParam(params, "fp")?.takeIf { it.isNotBlank() }
+            val alpnList = firstParam(params, "alpn")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }
+
+            val tlsConfig = TlsConfig(
+                enabled = true,
+                serverName = sni,
+                insecure = insecure,
+                alpn = alpnList,
+                utls = fingerprint?.let { UtlsConfig(enabled = true, fingerprint = it) }
+            )
+            val transport = buildTrojanTransport(params, hostParam)
 
             return Outbound(
                 type = "trojan",
@@ -490,15 +549,53 @@ class NodeLinkParser(private val gson: Gson) {
                 server = server,
                 serverPort = port,
                 password = password,
-                tls = TlsConfig(
-                    enabled = true,
-                    serverName = params["sni"] ?: params["host"] ?: server
-                )
+                tls = tlsConfig,
+                transport = transport
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse Trojan link", e)
         }
         return null
+    }
+
+    private fun buildTrojanTransport(
+        params: Map<String, String>,
+        hostParam: String?
+    ): TransportConfig? {
+        val transportType = firstParam(params, "type")?.lowercase() ?: "tcp"
+        return when (transportType) {
+            "ws" -> TransportConfig(
+                type = "ws",
+                path = firstParam(params, "path") ?: "/",
+                headers = hostParam?.let { mapOf("Host" to it) }
+            )
+
+            "grpc" -> TransportConfig(
+                type = "grpc",
+                serviceName = firstParam(params, "serviceName", "sn") ?: ""
+            )
+
+            "h2", "http" -> TransportConfig(
+                type = "http",
+                path = firstParam(params, "path"),
+                host = parseHostList(hostParam)
+            )
+
+            "xhttp", "splithttp" -> TransportConfig(
+                type = "xhttp",
+                path = firstParam(params, "path") ?: "/",
+                host = parseHostList(hostParam),
+                mode = firstParam(params, "mode"),
+                xPaddingBytes = firstParam(params, "xPaddingBytes", "x-padding-bytes"),
+                scMaxEachPostBytes = firstParam(params, "scMaxEachPostBytes")?.toLongOrNull(),
+                scMinPostsIntervalMs = firstParam(params, "scMinPostsIntervalMs")?.toLongOrNull(),
+                scMaxBufferedPosts = firstParam(params, "scMaxBufferedPosts")?.toLongOrNull(),
+                noGRPCHeader = parseBooleanFlag(firstParam(params, "noGRPCHeader")),
+                noSSEHeader = parseBooleanFlag(firstParam(params, "noSSEHeader"))
+            )
+
+            else -> null
+        }
     }
 
     private fun parseHysteria2Link(link: String): Outbound? {

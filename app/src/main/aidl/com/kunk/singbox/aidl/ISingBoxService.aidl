@@ -18,4 +18,8 @@ interface ISingBoxService {
     oneway void notifyAppLifecycle(boolean isForeground);
 
     int hotReloadConfig(String configContent);
+
+    int getCachedUrlTestDelay(String tag);
+
+    String getCachedUrlTestDelayDebug(String tag);
 }
