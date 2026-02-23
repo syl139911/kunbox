@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.10.1](https://github.com/roseforljh/KunBox/compare/v2.10.0...v2.10.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* add ConfigRepository for managing application configurations, profiles, and network-related settings. ([b4c5909](https://github.com/roseforljh/KunBox/commit/b4c59092f23885e229baca448f6fbeb6a5b3edf9))
+* 基于上一个版本的一些小补丁 ([e26ba3e](https://github.com/roseforljh/KunBox/commit/e26ba3e72520f6926432f168d22ec93421791191))
+
 ## [2.10.0](https://github.com/roseforljh/KunBox/compare/v2.9.0...v2.10.0) (2026-02-23)
 
 
