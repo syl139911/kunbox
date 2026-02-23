@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.2](https://github.com/roseforljh/KunBox/compare/v2.10.1...v2.10.2) (2026-02-23)
+
+
+### Bug Fixes
+
+* 工作流bug ([6f0a30b](https://github.com/roseforljh/KunBox/commit/6f0a30b2b9d4b8dea0d401d34411ae3a0fbfdaed))
+
 ## [2.10.1](https://github.com/roseforljh/KunBox/compare/v2.10.0...v2.10.1) (2026-02-23)
 
 
