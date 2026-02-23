@@ -447,13 +447,9 @@ fun DashboardScreen(
             ) {
                 // Always show InfoCard but with placeholder data when not connected
                 val isConnected = connectionState == ConnectionState.Connected
-                // 优先使用 VPN 启动后测得的实时延迟，如果没有则使用缓存的延迟
+                // 首页延迟优先与节点列表保持一致（activeNodeLatency），currentNodePing 仅作兜底
                 // currentNodePing: null = 未测试, -1 = 超时/失败, >0 = 实际延迟
-                val displayPing = when {
-                    currentNodePing != null && currentNodePing!! > 0 -> currentNodePing
-                    currentNodePing == null && activeNodeLatency != null -> activeNodeLatency
-                    else -> currentNodePing // 可能是 -1（超时）或 null
-                }
+                val displayPing = activeNodeLatency ?: currentNodePing
                 // 使用明确的 isPingTesting 状态来控制加载动画
                 val isPingLoading = isConnected && isPingTesting
                 // 格式化延迟显示：超时显示"超时"，未测试显示"-"

@@ -171,7 +171,7 @@ object OutboundFixer {
                 var updated = result.copy(
                     transport = transport.copy(path = normalizedPath)
                 )
-                
+
                 var tlsUpdated = tlsForXhttp
                 if (shouldFixXhttpSni && tlsUpdated != null) {
                     tlsUpdated = tlsUpdated.copy(serverName = xhttpHost)
@@ -179,11 +179,11 @@ object OutboundFixer {
                 if (shouldFixXhttpAlpn && tlsUpdated != null) {
                     tlsUpdated = tlsUpdated.copy(alpn = listOf("h2"))
                 }
-                
+
                 if (tlsUpdated != result.tls) {
                     updated = updated.copy(tls = tlsUpdated)
                 }
-                
+
                 result = updated
             }
 

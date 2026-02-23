@@ -1,4 +1,4 @@
-package com.kunk.singbox.ipc
+﻿package com.kunk.singbox.ipc
 
 import android.content.ComponentName
 import android.content.Context
@@ -21,23 +21,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.lang.ref.WeakReference
 
 /**
- * SingBoxRemote - IPC 客户端
+ * SingBoxRemote - IPC 瀹㈡埛绔?
  *
- * 2025-fix-v6: 解决后台恢复后 UI 一直加载中的问题
+ * 2025-fix-v6: 瑙ｅ喅鍚庡彴鎭㈠鍚?UI 涓€鐩村姞杞戒腑鐨勯棶棰?
  *
- * 核心改进:
- * 1. VpnStateStore 双重验证 - 回调失效时从 MMKV 读取真实状态
- * 2. 回调心跳检测 - 检测回调通道是否正常工作
- * 3. 强制重连机制 - rebind() 时直接断开再重连，不尝试复用
- * 4. 状态同步超时 - 如果回调超过阈值未更新，主动从 VpnStateStore 恢复
+ * 鏍稿績鏀硅繘:
+ * 1. VpnStateStore 鍙岄噸楠岃瘉 - 鍥炶皟澶辨晥鏃朵粠 MMKV 璇诲彇鐪熷疄鐘舵€?
+ * 2. 鍥炶皟蹇冭烦妫€娴?- 妫€娴嬪洖璋冮€氶亾鏄惁姝ｅ父宸ヤ綔
+ * 3. 寮哄埗閲嶈繛鏈哄埗 - rebind() 鏃剁洿鎺ユ柇寮€鍐嶉噸杩烇紝涓嶅皾璇曞鐢?
+ * 4. 鐘舵€佸悓姝ヨ秴鏃?- 濡傛灉鍥炶皟瓒呰繃闃堝€兼湭鏇存柊锛屼富鍔ㄤ粠 VpnStateStore 鎭㈠
  */
 @Suppress("TooManyFunctions")
 object SingBoxRemote {
     private const val TAG = "SingBoxRemote"
-    // 降低重连延迟以更快恢复前台通知（100ms * 10次 = 1s 最多）
+    // 闄嶄綆閲嶈繛寤惰繜浠ユ洿蹇仮澶嶅墠鍙伴€氱煡锛?00ms * 10娆?= 1s 鏈€澶氾級
     private const val RECONNECT_DELAY_MS = 100L
     private const val MAX_RECONNECT_ATTEMPTS = 10
-    // 回调超时阈值，超过此时间未收到回调则认为回调通道失效
+    // 鍥炶皟瓒呮椂闃堝€硷紝瓒呰繃姝ゆ椂闂存湭鏀跺埌鍥炶皟鍒欒涓哄洖璋冮€氶亾澶辨晥
     private const val CALLBACK_TIMEOUT_MS = 8_000L
 
     private val _state = MutableStateFlow(ServiceState.STOPPED)
@@ -82,12 +82,12 @@ object SingBoxRemote {
     @Volatile
     private var lastSyncTimeMs = 0L
 
-    // 2025-fix-v6: 上次收到回调的时间 (基于 SystemClock.elapsedRealtime)
+    // 2025-fix-v6: 涓婃鏀跺埌鍥炶皟鐨勬椂闂?(鍩轰簬 SystemClock.elapsedRealtime)
     @Volatile
     private var lastCallbackReceivedAtMs = 0L
 
-    // App 生命周期通知可能发生在 bind 完成前（例如 MainActivity.onStart 先 rebind 再 notify）
-    // 这里缓存最近一次事件，等 onServiceConnected 后补发，避免“跳过导致恢复不触发”。
+    // App 鐢熷懡鍛ㄦ湡閫氱煡鍙兘鍙戠敓鍦?bind 瀹屾垚鍓嶏紙渚嬪 MainActivity.onStart 鍏?rebind 鍐?notify锛?
+    // 杩欓噷缂撳瓨鏈€杩戜竴娆′簨浠讹紝绛?onServiceConnected 鍚庤ˉ鍙戯紝閬垮厤鈥滆烦杩囧鑷存仮澶嶄笉瑙﹀彂鈥濄€?
     @Volatile
     private var pendingAppLifecycle: Boolean? = null
 
@@ -104,7 +104,7 @@ object SingBoxRemote {
 
     private val callback = object : ISingBoxServiceCallback.Stub() {
         override fun onStateChanged(state: Int, activeLabel: String?, lastError: String?, manuallyStopped: Boolean) {
-            // 2025-fix-v6: 记录回调接收时间
+            // 2025-fix-v6: 璁板綍鍥炶皟鎺ユ敹鏃堕棿
             lastCallbackReceivedAtMs = SystemClock.elapsedRealtime()
             val st = ServiceState.values().getOrNull(state)
                 ?: ServiceState.STOPPED
@@ -130,8 +130,8 @@ object SingBoxRemote {
     }
 
     /**
-     * 2025-fix-v6: 从 VpnStateStore 同步状态 (不依赖 AIDL 回调)
-     * 当回调通道失效时，直接从 MMKV 读取跨进程共享的真实状态
+     * 2025-fix-v6: 浠?VpnStateStore 鍚屾鐘舵€?(涓嶄緷璧?AIDL 鍥炶皟)
+     * 褰撳洖璋冮€氶亾澶辨晥鏃讹紝鐩存帴浠?MMKV 璇诲彇璺ㄨ繘绋嬪叡浜殑鐪熷疄鐘舵€?
      */
     private fun syncStateFromStore() {
         val isActive = VpnStateStore.getActive()
@@ -294,8 +294,8 @@ object SingBoxRemote {
             bound = false
 
             val ctx = contextRef?.get()
-            // 保护：如果系统 VPN 仍在运行，或 MMKV 记录 VPN 活跃，不要回退到 STOPPED
-            // 这避免了 rebind 过程中 disconnect→onServiceDisconnected 导致的状态闪烁
+            // 淇濇姢锛氬鏋滅郴缁?VPN 浠嶅湪杩愯锛屾垨 MMKV 璁板綍 VPN 娲昏穬锛屼笉瑕佸洖閫€鍒?STOPPED
+            // 杩欓伩鍏嶄簡 rebind 杩囩▼涓?disconnect鈫抩nServiceDisconnected 瀵艰嚧鐨勭姸鎬侀棯鐑?
             val mmkvActive = VpnStateStore.getActive()
             val systemVpn = ctx != null && hasSystemVpn(ctx)
             if (systemVpn || mmkvActive) {
@@ -419,10 +419,10 @@ object SingBoxRemote {
     }
 
     /**
-     * 主动查询并同步状态
-     * 用于 Activity onResume 时确保 UI 与服务状态一致
+     * 涓诲姩鏌ヨ骞跺悓姝ョ姸鎬?
+     * 鐢ㄤ簬 Activity onResume 鏃剁‘淇?UI 涓庢湇鍔＄姸鎬佷竴鑷?
      *
-     * 2025-fix-v5: 增强版 - 如果连接 stale 则强制重连
+     * 2025-fix-v5: 澧炲己鐗?- 濡傛灉杩炴帴 stale 鍒欏己鍒堕噸杩?
      */
     fun queryAndSyncState(context: Context): Boolean {
         contextRef = WeakReference(context.applicationContext)
@@ -470,57 +470,57 @@ object SingBoxRemote {
     }
 
     /**
-     * 强制重新绑定
-     * 直接断开再重连，不尝试复用 stale 连接
+     * 寮哄埗閲嶆柊缁戝畾
+     * 鐩存帴鏂紑鍐嶉噸杩烇紝涓嶅皾璇曞鐢?stale 杩炴帴
      */
     fun rebind(context: Context) {
         Log.i(TAG, "rebind: forcing disconnect -> connect cycle")
         contextRef = WeakReference(context.applicationContext)
         reconnectAttempts = 0
 
-        // 2025-fix-v6: 不再尝试复用现有连接，直接断开再重连
-        // 原来的逻辑是先检查连接有效性再决定是否重连，但这无法检测回调通道失效
+        // 2025-fix-v6: 涓嶅啀灏濊瘯澶嶇敤鐜版湁杩炴帴锛岀洿鎺ユ柇寮€鍐嶉噸杩?
+        // 鍘熸潵鐨勯€昏緫鏄厛妫€鏌ヨ繛鎺ユ湁鏁堟€у啀鍐冲畾鏄惁閲嶈繛锛屼絾杩欐棤娉曟娴嬪洖璋冮€氶亾澶辨晥
         disconnect(context)
         connect(context)
 
-        // 2025-fix-v6: 在重连期间，先从 VpnStateStore 恢复状态
-        // 这样 UI 不会显示过时状态，即使回调还没到达
+        // 2025-fix-v6: 鍦ㄩ噸杩炴湡闂达紝鍏堜粠 VpnStateStore 鎭㈠鐘舵€?
+        // 杩欐牱 UI 涓嶄細鏄剧ず杩囨椂鐘舵€侊紝鍗充娇鍥炶皟杩樻病鍒拌揪
         syncStateFromStore()
     }
 
     /**
-     * 2025-fix-v10: 原子化 rebind + foreground 通知
+     * 2025-fix-v10: 鍘熷瓙鍖?rebind + foreground 閫氱煡
      *
-     * 解决竞态条件: rebind() 是异步的，notifyAppLifecycle() 在 IPC 未连接时执行会导致
-     * pendingAppLifecycle 可能在 onServiceConnected 之前/之后被设置，造成恢复通知丢失。
+     * 瑙ｅ喅绔炴€佹潯浠? rebind() 鏄紓姝ョ殑锛宯otifyAppLifecycle() 鍦?IPC 鏈繛鎺ユ椂鎵ц浼氬鑷?
+     * pendingAppLifecycle 鍙兘鍦?onServiceConnected 涔嬪墠/涔嬪悗琚缃紝閫犳垚鎭㈠閫氱煡涓㈠け銆?
      *
-     * 此方法确保:
-     * 1. 先设置 pendingAppLifecycle = true，确保不丢失
-     * 2. 再断开并重连 IPC
-     * 3. onServiceConnected 会处理 pendingAppLifecycle 并触发恢复
+     * 姝ゆ柟娉曠‘淇?
+     * 1. 鍏堣缃?pendingAppLifecycle = true锛岀‘淇濅笉涓㈠け
+     * 2. 鍐嶆柇寮€骞堕噸杩?IPC
+     * 3. onServiceConnected 浼氬鐞?pendingAppLifecycle 骞惰Е鍙戞仮澶?
      */
     fun rebindAndNotifyForeground(context: Context) {
         Log.i(TAG, "rebindAndNotifyForeground: start (atomic rebind + foreground)")
         contextRef = WeakReference(context.applicationContext)
         reconnectAttempts = 0
 
-        // 1. 先设置 pending 标记，确保不丢失
-        // 这是关键: 在 disconnect 之前设置，避免竞态
+        // 1. 鍏堣缃?pending 鏍囪锛岀‘淇濅笉涓㈠け
+        // 杩欐槸鍏抽敭: 鍦?disconnect 涔嬪墠璁剧疆锛岄伩鍏嶇珵鎬?
         pendingAppLifecycle = true
 
-        // 2. 断开旧连接
+        // 2. 鏂紑鏃ц繛鎺?
         disconnect(context)
 
-        // 3. 重新连接 (onServiceConnected 会处理 pendingAppLifecycle)
+        // 3. 閲嶆柊杩炴帴 (onServiceConnected 浼氬鐞?pendingAppLifecycle)
         connect(context)
 
-        // 4. 同步状态兜底 - UI 立即显示正确状态
+        // 4. 鍚屾鐘舵€佸厹搴?- UI 绔嬪嵆鏄剧ず姝ｇ‘鐘舵€?
         syncStateFromStore()
     }
 
     /**
-     * 2025-fix-v6: 检测回调通道是否超时
-     * 如果超过阈值未收到回调，返回 true
+     * 2025-fix-v6: 妫€娴嬪洖璋冮€氶亾鏄惁瓒呮椂
+     * 濡傛灉瓒呰繃闃堝€兼湭鏀跺埌鍥炶皟锛岃繑鍥?true
      */
     fun isCallbackStale(): Boolean {
         if (lastCallbackReceivedAtMs == 0L) return false
@@ -529,40 +529,40 @@ object SingBoxRemote {
     }
 
     /**
-     * 2025-fix-v6: 强制从 VpnStateStore 同步状态
-     * 用于 Activity onResume 时确保 UI 显示正确状态
+     * 2025-fix-v6: 寮哄埗浠?VpnStateStore 鍚屾鐘舵€?
+     * 鐢ㄤ簬 Activity onResume 鏃剁‘淇?UI 鏄剧ず姝ｇ‘鐘舵€?
      */
     fun forceStoreSync() {
         syncStateFromStore()
     }
 
     /**
-     * 即时恢复 - 前台回来时调用
-     * Phase 1: 同步从 MMKV 恢复状态 (< 1ms, 不依赖 IPC)
-     * Phase 2: 异步验证 IPC，仅在确认失效时才重连（避免不必要的 rebind 导致 STOPPED 闪烁）
+     * 鍗虫椂鎭㈠ - 鍓嶅彴鍥炴潵鏃惰皟鐢?
+     * Phase 1: 鍚屾浠?MMKV 鎭㈠鐘舵€?(< 1ms, 涓嶄緷璧?IPC)
+     * Phase 2: 寮傛楠岃瘉 IPC锛屼粎鍦ㄧ‘璁ゅけ鏁堟椂鎵嶉噸杩烇紙閬垮厤涓嶅繀瑕佺殑 rebind 瀵艰嚧 STOPPED 闂儊锛?
      */
     fun instantRecovery(context: Context) {
-        // Phase 1: 立即从 MMKV 读取状态（微秒级）
+        // Phase 1: 绔嬪嵆浠?MMKV 璇诲彇鐘舵€侊紙寰绾э級
         syncStateFromStore()
         Log.i(TAG, "instantRecovery: Phase 1 done, state=${_state.value}")
 
-        // Phase 2: 异步确保 IPC 可用（不阻塞调用者）
+        // Phase 2: 寮傛纭繚 IPC 鍙敤锛堜笉闃诲璋冪敤鑰咃級
         contextRef = WeakReference(context.applicationContext)
 
         if (!connectionActive) {
-            // IPC 完全不存在，用 connect（不是 rebind）避免多余 disconnect
+            // IPC 瀹屽叏涓嶅瓨鍦紝鐢?connect锛堜笉鏄?rebind锛夐伩鍏嶅浣?disconnect
             Log.i(TAG, "instantRecovery: IPC not active, connecting (not rebinding)")
             connect(context)
             return
         }
 
         if (!bound || service == null) {
-            // connectionActive 但 bound/service 丢失，说明正在重连中，不要打断
+            // connectionActive 浣?bound/service 涓㈠け锛岃鏄庢鍦ㄩ噸杩炰腑锛屼笉瑕佹墦鏂?
             Log.i(TAG, "instantRecovery: connection in progress, skip rebind")
             return
         }
 
-        // 连接看似存活，异步验证 + 同步（在主线程 post 避免并发问题）
+        // 杩炴帴鐪嬩技瀛樻椿锛屽紓姝ラ獙璇?+ 鍚屾锛堝湪涓荤嚎绋?post 閬垮厤骞跺彂闂锛?
         mainHandler.post {
             val s = service ?: run {
                 Log.w(TAG, "instantRecovery: service became null, rebinding")
@@ -596,8 +596,8 @@ object SingBoxRemote {
     fun getLastSyncAge(): Long = System.currentTimeMillis() - lastSyncTimeMs
 
     /**
-     * 通知 :bg 进程 App 生命周期变化
-     * 用于触发省电模式
+     * 閫氱煡 :bg 杩涚▼ App 鐢熷懡鍛ㄦ湡鍙樺寲
+     * 鐢ㄤ簬瑙﹀彂鐪佺數妯″紡
      */
     fun notifyAppLifecycle(isForeground: Boolean) {
         val version = pendingLifecycleVersion + 1
@@ -626,22 +626,13 @@ object SingBoxRemote {
         const val IPC_ERROR = 4
     }
 
-    fun getCachedUrlTestDelay(tag: String): Int? {
+    fun urlTestNodeDelay(groupTag: String, nodeTag: String, timeoutMs: Int): Int? {
         val s = service ?: return null
         if (!connectionActive || !bound) return null
 
         return runCatching {
-            val delay = s.getCachedUrlTestDelay(tag)
+            val delay = s.urlTestNodeDelay(groupTag, nodeTag, timeoutMs)
             if (delay > 0) delay else null
-        }.getOrNull()
-    }
-
-    fun getCachedUrlTestDelayDebug(tag: String): String? {
-        val s = service ?: return null
-        if (!connectionActive || !bound) return null
-
-        return runCatching {
-            s.getCachedUrlTestDelayDebug(tag)
         }.getOrNull()
     }
 

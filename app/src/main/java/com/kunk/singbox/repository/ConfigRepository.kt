@@ -24,6 +24,7 @@ import com.kunk.singbox.repository.config.OutboundFixer
 import com.kunk.singbox.repository.config.InboundBuilder
 import com.kunk.singbox.repository.config.NodeLinkExporter
 import com.kunk.singbox.utils.parser.SubscriptionManager
+import com.kunk.singbox.utils.TcpPing
 import com.kunk.singbox.database.AppDatabase
 import com.kunk.singbox.database.entity.ProfileEntity
 import com.kunk.singbox.database.entity.ActiveStateEntity
@@ -50,6 +51,12 @@ import com.tencent.mmkv.MMKV
  * 配置仓库 - 负责获取、解析和存储配置
  */
 class ConfigRepository(private val context: Context) {
+
+    private data class NodeTestInfo(
+        val outbound: Outbound,
+        val nodeId: String,
+        val profileId: String
+    )
 
     companion object {
         private const val TAG = "ConfigRepository"
@@ -526,6 +533,78 @@ class ConfigRepository(private val context: Context) {
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to persist latency for $nodeId", e)
             }
+        }
+    }
+
+    private suspend fun tcpLatencyFallback(outbound: Outbound): Long {
+        if (!LatencyProbePolicy.shouldUseTcpFallback(outbound)) return -1L
+        val host = outbound.server?.trim().orEmpty()
+        if (host.isBlank()) return -1L
+        val port = outbound.serverPort ?: 443
+        val timeout = settingsRepository.settings.first().latencyTestTimeout
+        return TcpPing.connect(host = host, port = port, timeout = timeout)
+    }
+
+    private suspend fun testNodeLatencyViaRunningService(nodeTag: String): Long {
+        val timeoutMs = settingsRepository.settings.first().latencyTestTimeout
+        SingBoxRemote.ensureBound(context)
+        val delay = SingBoxRemote.urlTestNodeDelay(
+            groupTag = "PROXY",
+            nodeTag = nodeTag,
+            timeoutMs = timeoutMs
+        )
+        return delay?.takeIf { it > 0 }?.toLong() ?: -1L
+    }
+
+    private fun applyLatencyResult(
+        info: NodeTestInfo,
+        latency: Long,
+        onNodeComplete: ((nodeId: String, latencyMs: Long) -> Unit)?
+    ) {
+        val latencyValue = if (latency > 0) latency else -1L
+
+        _nodes.update { list ->
+            list.map {
+                if (it.id == info.nodeId) it.copy(latencyMs = latencyValue) else it
+            }
+        }
+
+        profileNodes[info.profileId] = profileNodes[info.profileId]?.map {
+            if (it.id == info.nodeId) it.copy(latencyMs = latencyValue) else it
+        } ?: emptyList()
+
+        updateLatencyInAllNodes(info.nodeId, latency)
+        onNodeComplete?.invoke(info.nodeId, latencyValue)
+    }
+
+    private fun buildNodeTestInfos(nodes: List<NodeUi>): List<NodeTestInfo> {
+        return nodes.mapNotNull { node ->
+            val config = loadConfig(node.sourceProfileId) ?: return@mapNotNull null
+            val outbound = config.outbounds?.find { it.tag == node.name } ?: return@mapNotNull null
+            NodeTestInfo(buildOutboundForRuntime(outbound), node.id, node.sourceProfileId)
+        }
+    }
+
+    private suspend fun testRegularOutboundsLatency(
+        infos: List<NodeTestInfo>,
+        onNodeComplete: ((nodeId: String, latencyMs: Long) -> Unit)?
+    ) {
+        if (infos.isEmpty()) return
+        val tagToInfo = infos.associateBy { it.outbound.tag }
+        val outbounds = infos.map { it.outbound }
+        singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
+            val info = tagToInfo[tag] ?: return@testOutboundsLatency
+            applyLatencyResult(info, latency, onNodeComplete)
+        }
+    }
+
+    private suspend fun testTcpFallbackOutboundsLatency(
+        infos: List<NodeTestInfo>,
+        onNodeComplete: ((nodeId: String, latencyMs: Long) -> Unit)?
+    ) {
+        infos.forEach { info ->
+            val latency = tcpLatencyFallback(info.outbound)
+            applyLatencyResult(info, latency, onNodeComplete)
         }
     }
 
@@ -2015,21 +2094,38 @@ class ConfigRepository(private val context: Context) {
 
                         val fixedOutbound = buildOutboundForRuntime(outbound)
                         val allOutbounds = config.outbounds.map { buildOutboundForRuntime(it) }
-                        val latency = singBoxCore.testOutboundLatency(fixedOutbound, allOutbounds)
+                        val latency = if (VpnStateStore.getActive()) {
+                            testNodeLatencyViaRunningService(fixedOutbound.tag)
+                        } else {
+                            singBoxCore.testOutboundLatency(fixedOutbound, allOutbounds)
+                        }
+                        val finalLatency = if (latency > 0) {
+                            latency
+                        } else {
+                            tcpLatencyFallback(fixedOutbound)
+                        }
 
                         _nodes.update { list ->
                             list.map {
-                                if (it.id == nodeId) it.copy(latencyMs = if (latency > 0) latency else -1L) else it
+                                if (it.id == nodeId) {
+                                    it.copy(latencyMs = if (finalLatency > 0) finalLatency else -1L)
+                                } else {
+                                    it
+                                }
                             }
                         }
 
                         profileNodes[node.sourceProfileId] = profileNodes[node.sourceProfileId]?.map {
-                            if (it.id == nodeId) it.copy(latencyMs = if (latency > 0) latency else -1L) else it
+                            if (it.id == nodeId) {
+                                it.copy(latencyMs = if (finalLatency > 0) finalLatency else -1L)
+                            } else {
+                                it
+                            }
                         } ?: emptyList()
-                        updateLatencyInAllNodes(nodeId, latency)
+                        updateLatencyInAllNodes(nodeId, finalLatency)
                         saveProfiles()
 
-                        latency
+                        finalLatency
                     } catch (e: Exception) {
                         if (e is kotlinx.coroutines.CancellationException) {
                             throw e
@@ -2088,44 +2184,19 @@ class ConfigRepository(private val context: Context) {
             sourceNodes
         }
 
-        data class NodeTestInfo(
-            val outbound: Outbound,
-            val nodeId: String,
-            val profileId: String
-        )
-
-        val testInfoList = nodes.mapNotNull { node ->
-            val config = loadConfig(node.sourceProfileId) ?: return@mapNotNull null
-            val outbound = config.outbounds?.find { it.tag == node.name } ?: return@mapNotNull null
-            NodeTestInfo(buildOutboundForRuntime(outbound), node.id, node.sourceProfileId)
-        }
+        val testInfoList = buildNodeTestInfos(nodes)
 
         if (testInfoList.isEmpty()) {
             Log.w(TAG, "No valid nodes to test")
             return@withContext
         }
 
-        val outbounds = testInfoList.map { it.outbound }
-        val tagToInfo = testInfoList.associateBy { it.outbound.tag }
-
-        singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
-            val info = tagToInfo[tag] ?: return@testOutboundsLatency
-            val latencyValue = if (latency > 0) latency else -1L
-
-            _nodes.update { list ->
-                list.map {
-                    if (it.id == info.nodeId) it.copy(latencyMs = latencyValue) else it
-                }
-            }
-
-            profileNodes[info.profileId] = profileNodes[info.profileId]?.map {
-                if (it.id == info.nodeId) it.copy(latencyMs = latencyValue) else it
-            } ?: emptyList()
-
-            updateLatencyInAllNodes(info.nodeId, latency)
-
-            onNodeComplete?.invoke(info.nodeId, latencyValue)
+        val (tcpFallbackInfos, regularInfos) = testInfoList.partition {
+            LatencyProbePolicy.shouldUseTcpFallback(it.outbound)
         }
+
+        testRegularOutboundsLatency(regularInfos, onNodeComplete)
+        testTcpFallbackOutboundsLatency(tcpFallbackInfos, onNodeComplete)
 
         saveProfiles()
     }

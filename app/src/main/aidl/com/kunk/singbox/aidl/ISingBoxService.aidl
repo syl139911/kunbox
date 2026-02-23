@@ -19,7 +19,5 @@ interface ISingBoxService {
 
     int hotReloadConfig(String configContent);
 
-    int getCachedUrlTestDelay(String tag);
-
-    String getCachedUrlTestDelayDebug(String tag);
+    int urlTestNodeDelay(String groupTag, String nodeTag, int timeoutMs);
 }

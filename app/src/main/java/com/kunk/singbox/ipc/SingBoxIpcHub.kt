@@ -1,4 +1,4 @@
-package com.kunk.singbox.ipc
+﻿package com.kunk.singbox.ipc
 
 import android.os.RemoteCallbackList
 import android.os.SystemClock
@@ -8,18 +8,18 @@ import com.kunk.singbox.repository.LogRepository
 import com.kunk.singbox.service.ServiceState
 import com.kunk.singbox.service.manager.BackgroundPowerManager
 import com.kunk.singbox.service.manager.ServiceStateHolder
+import com.kunk.singbox.service.manager.UrlTestTagMatcher
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.runBlocking
 
 object SingBoxIpcHub {
     private const val TAG = "SingBoxIpcHub"
 
-    // 高频状态更新时避免 CPU 空转，50ms 是 RemoteCallbackList 回调的合理间隔
     private const val MIN_BROADCAST_INTERVAL_MS = 50L
 
-    // 单线程调度器：保证广播串行执行，避免 Thread.sleep 阻塞调用线程
     private val broadcastScheduler = ScheduledThreadPoolExecutor(1).apply {
         removeOnCancelPolicy = true
     }
@@ -52,14 +52,10 @@ object SingBoxIpcHub {
     private val broadcastPending = AtomicBoolean(false)
     private val broadcasting = AtomicBoolean(false)
 
-    // 省电管理器引用，由 SingBoxService 设置
     @Volatile
     private var powerManager: BackgroundPowerManager? = null
 
-    // 状态更新时间戳，用于检测回调通道是否正常
     private val lastStateUpdateAtMs = AtomicLong(0L)
-
-    // 上次应用进入后台的时间戳
     private val lastBackgroundAtMs = AtomicLong(0L)
 
     fun setPowerManager(manager: BackgroundPowerManager?) {
@@ -72,7 +68,6 @@ object SingBoxIpcHub {
         log("onAppLifecycle: isForeground=$isForeground, vpnState=$vpnState")
 
         if (isForeground) {
-            // BackgroundPowerManager.onAppForeground() 内部异步调用 wakeAndResetNetwork
             powerManager?.onAppForeground()
         } else {
             lastBackgroundAtMs.set(SystemClock.elapsedRealtime())
@@ -88,9 +83,6 @@ object SingBoxIpcHub {
 
     fun isManuallyStopped(): Boolean = manuallyStopped
 
-    /**
-     * 获取上次状态更新时间戳
-     */
     fun getLastStateUpdateTime(): Long = lastStateUpdateAtMs.get()
 
     fun update(
@@ -209,9 +201,6 @@ object SingBoxIpcHub {
         val manuallyStopped: Boolean
     )
 
-    /**
-     * 热重载结果码
-     */
     object HotReloadResult {
         const val SUCCESS = 0
         const val VPN_NOT_RUNNING = 1
@@ -219,40 +208,30 @@ object SingBoxIpcHub {
         const val UNKNOWN_ERROR = 3
     }
 
-    /**
-     * 内核级热重载配置
-     * 通过 ServiceStateHolder.instance 访问 SingBoxService
-     * 直接调用 Go 层 StartOrReloadService，不销毁 VPN 服务
-     *
-     * @param configContent 新的配置内容 (JSON)
-     * @return 热重载结果码 (HotReloadResult)
-     */
-    fun getCachedUrlTestDelay(tag: String): Int? {
-        return ServiceStateHolder.instance?.getCachedUrlTestDelay(tag)
-    }
-
-    fun getCachedUrlTestDelayDebug(tag: String): String {
-        return ServiceStateHolder.instance?.getCachedUrlTestDelayDebug(tag)
-            ?: "SERVICE_UNAVAILABLE"
+    fun urlTestNodeDelay(groupTag: String, nodeTag: String, timeoutMs: Int): Int {
+        val service = ServiceStateHolder.instance ?: return -1
+        val safeTimeout = timeoutMs.coerceIn(1000, 30000).toLong()
+        return runBlocking {
+            val results = service.urlTestGroup(groupTag, safeTimeout)
+            val matched = UrlTestTagMatcher.resolveDelayDetail(results, nodeTag)
+            matched?.delay?.takeIf { it > 0 } ?: -1
+        }
     }
 
     fun hotReloadConfig(configContent: String): Int {
         log("[HotReload] IPC request received")
 
-        // 检查 VPN 是否运行
         if (stateOrdinal != ServiceState.RUNNING.ordinal) {
             Log.w(TAG, "[HotReload] VPN not running, state=$stateOrdinal")
             return HotReloadResult.VPN_NOT_RUNNING
         }
 
-        // 获取 SingBoxService 实例
         val service = ServiceStateHolder.instance
         if (service == null) {
             Log.e(TAG, "[HotReload] SingBoxService instance is null")
             return HotReloadResult.VPN_NOT_RUNNING
         }
 
-        // 调用 Service 的热重载方法
         return try {
             val result = service.performHotReloadSync(configContent)
             if (result) {

@@ -38,16 +38,9 @@ class SingBoxIpcService : Service() {
             return SingBoxIpcHub.hotReloadConfig(configContent)
         }
 
-        override fun getCachedUrlTestDelay(tag: String?): Int {
-            if (tag.isNullOrBlank()) return -1
-            return SingBoxIpcHub.getCachedUrlTestDelay(tag) ?: -1
-        }
-
-        override fun getCachedUrlTestDelayDebug(tag: String?): String {
-            if (tag.isNullOrBlank()) {
-                return "INVALID_TAG"
-            }
-            return SingBoxIpcHub.getCachedUrlTestDelayDebug(tag)
+        override fun urlTestNodeDelay(groupTag: String?, nodeTag: String?, timeoutMs: Int): Int {
+            if (groupTag.isNullOrBlank() || nodeTag.isNullOrBlank()) return -1
+            return SingBoxIpcHub.urlTestNodeDelay(groupTag, nodeTag, timeoutMs)
         }
     }
 

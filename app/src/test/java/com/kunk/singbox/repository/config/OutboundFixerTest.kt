@@ -66,7 +66,7 @@ class OutboundFixerTest {
             serverPort = 443,
             uuid = "uuid-1",
             tls = TlsConfig(
-                enabled = true, 
+                enabled = true,
                 serverName = "sg-005-x.xiaoxiaobujidao.xyz",
                 alpn = listOf("h2", "http/1.1") // Link has both
             ),
