@@ -4,13 +4,17 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PingDisplayTextTest {
+    private val timeoutText = "超时"
+    private val unavailableText = "不可用"
+    private val ipv6OnlyText = "仅IPv6可用"
     @Test
     fun resolve_returnsDash_whenDisconnected() {
         val text = PingDisplayText.resolve(
             isConnected = false,
             displayPing = 123L,
-            timeoutText = "超时",
-            unavailableText = "不可用"
+            timeoutText = timeoutText,
+            unavailableText = unavailableText,
+            ipv6OnlyText = ipv6OnlyText
         )
 
         assertEquals("-", text)
@@ -21,8 +25,9 @@ class PingDisplayTextTest {
         val text = PingDisplayText.resolve(
             isConnected = true,
             displayPing = 88L,
-            timeoutText = "超时",
-            unavailableText = "不可用"
+            timeoutText = timeoutText,
+            unavailableText = unavailableText,
+            ipv6OnlyText = ipv6OnlyText
         )
 
         assertEquals("88 ms", text)
@@ -33,8 +38,9 @@ class PingDisplayTextTest {
         val text = PingDisplayText.resolve(
             isConnected = true,
             displayPing = PingResultCode.FAILED_TIMEOUT,
-            timeoutText = "超时",
-            unavailableText = "不可用"
+            timeoutText = timeoutText,
+            unavailableText = unavailableText,
+            ipv6OnlyText = ipv6OnlyText
         )
 
         assertEquals("超时", text)
@@ -45,8 +51,9 @@ class PingDisplayTextTest {
         val text = PingDisplayText.resolve(
             isConnected = true,
             displayPing = PingResultCode.UNAVAILABLE,
-            timeoutText = "超时",
-            unavailableText = "不可用"
+            timeoutText = timeoutText,
+            unavailableText = unavailableText,
+            ipv6OnlyText = ipv6OnlyText
         )
 
         assertEquals("不可用", text)

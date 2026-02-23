@@ -453,11 +453,13 @@ fun DashboardScreen(
                 // 格式化延迟显示：超时显示"超时"，未测试显示"-"
                 val timeoutMsg = stringResource(R.string.common_timeout)
                 val unavailableMsg = stringResource(R.string.common_unavailable)
+                val ipv6OnlyMsg = stringResource(R.string.common_ipv6_only)
                 val pingText = PingDisplayText.resolve(
                     isConnected = isConnected,
                     displayPing = displayPing,
                     timeoutText = timeoutMsg,
-                    unavailableText = unavailableMsg
+                    unavailableText = unavailableMsg,
+                    ipv6OnlyText = ipv6OnlyMsg
                 )
                 InfoCard(
                     uploadSpeed = if (isConnected) "${formatBytes(stats.uploadSpeed)}/s" else "-/s",

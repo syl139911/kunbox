@@ -305,26 +305,34 @@ class SingBoxCore private constructor(private val context: Context) {
 
             val config = SingBoxConfig(
                 log = com.kunk.singbox.model.LogConfig(level = "debug", timestamp = true), // 使用 debug 级别诊断问题
-                // 测速服务使用纯 IP DNS，避免 DoH 请求被 VPN 拦截
-                // 添加多个 DNS 服务器作为备份，提高可靠性
-                // 关键: 必须设置 finalServer，否则 sing-box 不知道使用哪个 DNS 服务器
+                // 测速服务 DNS：A/AAAA 分流，确保 IPv6-only 节点在离线测速也可解析
                 dns = com.kunk.singbox.model.DnsConfig(
                     servers = listOf(
                         com.kunk.singbox.model.DnsServer(
-                            tag = "dns-direct",
+                            tag = "dns-direct-v4",
                             address = "223.5.5.5",
                             detour = "direct",
-                            strategy = "ipv4_only"
+                            strategy = "prefer_ipv4"
+                        ),
+                        com.kunk.singbox.model.DnsServer(
+                            tag = "dns-direct-v6",
+                            address = "https://[2606:4700:4700::1111]/dns-query",
+                            detour = "direct",
+                            strategy = "prefer_ipv6"
                         ),
                         com.kunk.singbox.model.DnsServer(
                             tag = "dns-backup",
                             address = "119.29.29.29",
                             detour = "direct",
-                            strategy = "ipv4_only"
+                            strategy = "prefer_ipv4"
                         )
                     ),
-                    finalServer = "dns-direct", // 指定默认 DNS 服务器
-                    strategy = "ipv4_only" // 全局 DNS 策略
+                    rules = listOf(
+                        com.kunk.singbox.model.DnsRule(queryType = listOf("A"), server = "dns-direct-v4"),
+                        com.kunk.singbox.model.DnsRule(queryType = listOf("AAAA"), server = "dns-direct-v6")
+                    ),
+                    finalServer = "dns-backup",
+                    strategy = "prefer_ipv4"
                 ),
                 inbounds = listOf(inbound),
                 outbounds = allOutbounds,
@@ -597,11 +605,31 @@ class SingBoxCore private constructor(private val context: Context) {
 
         val dnsConfig = com.kunk.singbox.model.DnsConfig(
             servers = listOf(
-                com.kunk.singbox.model.DnsServer(tag = "dns-direct", address = "223.5.5.5", detour = "direct", strategy = "ipv4_only"),
-                com.kunk.singbox.model.DnsServer(tag = "dns-backup", address = "119.29.29.29", detour = "direct", strategy = "ipv4_only")
+                com.kunk.singbox.model.DnsServer(
+                    tag = "dns-direct-v4",
+                    address = "223.5.5.5",
+                    detour = "direct",
+                    strategy = "prefer_ipv4"
+                ),
+                com.kunk.singbox.model.DnsServer(
+                    tag = "dns-direct-v6",
+                    address = "https://[2606:4700:4700::1111]/dns-query",
+                    detour = "direct",
+                    strategy = "prefer_ipv6"
+                ),
+                com.kunk.singbox.model.DnsServer(
+                    tag = "dns-backup",
+                    address = "119.29.29.29",
+                    detour = "direct",
+                    strategy = "prefer_ipv4"
+                )
             ),
-            finalServer = "dns-direct",
-            strategy = "ipv4_only"
+            rules = listOf(
+                com.kunk.singbox.model.DnsRule(queryType = listOf("A"), server = "dns-direct-v4"),
+                com.kunk.singbox.model.DnsRule(queryType = listOf("AAAA"), server = "dns-direct-v6")
+            ),
+            finalServer = "dns-backup",
+            strategy = "prefer_ipv4"
         )
 
         val safeOutbounds = ArrayList(batchOutbounds)

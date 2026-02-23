@@ -10,6 +10,7 @@ import com.kunk.singbox.model.NodeFilter
 import com.kunk.singbox.model.NodeSortType
 import com.kunk.singbox.model.NodeUi
 import com.kunk.singbox.model.ProfileUi
+import com.kunk.singbox.model.PingResultCode
 import com.kunk.singbox.repository.ConfigRepository
 import com.kunk.singbox.repository.SettingsRepository
 import com.kunk.singbox.viewmodel.shared.NodeDisplaySettings
@@ -327,21 +328,28 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
             var completedCount = 0
             var successCount = 0
             var timeoutCount = 0
+            var ipv6OnlyCount = 0
             _testProgress.value = Pair(0, totalCount)
 
             try {
                 configRepository.testAllNodesLatency(targetIds) { finishedNodeId, latencyMs ->
                     _testingNodeIds.value = _testingNodeIds.value - finishedNodeId
                     completedCount++
-                    if (latencyMs > 0) {
-                        successCount++
-                    } else {
-                        timeoutCount++
+                    when {
+                        latencyMs > 0 -> successCount++
+                        latencyMs == PingResultCode.IPV6_ONLY -> ipv6OnlyCount++
+                        else -> timeoutCount++
                     }
                     _testProgress.value = Pair(completedCount, totalCount)
                 }
                 setSortType(NodeSortType.LATENCY)
-                emitToast(getApplication<Application>().getString(R.string.nodes_test_complete_stats, successCount, timeoutCount))
+                val context = getApplication<Application>()
+                val summary = if (ipv6OnlyCount > 0) {
+                    context.getString(R.string.nodes_test_complete_stats_v6, successCount, timeoutCount, ipv6OnlyCount)
+                } else {
+                    context.getString(R.string.nodes_test_complete_stats, successCount, timeoutCount)
+                }
+                emitToast(summary)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

@@ -15,6 +15,7 @@ import com.kunk.singbox.core.SingBoxCore
 import com.kunk.singbox.ipc.SingBoxRemote
 import com.kunk.singbox.ipc.VpnStateStore
 import com.kunk.singbox.model.*
+import com.kunk.singbox.model.PingResultCode
 import com.kunk.singbox.service.SingBoxService
 import com.kunk.singbox.service.ProxyOnlyService
 import com.kunk.singbox.utils.parser.Base64Parser
@@ -30,6 +31,9 @@ import com.kunk.singbox.database.entity.ProfileEntity
 import com.kunk.singbox.database.entity.ActiveStateEntity
 import com.kunk.singbox.database.entity.NodeLatencyEntity
 import java.io.File
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
 import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -519,7 +523,7 @@ class ConfigRepository(private val context: Context) {
     }
 
     private fun updateLatencyInAllNodes(nodeId: String, latency: Long) {
-        val latencyValue = if (latency > 0) latency else -1L
+        val latencyValue = normalizeLatencyValue(latency)
         savedNodeLatencies[nodeId] = latencyValue
         _allNodes.update { list ->
             list.map {
@@ -545,6 +549,14 @@ class ConfigRepository(private val context: Context) {
         return TcpPing.connect(host = host, port = port, timeout = timeout)
     }
 
+    private suspend fun ipv6TcpLatencyFallback(outbound: Outbound): Long {
+        val host = outbound.server?.trim().orEmpty()
+        if (host.isBlank()) return -1L
+        val port = outbound.serverPort ?: 443
+        val timeout = settingsRepository.settings.first().latencyTestTimeout
+        return TcpPing.connect(host = host, port = port, timeout = timeout)
+    }
+
     private suspend fun testNodeLatencyViaRunningService(nodeTag: String): Long {
         val timeoutMs = settingsRepository.settings.first().latencyTestTimeout
         SingBoxRemote.ensureBound(context)
@@ -553,7 +565,52 @@ class ConfigRepository(private val context: Context) {
             nodeTag = nodeTag,
             timeoutMs = timeoutMs
         )
-        return delay?.takeIf { it > 0 }?.toLong() ?: -1L
+        return normalizeLatencyValue(delay?.toLong() ?: -1L)
+    }
+
+    private fun normalizeLatencyValue(latency: Long): Long {
+        return when {
+            latency > 0L -> latency
+            latency == PingResultCode.UNAVAILABLE -> PingResultCode.UNAVAILABLE
+            latency == PingResultCode.IPV6_ONLY -> PingResultCode.IPV6_ONLY
+            latency == 0L -> PingResultCode.UNAVAILABLE
+            else -> PingResultCode.FAILED_TIMEOUT
+        }
+    }
+
+    private fun resolveIpv6OnlyStatus(outbound: Outbound, latency: Long): Long {
+        val normalized = normalizeLatencyValue(latency)
+        if (normalized != PingResultCode.UNAVAILABLE) return normalized
+        if (!isLikelyIpv6OnlyDomain(outbound.server)) return normalized
+        return PingResultCode.IPV6_ONLY
+    }
+
+    private suspend fun prepareOfflineProbeOutbound(outbound: Outbound): Outbound {
+        val host = outbound.server?.trim().orEmpty()
+        if (host.isBlank() || isIpAddress(host)) return outbound
+        return withContext(Dispatchers.IO) {
+            val addresses = runCatching { InetAddress.getAllByName(host) }.getOrNull() ?: return@withContext outbound
+            val hasV4 = addresses.any { it is Inet4Address }
+            val v6 = addresses.firstOrNull { it is Inet6Address } as? Inet6Address ?: return@withContext outbound
+            if (hasV4) {
+                outbound
+            } else {
+                val literal = v6.hostAddress?.substringBefore('%')
+                if (literal.isNullOrBlank()) outbound else outbound.copy(server = literal)
+            }
+        }
+    }
+
+    private fun isLikelyIpv6OnlyDomain(server: String?): Boolean {
+        val host = server?.trim().orEmpty()
+        if (host.isBlank()) return false
+        if (isIpAddress(host)) return false
+        return runCatching {
+            val addresses = InetAddress.getAllByName(host)
+            val hasV6 = addresses.any { it is Inet6Address }
+            val hasV4 = addresses.any { it is Inet4Address }
+            hasV6 && !hasV4
+        }.getOrDefault(false)
     }
 
     private fun applyLatencyResult(
@@ -561,7 +618,7 @@ class ConfigRepository(private val context: Context) {
         latency: Long,
         onNodeComplete: ((nodeId: String, latencyMs: Long) -> Unit)?
     ) {
-        val latencyValue = if (latency > 0) latency else -1L
+        val latencyValue = normalizeLatencyValue(latency)
 
         _nodes.update { list ->
             list.map {
@@ -590,11 +647,25 @@ class ConfigRepository(private val context: Context) {
         onNodeComplete: ((nodeId: String, latencyMs: Long) -> Unit)?
     ) {
         if (infos.isEmpty()) return
-        val tagToInfo = infos.associateBy { it.outbound.tag }
-        val outbounds = infos.map { it.outbound }
-        singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
-            val info = tagToInfo[tag] ?: return@testOutboundsLatency
-            applyLatencyResult(info, latency, onNodeComplete)
+
+        if (VpnStateStore.getActive()) {
+            infos.forEach { info ->
+                val latency = testNodeLatencyViaRunningService(info.outbound.tag)
+                applyLatencyResult(info, latency, onNodeComplete)
+            }
+            return
+        }
+
+        infos.forEach { info ->
+            val probeOutbound = prepareOfflineProbeOutbound(info.outbound)
+            val latency = singBoxCore.testOutboundLatency(probeOutbound)
+            val finalLatency = if (latency > 0) {
+                latency
+            } else {
+                val fallback = ipv6TcpLatencyFallback(probeOutbound)
+                if (fallback > 0) fallback else resolveIpv6OnlyStatus(probeOutbound, latency)
+            }
+            applyLatencyResult(info, finalLatency, onNodeComplete)
         }
     }
 
@@ -2094,21 +2165,31 @@ class ConfigRepository(private val context: Context) {
 
                         val fixedOutbound = buildOutboundForRuntime(outbound)
                         val allOutbounds = config.outbounds.map { buildOutboundForRuntime(it) }
+                        val probeOutbound = if (VpnStateStore.getActive()) {
+                            fixedOutbound
+                        } else {
+                            prepareOfflineProbeOutbound(fixedOutbound)
+                        }
                         val latency = if (VpnStateStore.getActive()) {
                             testNodeLatencyViaRunningService(fixedOutbound.tag)
                         } else {
-                            singBoxCore.testOutboundLatency(fixedOutbound, allOutbounds)
+                            singBoxCore.testOutboundLatency(probeOutbound, allOutbounds)
                         }
                         val finalLatency = if (latency > 0) {
                             latency
                         } else {
-                            tcpLatencyFallback(fixedOutbound)
+                            val fallback = ipv6TcpLatencyFallback(probeOutbound)
+                            if (fallback > 0) {
+                                fallback
+                            } else {
+                                resolveIpv6OnlyStatus(probeOutbound, latency)
+                            }
                         }
 
                         _nodes.update { list ->
                             list.map {
                                 if (it.id == nodeId) {
-                                    it.copy(latencyMs = if (finalLatency > 0) finalLatency else -1L)
+                                    it.copy(latencyMs = normalizeLatencyValue(finalLatency))
                                 } else {
                                     it
                                 }
@@ -2117,7 +2198,7 @@ class ConfigRepository(private val context: Context) {
 
                         profileNodes[node.sourceProfileId] = profileNodes[node.sourceProfileId]?.map {
                             if (it.id == nodeId) {
-                                it.copy(latencyMs = if (finalLatency > 0) finalLatency else -1L)
+                                it.copy(latencyMs = normalizeLatencyValue(finalLatency))
                             } else {
                                 it
                             }
@@ -2914,7 +2995,6 @@ class ConfigRepository(private val context: Context) {
 
         // 关键：代理节点服务器域名必须使用直连 DNS 解析，避免循环依赖
         // outbound: ["any"] 匹配所有 outbound 服务器的域名
-        dnsRules.add(dnsRouteTo("dns-bootstrap", DnsRule(outboundRaw = listOf("any"))))
 
         // 2025-fix: 拒绝 HTTPS/SVCB 记录查询，加速图片加载
         // 原因：
@@ -2927,21 +3007,52 @@ class ConfigRepository(private val context: Context) {
         }
 
         // 0. Bootstrap DNS (必须是 IP，用于解析其他 DoH/DoT 域名)
-        // 使用多个 IP 以提高可靠性
-        // 使用用户配置的服务器地址策略
-        // AUTO 行为：优先 IPv4，失败后自动回退 IPv6
+        // 混合并行回退：优先 v4，失败可回退 v6（通过多个 server + strategy）
         val bootstrapStrategy = when (settings.serverAddressStrategy) {
             DnsStrategy.AUTO -> "prefer_ipv4"
             else -> mapDnsStrategy(settings.serverAddressStrategy) ?: "prefer_ipv4"
         }
+        val bootstrapV4Tag = "dns-bootstrap-v4"
+        val bootstrapV6Tag = "dns-bootstrap-v6"
+
         dnsServers.add(
             DnsServer(
-                tag = "dns-bootstrap",
-                address = "223.5.5.5", // AliDNS IP
+                tag = bootstrapV4Tag,
+                address = "223.5.5.5",
                 detour = "direct",
                 strategy = bootstrapStrategy
             )
         )
+        dnsServers.add(
+            DnsServer(
+                tag = bootstrapV6Tag,
+                address = "https://[2606:4700:4700::1111]/dns-query",
+                detour = "direct",
+                strategy = "prefer_ipv6"
+            )
+        )
+        dnsServers.add(
+            DnsServer(
+                tag = "dns-bootstrap",
+                address = "119.29.29.29",
+                detour = "direct",
+                strategy = bootstrapStrategy
+            )
+        )
+
+        dnsRules.add(
+            dnsRouteTo(
+                bootstrapV4Tag,
+                DnsRule(outboundRaw = listOf("any"), queryType = listOf("A"))
+            )
+        )
+        dnsRules.add(
+            dnsRouteTo(
+                bootstrapV6Tag,
+                DnsRule(outboundRaw = listOf("any"), queryType = listOf("AAAA"))
+            )
+        )
+        dnsRules.add(dnsRouteTo("dns-bootstrap", DnsRule(outboundRaw = listOf("any"))))
 
         // 1. 本地 DNS
         val localDnsAddr = settings.localDns.takeIf { it.isNotBlank() } ?: "https://dns.alidns.com/dns-query"

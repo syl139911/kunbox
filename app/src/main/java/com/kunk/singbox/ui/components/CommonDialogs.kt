@@ -1508,7 +1508,10 @@ private fun NodeSelectorItem(
                     }
                     val latencyText = when {
                         latency == null -> "---"
-                        latency < 0 -> "Timeout"
+                        latency == com.kunk.singbox.model.PingResultCode.IPV6_ONLY -> {
+                            stringResource(R.string.common_ipv6_only)
+                        }
+                        latency < 0 -> stringResource(R.string.common_timeout)
                         else -> "${latency}ms"
                     }
                     Text(

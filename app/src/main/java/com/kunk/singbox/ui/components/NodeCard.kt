@@ -138,10 +138,13 @@ fun NodeCard(
                                     else -> Color.Red // Red: >500ms
                                 }
                             }
-                            val latencyText = remember(latency) {
+                            val timeoutText = stringResource(R.string.common_timeout)
+                            val ipv6OnlyText = stringResource(R.string.common_ipv6_only)
+                            val latencyText = remember(latency, timeoutText, ipv6OnlyText) {
                                 when {
                                     latency == null -> "---"
-                                    latency < 0 -> "Timeout"
+                                    latency == com.kunk.singbox.model.PingResultCode.IPV6_ONLY -> ipv6OnlyText
+                                    latency < 0 -> timeoutText
                                     else -> "${latency}ms"
                                 }
                             }
