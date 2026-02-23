@@ -649,8 +649,10 @@ class ConfigRepository(private val context: Context) {
         if (infos.isEmpty()) return
 
         if (VpnStateStore.getActive()) {
-            infos.forEach { info ->
-                val latency = testNodeLatencyViaRunningService(info.outbound.tag)
+            val tagToInfo = infos.associateBy { it.outbound.tag }
+            val outbounds = infos.map { it.outbound }
+            singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
+                val info = tagToInfo[tag] ?: return@testOutboundsLatency
                 applyLatencyResult(info, latency, onNodeComplete)
             }
             return
