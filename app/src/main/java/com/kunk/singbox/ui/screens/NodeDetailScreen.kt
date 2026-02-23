@@ -705,7 +705,7 @@ fun NodeDetailScreen(
                         EditableSelectionItem(
                             title = stringResource(R.string.node_detail_transport_protocol),
                             value = currentType,
-                            options = listOf("tcp", "http", "ws", "grpc", "quic", "httpupgrade"),
+                            options = listOf("tcp", "http", "ws", "grpc", "quic", "httpupgrade", "xhttp"),
                             icon = Icons.Rounded.SwapHoriz,
                             onValueChange = { newType ->
                                 editingOutbound = outbound.copy(
@@ -756,13 +756,18 @@ fun NodeDetailScreen(
                             )
                         }
 
-                        if (currentType == "http" || currentType == "h2" || currentType == "httpupgrade") {
+                        val pathBasedTypes = setOf("http", "h2", "httpupgrade", "xhttp")
+                        if (currentType in pathBasedTypes) {
                             Spacer(modifier = Modifier.height(8.dp))
                             EditableTextItem(
                                 title = stringResource(R.string.node_detail_transport_path),
                                 value = transport.path ?: "/",
                                 icon = Icons.Rounded.Route,
-                                onValueChange = { editingOutbound = outbound.copy(transport = transport.copy(path = it)) }
+                                onValueChange = {
+                                    editingOutbound = outbound.copy(
+                                        transport = transport.copy(path = it)
+                                    )
+                                }
                             )
                             EditableTextItem(
                                 title = "Host",
@@ -770,7 +775,80 @@ fun NodeDetailScreen(
                                 icon = Icons.Rounded.Language,
                                 onValueChange = {
                                     val hosts = it.split(",").map { h -> h.trim() }.filter { h -> h.isNotEmpty() }
-                                    editingOutbound = outbound.copy(transport = transport.copy(host = hosts))
+                                    editingOutbound = outbound.copy(
+                                        transport = transport.copy(host = hosts)
+                                    )
+                                }
+                            )
+                        }
+
+                        if (currentType == "xhttp") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            EditableSelectionItem(
+                                title = "XHTTP Mode",
+                                value = transport.mode ?: "auto",
+                                options = listOf("auto", "packet-up", "stream-up"),
+                                icon = Icons.Rounded.Tune,
+                                onValueChange = {
+                                    editingOutbound = outbound.copy(
+                                        transport = transport.copy(mode = it)
+                                    )
+                                }
+                            )
+                            EditableTextItem(
+                                title = "XPaddingBytes",
+                                value = transport.xPaddingBytes ?: "",
+                                icon = Icons.Rounded.CompareArrows,
+                                onValueChange = {
+                                    editingOutbound = outbound.copy(
+                                        transport = transport.copy(xPaddingBytes = if (it.isEmpty()) null else it)
+                                    )
+                                }
+                            )
+                            EditableTextItem(
+                                title = "scMaxEachPostBytes",
+                                value = transport.scMaxEachPostBytes?.toString() ?: "",
+                                icon = Icons.Rounded.Numbers,
+                                onValueChange = {
+                                    editingOutbound = outbound.copy(
+                                        transport = transport.copy(scMaxEachPostBytes = it.toLongOrNull())
+                                    )
+                                }
+                            )
+                            EditableTextItem(
+                                title = "scMinPostsIntervalMs",
+                                value = transport.scMinPostsIntervalMs?.toString() ?: "",
+                                icon = Icons.Rounded.Numbers,
+                                onValueChange = {
+                                    editingOutbound = outbound.copy(
+                                        transport = transport.copy(scMinPostsIntervalMs = it.toLongOrNull())
+                                    )
+                                }
+                            )
+                            EditableTextItem(
+                                title = "scMaxBufferedPosts",
+                                value = transport.scMaxBufferedPosts?.toString() ?: "",
+                                icon = Icons.Rounded.Numbers,
+                                onValueChange = {
+                                    editingOutbound = outbound.copy(
+                                        transport = transport.copy(scMaxBufferedPosts = it.toLongOrNull())
+                                    )
+                                }
+                            )
+                            SettingSwitchItem(
+                                title = "No GRPC Header",
+                                checked = transport.noGRPCHeader == true,
+                                icon = Icons.Rounded.Merge,
+                                onCheckedChange = {
+                                    editingOutbound = outbound.copy(transport = transport.copy(noGRPCHeader = it))
+                                }
+                            )
+                            SettingSwitchItem(
+                                title = "No SSE Header",
+                                checked = transport.noSSEHeader == true,
+                                icon = Icons.Rounded.Merge,
+                                onCheckedChange = {
+                                    editingOutbound = outbound.copy(transport = transport.copy(noSSEHeader = it))
                                 }
                             )
                         }
