@@ -6,6 +6,8 @@
 *.xml text
 *.json text
 *.properties text
+*.sh text eol=lf
+gradlew text eol=lf
 
 # Binary files
 *.aar binary
