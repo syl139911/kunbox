@@ -327,6 +327,7 @@ fun SingBoxApp() {
                 snackbarHost = {
                     SnackbarHost(
                         hostState = snackbarHostState,
+                        modifier = Modifier.padding(bottom = if (showBottomBar) 64.dp else 16.dp),
                         snackbar = { data ->
                             Surface(
                                 modifier = Modifier

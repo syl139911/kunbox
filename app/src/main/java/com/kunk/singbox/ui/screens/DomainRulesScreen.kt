@@ -1,7 +1,9 @@
 package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,10 +26,13 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
@@ -43,9 +48,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kunk.singbox.ui.theme.Destructive
 import androidx.navigation.NavController
 import com.kunk.singbox.model.CustomRule
 import com.kunk.singbox.model.OutboundTag
@@ -439,13 +446,17 @@ private fun DomainRuleEditorDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
                         .clickable { showOutboundDialog = true }
-                        .padding(vertical = 12.dp),
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(stringResource(R.string.common_outbound), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(stringResource(outboundMode.displayNameRes), color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(outboundMode.displayNameRes), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 }
 
                 if (outboundMode == RuleSetOutboundMode.NODE ||
@@ -462,6 +473,10 @@ private fun DomainRuleEditorDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
                             .clickable {
                                 when (outboundMode) {
                                     RuleSetOutboundMode.NODE -> {
@@ -477,37 +492,40 @@ private fun DomainRuleEditorDialog(
                                     showTargetSelectionDialog = true
                                 }
                             }
-                            .padding(vertical = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(stringResource(R.string.app_rules_select_target), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(targetName, color = MaterialTheme.colorScheme.onSurface)
+                        Text(targetName, color = if (targetName == "点击选择...") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary, fontWeight = if (targetName == "点击选择...") FontWeight.Normal else FontWeight.SemiBold)
                     }
                 }
 
                 if (onDelete != null) {
-                    TextButton(onClick = { showDeleteConfirm = true }) {
+                    TextButton(
+                        onClick = { showDeleteConfirm = true },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Destructive)
+                    ) {
                         Text(stringResource(R.string.common_delete))
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     val rawValue = value.trim()
-                    if (rawValue.isEmpty()) return@TextButton
+                    if (rawValue.isEmpty()) return@Button
 
                     val smartType = parseSmartDomainType(rawValue)
                     val finalValue = cleanDomainValue(rawValue)
 
                     val finalName = generateRuleNameFromValue(finalValue)
-                    if (finalName.isEmpty()) return@TextButton
+                    if (finalName.isEmpty()) return@Button
 
                     if ((outboundMode == RuleSetOutboundMode.NODE ||
                             outboundMode == RuleSetOutboundMode.PROFILE) && outboundValue.isNullOrBlank()) {
-                        return@TextButton
+                        return@Button
                     }
 
                     val legacyOutbound = when (outboundMode) {
@@ -527,13 +545,17 @@ private fun DomainRuleEditorDialog(
                         enabled = initialRule?.enabled ?: true
                     )
                     onConfirm(rule)
-                }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text(stringResource(R.string.common_ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss) {
                 Text(stringResource(R.string.common_cancel))
             }
         }
