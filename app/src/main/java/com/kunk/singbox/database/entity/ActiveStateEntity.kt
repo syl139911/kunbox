@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.database.entity
+package com.kunk.singbox.database.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.service.manager
+package com.kunk.singbox.service.manager
 
 import android.content.Context
 import android.net.ConnectivityManager

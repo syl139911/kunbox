@@ -139,6 +139,7 @@ data class Outbound(
     @SerializedName("tcp_keep_alive") val tcpKeepAlive: String? = null,
     @SerializedName("tcp_keep_alive_interval") val tcpKeepAliveInterval: String? = null,
     @SerializedName("connect_timeout") val connectTimeout: String? = null,
+    @SerializedName("domain_resolver") val domainResolver: DomainResolveConfig? = null,
 
     @SerializedName("outbounds") val outbounds: List<String>? = null,
     @SerializedName("default") val default: String? = null,
@@ -180,6 +181,9 @@ data class Outbound(
     @SerializedName("multiplex") val multiplex: MultiplexConfig? = null,
 
     @SerializedName("congestion_control") val congestionControl: String? = null,
+    @SerializedName("quic") val quic: Boolean? = null,
+    @SerializedName("quic_congestion_control") val quicCongestionControl: String? = null,
+    @SerializedName("extra_headers") val extraHeaders: Map<String, String>? = null,
     @SerializedName("udp_relay_mode") val udpRelayMode: String? = null,
     @SerializedName("zero_rtt_handshake") val zeroRttHandshake: Boolean? = null,
     @SerializedName("heartbeat") val heartbeat: String? = null,
@@ -223,6 +227,14 @@ data class WireGuardPeer(
 data class UdpOverTcpConfig(
     @SerializedName("enabled") val enabled: Boolean? = null,
     @SerializedName("version") val version: Int? = null
+)
+
+@Keep
+data class DomainResolveConfig(
+    @SerializedName("server") val server: String? = null,
+    @SerializedName("strategy") val strategy: String? = null,
+    @SerializedName("disable_cache") val disableCache: Boolean? = null,
+    @SerializedName("rewrite_ttl") val rewriteTtl: Int? = null
 )
 
 @Keep

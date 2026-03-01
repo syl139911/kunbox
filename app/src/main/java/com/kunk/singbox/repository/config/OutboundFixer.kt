@@ -4,6 +4,7 @@ import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
+import com.kunk.singbox.model.UdpOverTcpConfig
 import com.kunk.singbox.repository.SettingsRepository
 
 /**
@@ -409,12 +410,13 @@ object OutboundFixer {
                 serverPort = fixed.serverPort,
                 username = fixed.username,
                 password = fixed.password,
-                network = fixed.network,
-                path = fixed.path,
-                headers = fixed.headers,
-                tls = fixed.tls,
-                congestionControl = fixed.congestionControl,
-                udpOverTcp = fixed.udpOverTcp,
+                extraHeaders = fixed.headers,
+                quic = fixed.network?.equals("quic", ignoreCase = true),
+                quicCongestionControl = fixed.congestionControl,
+                tls = fixed.tls?.copy(utls = null, alpn = null),
+                udpOverTcp = fixed.udpOverTcp ?: UdpOverTcpConfig(enabled = true),
+                domainResolver = fixed.domainResolver
+                    ?: com.kunk.singbox.model.DomainResolveConfig(server = "dns-bootstrap"),
 
                 tcpKeepAlive = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
                 tcpKeepAliveInterval = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
@@ -489,12 +491,15 @@ object OutboundFixer {
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun fixNaive(outbound: Outbound): Outbound {
-        val normalizedNetwork = when (outbound.network?.trim()?.lowercase()) {
+        val preferredNetwork = outbound.network?.trim()?.lowercase()
+        val normalizedNetwork = when (preferredNetwork) {
             "", null -> "h2"
-            "http", "h2", "quic" -> outbound.network?.trim()?.lowercase()
+            "http", "h2", "quic" -> preferredNetwork
             else -> "h2"
         }
+        val useQuic = normalizedNetwork == "quic" || outbound.quic == true
 
         val rawPath = outbound.path?.trim().orEmpty()
         val normalizedPath = if (rawPath.isBlank()) {
@@ -505,7 +510,7 @@ object OutboundFixer {
             "/$rawPath"
         }
 
-        val host = outbound.headers?.get("Host")?.trim()
+        val host = (outbound.headers?.get("Host") ?: outbound.extraHeaders?.get("Host"))?.trim()
         val tls = outbound.tls ?: TlsConfig(enabled = true)
         val tlsEnabled = tls.enabled != false
         val shouldSetSni = tlsEnabled &&
@@ -517,9 +522,12 @@ object OutboundFixer {
         val tlsUpdated = if (shouldSetSni) tls.copy(serverName = host, enabled = true) else tls
 
         return outbound.copy(
-            network = normalizedNetwork,
+            network = if (useQuic) "quic" else "h2",
             path = normalizedPath,
             headers = normalizedHeaders,
+            extraHeaders = normalizedHeaders,
+            quic = useQuic,
+            quicCongestionControl = outbound.quicCongestionControl ?: outbound.congestionControl,
             tls = tlsUpdated
         )
     }
@@ -527,13 +535,12 @@ object OutboundFixer {
     private fun applyNaiveRuntimeCompatibility(outbound: Outbound): Outbound {
         if (outbound.type != "naive") return outbound
 
-        val network = outbound.network?.lowercase()
-        val hasQuic = network == "quic"
+        val hasQuic = outbound.quic == true || outbound.network?.lowercase() == "quic"
         val quicSupported = LibboxCompat.isNaiveQuicSupported()
         if (!hasQuic || quicSupported) return outbound
 
         val tls = (outbound.tls ?: TlsConfig(enabled = true)).copy(alpn = listOf("h2"))
-        return outbound.copy(network = "h2", tls = tls)
+        return outbound.copy(network = "h2", quic = false, tls = tls)
     }
 
     private fun tuneMuxForVisionReality(outbound: Outbound): MultiplexConfig? {

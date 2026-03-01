@@ -71,7 +71,7 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
 /**
  */
 class Base64Parser(private val nodeParser: (String) -> Outbound?) : SubscriptionParser {
-    private val LINK_PREFIXES = listOf(
+    private val linkPrefixes = listOf(
         "vmess://",
         "vless://",
         "ss://",
@@ -101,7 +101,7 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
         android.util.Log.d("Base64Parser", "Parsing content, length: ${content.length}, starts with: ${content.take(20)}")
         val trimmed = content.trim()
 
-        val isAlreadyLink = LINK_PREFIXES.any { trimmed.startsWith(it) }
+        val isAlreadyLink = linkPrefixes.any { trimmed.startsWith(it) }
         val decoded = if (isAlreadyLink) trimmed else (tryDecodeBase64(trimmed) ?: trimmed)
         val normalized = decoded
             .replace("\u2028", "\n")
@@ -138,7 +138,7 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
 
         if (normalized.isBlank()) return emptyList()
 
-        val sortedPrefixes = LINK_PREFIXES.sortedByDescending { it.length }
+        val sortedPrefixes = linkPrefixes.sortedByDescending { it.length }
 
         val linkPositions = mutableListOf<Pair<Int, String>>() // (·达絽绉堕悿? ·告挸绉剁槐?
         val usedPositions = mutableSetOf<Int>()

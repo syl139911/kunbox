@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.database
+package com.kunk.singbox.database
 
 import androidx.room.TypeConverter
 import com.kunk.singbox.model.ProfileType

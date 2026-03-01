@@ -1048,8 +1048,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         lastTrafficSampleAtElapsedMs = SystemClock.elapsedRealtime()
 
         // 璁板綍 BoxWrapper 鍒濆娴侀噺鍊?(鐢ㄤ簬璁＄畻鏈浼氳瘽娴侀噺)
-        wrapperBaseUpload = if (BoxWrapperManager.isAvailable()) BoxWrapperManager.getUploadTotal().let { if (it >= 0) it else 0L } else 0L
-        wrapperBaseDownload = if (BoxWrapperManager.isAvailable()) BoxWrapperManager.getDownloadTotal().let { if (it >= 0) it else 0L } else 0L
+        wrapperBaseUpload = if (BoxWrapperManager.isAvailable()) {
+            BoxWrapperManager.getUploadTotal().let { if (it >= 0) it else 0L }
+        } else {
+            0L
+        }
+        wrapperBaseDownload = if (BoxWrapperManager.isAvailable()) {
+            BoxWrapperManager.getDownloadTotal().let { if (it >= 0) it else 0L }
+        } else {
+            0L
+        }
 
         trafficSmoothingJob = viewModelScope.launch(Dispatchers.Default) {
             while (true) {

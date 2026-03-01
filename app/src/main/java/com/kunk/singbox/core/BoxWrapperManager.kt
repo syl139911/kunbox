@@ -60,7 +60,6 @@ object BoxWrapperManager {
         return commandServer != null
     }
 
-
     /**
      */
     fun selectOutbound(nodeTag: String): Boolean {
@@ -116,7 +115,6 @@ object BoxWrapperManager {
             false
         }
     }
-
 
     /**
      */
@@ -227,7 +225,6 @@ object BoxWrapperManager {
             RecoveryMode.HARD -> recoverNetworkHard(source)
         }
     }
-
 
     /**
      *

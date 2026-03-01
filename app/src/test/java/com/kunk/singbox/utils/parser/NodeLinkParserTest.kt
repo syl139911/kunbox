@@ -390,6 +390,19 @@ class NodeLinkParserTest {
         assertEquals("/abc", outbound?.path)
     }
 
+    @Test
+    fun testParseNaivePlusHttpsWithTrailingComma() {
+        val link = "naive+https://u:p@naive.example.com:443?path=%2Fabc#NaiveHttps,"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("naive", outbound?.type)
+        assertEquals("NaiveHttps", outbound?.tag)
+        assertEquals("u", outbound?.username)
+        assertEquals("p", outbound?.password)
+        assertEquals("/abc", outbound?.path)
+    }
+
     // ==================== TUIC ====================
 
     @Test

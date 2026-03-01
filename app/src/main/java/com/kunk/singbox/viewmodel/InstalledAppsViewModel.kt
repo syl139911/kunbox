@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.viewmodel
+package com.kunk.singbox.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

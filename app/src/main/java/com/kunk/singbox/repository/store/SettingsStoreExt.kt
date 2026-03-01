@@ -31,7 +31,6 @@ fun SettingsStore.setShowNotificationSpeed(value: Boolean) {
     updateSettings { it.copy(showNotificationSpeed = value) }
 }
 
-
 fun SettingsStore.setTunEnabled(value: Boolean) {
     updateSettings { it.copy(tunEnabled = value) }
 }
@@ -84,7 +83,6 @@ fun SettingsStore.setVpnBlocklist(value: String) {
     updateSettings { it.copy(vpnBlocklist = value) }
 }
 
-
 fun SettingsStore.setProxyPort(value: Int) {
     updateSettings { it.copy(proxyPort = value) }
 }
@@ -96,7 +94,6 @@ fun SettingsStore.setAllowLan(value: Boolean) {
 fun SettingsStore.setAppendHttpProxy(value: Boolean) {
     updateSettings { it.copy(appendHttpProxy = value) }
 }
-
 
 fun SettingsStore.setLocalDns(value: String) {
     updateSettings { it.copy(localDns = value) }
@@ -134,7 +131,6 @@ fun SettingsStore.setDnsCacheEnabled(value: Boolean) {
     updateSettings { it.copy(dnsCacheEnabled = value) }
 }
 
-
 fun SettingsStore.setRoutingMode(value: RoutingMode) {
     updateSettings { it.copy(routingMode = value) }
 }
@@ -155,11 +151,9 @@ fun SettingsStore.setDebugLoggingEnabled(value: Boolean) {
     updateSettings { it.copy(debugLoggingEnabled = value) }
 }
 
-
 fun SettingsStore.setWakeResetConnections(value: Boolean) {
     updateSettings { it.copy(wakeResetConnections = value) }
 }
-
 
 fun SettingsStore.setLatencyTestMethod(value: LatencyTestMethod) {
     updateSettings { it.copy(latencyTestMethod = value) }
@@ -199,7 +193,6 @@ fun SettingsStore.setAppGroups(value: List<AppGroup>) {
     updateSettings { it.copy(appGroups = value) }
 }
 
-
 fun SettingsStore.setRuleSetAutoUpdateEnabled(value: Boolean) {
     updateSettings { it.copy(ruleSetAutoUpdateEnabled = value) }
 }
@@ -208,11 +201,9 @@ fun SettingsStore.setRuleSetAutoUpdateInterval(value: Int) {
     updateSettings { it.copy(ruleSetAutoUpdateInterval = value) }
 }
 
-
 fun SettingsStore.setSubscriptionUpdateTimeout(value: Int) {
     updateSettings { it.copy(subscriptionUpdateTimeout = value) }
 }
-
 
 fun SettingsStore.setNodeFilter(value: NodeFilter) {
     updateSettings { it.copy(nodeFilter = value) }
@@ -225,7 +216,6 @@ fun SettingsStore.setNodeSortType(value: NodeSortType) {
 fun SettingsStore.setCustomNodeOrder(value: List<String>) {
     updateSettings { it.copy(customNodeOrder = value) }
 }
-
 
 fun SettingsStore.setAutoCheckUpdate(value: Boolean) {
     updateSettings { it.copy(autoCheckUpdate = value) }

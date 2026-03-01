@@ -7,6 +7,8 @@ import android.net.NetworkCapabilities
 import android.os.Process
 import android.util.Log
 import com.google.gson.Gson
+import com.kunk.singbox.model.DnsConfig
+import com.kunk.singbox.model.DnsServer
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.SingBoxConfig
 import com.kunk.singbox.model.LatencyTestMethod
@@ -146,7 +148,6 @@ class SingBoxCore private constructor(private val context: Context) {
         if (nativeRtt >= 0) {
             return@withContext nativeRtt
         }
-
 
         if (VpnStateStore.getActive()) {
             Log.d(TAG, "VPN is running, skipping local HTTP proxy fallback to avoid command.sock conflict")
@@ -790,7 +791,6 @@ class SingBoxCore private constructor(private val context: Context) {
     ) = withContext(Dispatchers.IO) {
         val settings = SettingsRepository.getInstance(context).settings.first()
 
-
         val isNativeUrlTestSupported = BoxWrapperManager.isAvailable()
 
         if (libboxAvailable && VpnStateStore.getActive() && isNativeUrlTestSupported) {
@@ -901,9 +901,22 @@ class SingBoxCore private constructor(private val context: Context) {
             return true
         }
 
+        val resolverServerTag = outbound.domainResolver?.server?.takeIf { it.isNotBlank() }
+        val validationDns = resolverServerTag?.let { tag ->
+            DnsConfig(
+                servers = listOf(
+                    DnsServer(
+                        tag = tag,
+                        address = "223.5.5.5",
+                        detour = "direct"
+                    )
+                )
+            )
+        }
+
         val minimalConfig = SingBoxConfig(
             log = null,
-            dns = null,
+            dns = validationDns,
             inbounds = null,
             outbounds = listOf(
                 outbound,
@@ -974,7 +987,6 @@ class SingBoxCore private constructor(private val context: Context) {
         }
 
         override fun startDefaultInterfaceMonitor(listener: InterfaceUpdateListener?) {
-
 
             if (listener == null) return
 

@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.core
+package com.kunk.singbox.core
 
 import android.util.Log
 import io.nekohasekai.libbox.Libbox
@@ -104,12 +104,12 @@ object LibboxCompat {
         val normalized = versionText.removePrefix("v")
         val head = normalized.substringBefore('-')
         val parts = head.split(".")
-        if (parts.size < 3) return true
 
-        val major = parts[0].toIntOrNull() ?: return true
-        val minor = parts[1].toIntOrNull() ?: return true
+        val major = parts.getOrNull(0)?.toIntOrNull()
+        val minor = parts.getOrNull(1)?.toIntOrNull()
 
-        return major > 1 || (major == 1 && minor >= 13)
+        return parts.size < 3 || major == null || minor == null ||
+            major > 1 || (major == 1 && minor >= 13)
     }
 
     fun printDiagnostics() {

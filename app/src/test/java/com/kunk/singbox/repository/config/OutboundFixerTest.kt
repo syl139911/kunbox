@@ -4,9 +4,12 @@ import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.RealityConfig
 import com.kunk.singbox.model.TlsConfig
+import com.kunk.singbox.model.UdpOverTcpConfig
 import com.kunk.singbox.model.TransportConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OutboundFixerTest {
@@ -146,5 +149,52 @@ class OutboundFixerTest {
         assertEquals("yamux", fixed.multiplex?.protocol)
         assertEquals(8, fixed.multiplex?.maxConnections)
         assertEquals(true, fixed.multiplex?.padding)
+    }
+
+    @Test
+    fun fixNaiveShouldMoveHeadersAndQuicToRuntimeFields() {
+        val outbound = Outbound(
+            type = "naive",
+            tag = "naive-quic",
+            server = "naive.example.com",
+            serverPort = 443,
+            username = "u",
+            password = "p",
+            network = "quic",
+            path = "proxy",
+            headers = mapOf("Host" to "h.example.com"),
+            congestionControl = "bbr",
+            udpOverTcp = UdpOverTcpConfig(enabled = true),
+            tls = TlsConfig(enabled = true)
+        )
+
+        val fixed = OutboundFixer.fix(outbound)
+
+        assertEquals("quic", fixed.network)
+        assertEquals("/proxy", fixed.path)
+        assertEquals("h.example.com", fixed.headers?.get("Host"))
+        assertEquals("h.example.com", fixed.extraHeaders?.get("Host"))
+        assertTrue(fixed.quic == true)
+        assertEquals("bbr", fixed.quicCongestionControl)
+        assertEquals(true, fixed.udpOverTcp?.enabled)
+    }
+
+    @Test
+    fun fixNaiveShouldDefaultToH2WhenNoNetworkSpecified() {
+        val outbound = Outbound(
+            type = "naive",
+            tag = "naive-h2",
+            server = "naive.example.com",
+            serverPort = 443,
+            username = "u",
+            password = "p",
+            path = "/",
+            tls = TlsConfig(enabled = true)
+        )
+
+        val fixed = OutboundFixer.fix(outbound)
+
+        assertEquals("h2", fixed.network)
+        assertFalse(fixed.quic == true)
     }
 }

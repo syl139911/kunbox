@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.ipc
+package com.kunk.singbox.ipc
 
 import android.util.Log
 import com.tencent.mmkv.MMKV

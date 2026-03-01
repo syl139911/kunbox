@@ -128,7 +128,6 @@ class ShutdownManager(
 
         callbacks.tryClearRunningServiceForLibbox()
 
-
         CoreSelectorManager.clear()
         selectorManager.clear()
 

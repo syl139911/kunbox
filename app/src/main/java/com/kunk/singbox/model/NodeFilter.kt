@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.model
+package com.kunk.singbox.model
 
 import com.google.gson.annotations.SerializedName
 

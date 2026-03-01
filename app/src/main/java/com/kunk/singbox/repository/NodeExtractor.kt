@@ -23,7 +23,7 @@ object NodeExtractor {
     private val PROXY_TYPES = setOf(
         "shadowsocks", "vmess", "vless", "trojan",
         "hysteria", "hysteria2", "tuic", "wireguard",
-        "shadowtls", "ssh", "anytls", "http", "socks"
+        "shadowtls", "ssh", "anytls", "naive", "http", "socks"
     )
 
     private val nodeIdCache = ConcurrentHashMap<String, String>()

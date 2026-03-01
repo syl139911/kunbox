@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.utils.dns
+package com.kunk.singbox.utils.dns
 
 import android.util.Log
 import com.google.gson.Gson

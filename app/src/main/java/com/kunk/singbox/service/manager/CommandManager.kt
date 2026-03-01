@@ -153,7 +153,6 @@ class CommandManager(
         val handler = createClientHandler()
         clientHandler = handler
 
-
         val optionsStatus = CommandClientOptions()
         optionsStatus.addCommand(Libbox.CommandStatus)
         optionsStatus.statusInterval = 3000L * 1000L * 1000L // 3s

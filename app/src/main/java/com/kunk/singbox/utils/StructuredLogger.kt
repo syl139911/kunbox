@@ -46,7 +46,6 @@ object L {
     @Volatile
     var uiLogEnabled: Boolean = true
 
-
     /**
      */
     fun connection(tag: String, message: String, level: Int = Log.INFO) {
@@ -94,7 +93,6 @@ object L {
     fun info(tag: String, message: String) {
         log(Category.INFO, tag, message, Log.INFO)
     }
-
 
     private fun log(
         category: Category,

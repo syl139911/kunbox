@@ -78,22 +78,36 @@ class NodeLinkParser(private val gson: Gson) {
         return result
     }
 
+    private fun normalizeInputLink(link: String): String {
+        val trimmed = link.trim().trim('`', '"', '\'')
+        val prefixMatch = Regex("^[A-Za-z][A-Za-z0-9+.-]*://[A-Za-z0-9\\-._~%!$&'()*+,;=:@/?#\\[\\]]+")
+            .find(trimmed)
+            ?.value
+            ?: trimmed
+        return prefixMatch.trimEnd(',', '，', ';', '；', '。')
+    }
+
     fun parse(link: String): Outbound? {
+        val normalizedLink = normalizeInputLink(link)
         return when {
-            link.startsWith("ss://") -> parseShadowsocksLink(link)
-            link.startsWith("vmess://") -> parseVMessLink(link)
-            link.startsWith("vless://") -> parseVLessLink(link)
-            link.startsWith("trojan://") -> parseTrojanLink(link)
-            link.startsWith("hysteria2://") || link.startsWith("hy2://") -> parseHysteria2Link(link)
-            link.startsWith("hysteria://") -> parseHysteriaLink(link)
-            link.startsWith("anytls://") -> parseAnyTLSLink(link)
-            link.startsWith("naive://") || link.startsWith("naive+https://") -> parseNaiveLink(link)
-            link.startsWith("tuic://") -> parseTuicLink(link)
-            link.startsWith("https://") -> parseHttpLink(link, useTls = true)
-            link.startsWith("http://") -> parseHttpLink(link, useTls = false)
-            link.startsWith("socks5://") || link.startsWith("socks://") -> parseSocks5Link(link)
-            link.startsWith("wireguard://") || link.startsWith("wg://") -> parseWireGuardLink(link)
-            link.startsWith("ssh://") -> parseSSHLink(link)
+            normalizedLink.startsWith("ss://") -> parseShadowsocksLink(normalizedLink)
+            normalizedLink.startsWith("vmess://") -> parseVMessLink(normalizedLink)
+            normalizedLink.startsWith("vless://") -> parseVLessLink(normalizedLink)
+            normalizedLink.startsWith("trojan://") -> parseTrojanLink(normalizedLink)
+            normalizedLink.startsWith("hysteria2://") ||
+                normalizedLink.startsWith("hy2://") -> parseHysteria2Link(normalizedLink)
+            normalizedLink.startsWith("hysteria://") -> parseHysteriaLink(normalizedLink)
+            normalizedLink.startsWith("anytls://") -> parseAnyTLSLink(normalizedLink)
+            normalizedLink.startsWith("naive://") ||
+                normalizedLink.startsWith("naive+https://") -> parseNaiveLink(normalizedLink)
+            normalizedLink.startsWith("tuic://") -> parseTuicLink(normalizedLink)
+            normalizedLink.startsWith("https://") -> parseHttpLink(normalizedLink, useTls = true)
+            normalizedLink.startsWith("http://") -> parseHttpLink(normalizedLink, useTls = false)
+            normalizedLink.startsWith("socks5://") ||
+                normalizedLink.startsWith("socks://") -> parseSocks5Link(normalizedLink)
+            normalizedLink.startsWith("wireguard://") ||
+                normalizedLink.startsWith("wg://") -> parseWireGuardLink(normalizedLink)
+            normalizedLink.startsWith("ssh://") -> parseSSHLink(normalizedLink)
             else -> null
         }
     }
@@ -707,7 +721,7 @@ class NodeLinkParser(private val gson: Gson) {
         return null
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private fun parseNaiveLink(link: String): Outbound? {
         try {
             val normalizedLink = link.replace("naive+https://", "naive://")
@@ -745,6 +759,8 @@ class NodeLinkParser(private val gson: Gson) {
 
             val headers = host?.let { mapOf("Host" to it) }
 
+            val useQuic = network.equals("quic", ignoreCase = true)
+
             return Outbound(
                 type = "naive",
                 tag = name,
@@ -752,10 +768,13 @@ class NodeLinkParser(private val gson: Gson) {
                 serverPort = port,
                 username = username,
                 password = password,
-                network = network,
+                network = if (useQuic) "quic" else "h2",
                 path = path,
                 headers = headers,
-                congestionControl = congestionControl,
+                extraHeaders = headers,
+                quic = useQuic,
+                quicCongestionControl = if (useQuic) congestionControl else null,
+                congestionControl = if (useQuic) null else congestionControl,
                 udpOverTcp = if (enableUdpOverTcp) com.kunk.singbox.model.UdpOverTcpConfig(enabled = true) else null,
                 tls = TlsConfig(
                     enabled = true,

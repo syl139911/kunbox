@@ -334,7 +334,6 @@ class VpnTileService : TileService() {
                 if (configResult != null) {
 
                     VpnServiceManager.startVpn(this@VpnTileService, settings.tunEnabled)
-
                 } else {
                     handleStartFailure(getString(R.string.dashboard_config_generation_failed))
                 }

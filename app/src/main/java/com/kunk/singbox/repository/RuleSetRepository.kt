@@ -212,7 +212,6 @@ class RuleSetRepository(private val context: Context) {
             }
         }
 
-
         if (rawUrl.contains("raw.githubusercontent.com")) {
 
             var path = rawUrl.substringAfter("raw.githubusercontent.com/")

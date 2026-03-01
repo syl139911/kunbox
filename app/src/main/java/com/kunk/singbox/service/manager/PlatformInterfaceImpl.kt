@@ -683,7 +683,6 @@ class PlatformInterfaceImpl(
 
     override fun systemCertificates(): StringIterator? = null
 
-
     private fun updateDefaultInterface(network: Network) {
 
         networkSwitchManager.handleNetworkUpdate(network)

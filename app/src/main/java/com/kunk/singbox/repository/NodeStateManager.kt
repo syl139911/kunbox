@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.repository
+package com.kunk.singbox.repository
 
 import com.kunk.singbox.model.NodeUi
 import com.tencent.mmkv.MMKV

@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.service.network
+package com.kunk.singbox.service.network
 
 import android.net.TrafficStats
 import android.os.SystemClock

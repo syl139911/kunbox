@@ -131,7 +131,12 @@ fun TrafficStatsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.traffic_stats_title), color = MaterialTheme.colorScheme.onBackground) },
+                title = {
+                    Text(
+                        stringResource(R.string.traffic_stats_title),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -310,7 +315,10 @@ private fun TotalTrafficCard(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = stringResource(R.string.traffic_stats_total_format, formatBytes(totalUpload + totalDownload)),
+                    text = stringResource(
+                        R.string.traffic_stats_total_format,
+                        formatBytes(totalUpload + totalDownload)
+                    ),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -389,7 +397,9 @@ private fun TrafficDistributionCard(
             nodePercentages.forEachIndexed { index, (stats, percentage) ->
                 ChartLegendItem(
                     color = chartColors[index % chartColors.size],
-                    label = stats.nodeId?.let { nodeNames[it] } ?: stats.nodeName ?: stringResource(R.string.traffic_stats_unknown_node),
+                    label = stats.nodeId?.let { nodeNames[it] }
+                        ?: stats.nodeName
+                        ?: stringResource(R.string.traffic_stats_unknown_node),
                     percentage = percentage,
                     traffic = formatBytes(stats.upload + stats.download)
                 )
@@ -503,7 +513,9 @@ private fun NodeRankingCard(
                     stats = stats,
                     totalTraffic = totalTraffic,
                     color = chartColors[index % chartColors.size],
-                    displayName = stats.nodeId?.let { nodeNames[it] } ?: stats.nodeName ?: stringResource(R.string.traffic_stats_unknown_node)
+                    displayName = stats.nodeId?.let { nodeNames[it] }
+                        ?: stats.nodeName
+                        ?: stringResource(R.string.traffic_stats_unknown_node)
                 )
                 if (index < nodes.size - 1) {
                     Spacer(modifier = Modifier.height(12.dp))

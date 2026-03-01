@@ -1318,7 +1318,7 @@ class ConfigRepository(private val context: Context) {
         val proxyTypes = setOf(
             "shadowsocks", "vmess", "vless", "trojan",
             "hysteria", "hysteria2", "tuic", "wireguard",
-            "shadowtls", "ssh", "anytls", "http", "socks"
+            "shadowtls", "ssh", "anytls", "naive", "http", "socks"
         )
         val detourTags = outbounds.mapNotNull { it.detour }.toSet()
 
@@ -1365,7 +1365,7 @@ class ConfigRepository(private val context: Context) {
         val proxyTypes = setOf(
             "shadowsocks", "vmess", "vless", "trojan",
             "hysteria", "hysteria2", "tuic", "wireguard",
-            "shadowtls", "ssh", "anytls", "http", "socks"
+            "shadowtls", "ssh", "anytls", "naive", "http", "socks"
         )
         val detourTags = outbounds.mapNotNull { it.detour }.toSet()
 
@@ -3076,7 +3076,7 @@ class ConfigRepository(private val context: Context) {
             it.type in listOf(
                 "vless", "vmess", "trojan", "shadowsocks",
                 "hysteria2", "hysteria", "anytls", "tuic",
-                "wireguard", "ssh", "shadowtls", "http", "socks"
+                "wireguard", "ssh", "shadowtls", "http", "socks", "naive"
             )
         }.map { it.tag }.toMutableList()
         val selectorTag = "PROXY"
@@ -3186,7 +3186,10 @@ class ConfigRepository(private val context: Context) {
 
     private fun buildQuicBlockRule(settings: AppSettings): List<RouteRule> {
         return if (settings.blockQuic) {
-            listOf(RouteRule(protocolRaw = listOf("quic"), outbound = "block"))
+            listOf(
+                RouteRule(protocolRaw = listOf("quic"), outbound = "block"),
+                RouteRule(networkRaw = listOf("udp"), port = listOf(443), action = "reject")
+            )
         } else {
             emptyList()
         }
@@ -3262,8 +3265,9 @@ class ConfigRepository(private val context: Context) {
         val hijackDnsRule = listOf(RouteRule(protocolRaw = listOf("dns"), action = "hijack-dns"))
 
         val allRules = when (settings.routingMode) {
-            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + icmpEchoRules
-            RoutingMode.GLOBAL_DIRECT -> hijackDnsRule + icmpEchoRules + listOf(RouteRule(outbound = "direct"))
+            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + quicRule + icmpEchoRules
+            RoutingMode.GLOBAL_DIRECT ->
+                hijackDnsRule + quicRule + icmpEchoRules + listOf(RouteRule(outbound = "direct"))
             RoutingMode.RULE -> {
                 hijackDnsRule + quicRule + bypassLanRules + icmpEchoRules +
                     customDomainRules + appRoutingRules + customRuleSetRules + defaultRuleCatchAll

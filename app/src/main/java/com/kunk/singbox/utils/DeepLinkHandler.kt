@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.utils
+package com.kunk.singbox.utils
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.utils
+package com.kunk.singbox.utils
 
 import java.util.concurrent.ConcurrentLinkedQueue
 

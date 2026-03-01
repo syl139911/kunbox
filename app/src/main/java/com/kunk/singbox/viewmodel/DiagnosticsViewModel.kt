@@ -384,7 +384,10 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
             } else {
                 val match = findMatch(config, testDomain)
                 val naiveHints = buildNaiveDiagnostics(config)
-                _resultMessage.value = "Test Domain: $testDomain\n\nResult:\nRule: ${match.rule}\nOutbound: ${match.outbound}\n\n$naiveHints\n\nNote: This test simulates sing-box routing logic and does not represent actual traffic flow."
+                _resultMessage.value = "Test Domain: $testDomain\n\n" +
+                    "Result:\nRule: ${match.rule}\nOutbound: ${match.outbound}\n\n" +
+                    "$naiveHints\n\n" +
+                    "Note: This test simulates sing-box routing logic and does not represent actual traffic flow."
             }
             _isRoutingLoading.value = false
             _showResultDialog.value = true

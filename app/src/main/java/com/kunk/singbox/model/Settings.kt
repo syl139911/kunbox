@@ -36,8 +36,6 @@ data class AppSettings(
     @SerializedName("allowLan") val allowLan: Boolean = false,
     @SerializedName("appendHttpProxy") val appendHttpProxy: Boolean = false,
 
-
-
     @SerializedName("localDns") val localDns: String = "local",
 
     @SerializedName("remoteDns") val remoteDns: String = "https://1.1.1.1/dns-query",

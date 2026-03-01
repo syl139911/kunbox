@@ -160,7 +160,6 @@ class BackgroundPowerManager(
         evaluateUserPresence()
     }
 
-
     /**
      */
     fun onScreenOff() {

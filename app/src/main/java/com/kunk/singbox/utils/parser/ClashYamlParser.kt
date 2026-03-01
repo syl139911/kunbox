@@ -286,7 +286,6 @@ class ClashYamlParser : SubscriptionParser {
 
         val fingerprint = asString(map["client-fingerprint"]) ?: globalFingerprint
 
-
         val skipCertVerifyValue = map["skip-cert-verify"]
         val insecure = when {
             skipCertVerifyValue == null -> true

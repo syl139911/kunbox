@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.ui.screens
+package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -101,6 +101,7 @@ import com.kunk.singbox.ui.navigation.Screen
 import com.kunk.singbox.ui.theme.Neutral500
 import kotlinx.coroutines.flow.collectLatest
 
+@Suppress("FunctionNaming", "LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NodesScreen(
@@ -562,6 +563,7 @@ fun NodesScreen(
     }
 }
 
+@Suppress("FunctionNaming", "LongMethod", "CognitiveComplexMethod")
 @Composable
 private fun NodeSearchBar(
     query: String,

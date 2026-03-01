@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.database.dao
+package com.kunk.singbox.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert

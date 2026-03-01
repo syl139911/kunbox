@@ -109,7 +109,6 @@ class SettingsRepository(private val context: Context) {
         settingsStore.updateSettingsAndWait { it.copy(showNotificationSpeed = value) }
     }
 
-
     suspend fun setTunEnabled(value: Boolean) {
         settingsStore.updateSettingsAndWait { it.copy(tunEnabled = value) }
         notifyRestartRequired()
@@ -175,7 +174,6 @@ class SettingsRepository(private val context: Context) {
         notifyRestartRequired()
     }
 
-
     suspend fun setLocalDns(value: String) {
         settingsStore.updateSettingsAndWait { it.copy(localDns = value) }
         notifyRestartRequired()
@@ -220,7 +218,6 @@ class SettingsRepository(private val context: Context) {
         settingsStore.updateSettingsAndWait { it.copy(dnsCacheEnabled = value) }
         notifyRestartRequired()
     }
-
 
     suspend fun setRoutingMode(value: RoutingMode, notifyRestartRequired: Boolean = true) {
         settingsStore.updateSettingsAndWait { it.copy(routingMode = value) }
@@ -322,7 +319,6 @@ class SettingsRepository(private val context: Context) {
         notifyRestartRequired()
     }
 
-
     suspend fun setRuleSetAutoUpdateEnabled(value: Boolean) {
         settingsStore.updateSettingsAndWait { it.copy(ruleSetAutoUpdateEnabled = value) }
     }
@@ -331,21 +327,17 @@ class SettingsRepository(private val context: Context) {
         settingsStore.updateSettingsAndWait { it.copy(ruleSetAutoUpdateInterval = value) }
     }
 
-
     suspend fun setSubscriptionUpdateTimeout(value: Int) {
         settingsStore.updateSettingsAndWait { it.copy(subscriptionUpdateTimeout = value) }
     }
-
 
     suspend fun setAutoCheckUpdate(value: Boolean) {
         settingsStore.updateSettingsAndWait { it.copy(autoCheckUpdate = value) }
     }
 
-
     suspend fun setBackgroundPowerSavingDelay(value: BackgroundPowerSavingDelay) {
         settingsStore.updateSettingsAndWait { it.copy(backgroundPowerSavingDelay = value) }
     }
-
 
     suspend fun setNodeFilter(value: NodeFilter) {
         settingsStore.updateSettingsAndWait { it.copy(nodeFilter = value) }

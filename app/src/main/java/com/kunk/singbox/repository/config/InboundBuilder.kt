@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.repository.config
+package com.kunk.singbox.repository.config
 
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.Inbound

@@ -276,6 +276,7 @@ class StartupManager(
         }
     }
 
+    @Suppress("LongMethod")
     private suspend fun parallelInit(
         configPath: String,
         callbacks: Callbacks
@@ -324,6 +325,16 @@ class StartupManager(
                             "flow=${ob.flow}, tls=${ob.tls != null}, packet_encoding=${ob.packetEncoding}, " +
                             "transport_type=${ob.transport?.type}, transport_mode=${ob.transport?.mode}"
                     )
+                }
+                if (ob.type == "naive") {
+                    Log.w(
+                        TAG,
+                        "[DEBUG] NAIVE outbound '${ob.tag}': server=${ob.server}:${ob.serverPort}, " +
+                            "quic=${ob.quic}, uot=${ob.udpOverTcp?.enabled}, " +
+                            "resolver=${ob.domainResolver?.server}, sni=${ob.tls?.serverName}, " +
+                            "insecure=${ob.tls?.insecure}, headers=${ob.extraHeaders}"
+                    )
+                    Log.w(TAG, "[DEBUG] NAIVE outbound raw=${gson.toJson(ob)}")
                 }
             }
         } catch (e: Exception) {
@@ -407,7 +418,7 @@ class StartupManager(
             val proxyTypes = setOf(
                 "shadowsocks", "vmess", "vless", "trojan",
                 "hysteria", "hysteria2", "tuic", "wireguard",
-                "ssh", "shadowtls", "socks", "http", "anytls"
+                "ssh", "shadowtls", "socks", "http", "anytls", "naive"
             )
             val defaultConnectTimeout = "5s"
 

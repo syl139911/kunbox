@@ -748,7 +748,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-
     /**
      */
     fun exportData(uri: Uri) {
