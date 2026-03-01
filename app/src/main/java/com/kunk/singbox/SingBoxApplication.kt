@@ -1,4 +1,4 @@
-package com.kunk.singbox
+﻿package com.kunk.singbox
 
 import android.app.ActivityManager
 import android.app.Application
@@ -31,25 +31,21 @@ class SingBoxApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
-        // 初始化 MMKV - 必须在所有进程中初始化
         MMKV.initialize(this)
 
-        // 手动初始化 WorkManager 以支持多进程
         if (!isWorkManagerInitialized()) {
             WorkManager.initialize(this, workManagerConfiguration)
         }
 
         LogRepository.init(this)
 
-        // 清理遗留的临时数据库文件 (应对应用崩溃或强制停止的情况)
         cleanupOrphanedTempFiles()
 
-// 只在主进程中调度自动更新任务
         if (isMainProcess()) {
             AppLifecycleObserver.register()
 
             applicationScope.launch {
-                // 读取省电设置并传给 AppLifecycleObserver
+
                 try {
                     val settings = SettingsRepository.getInstance(this@SingBoxApplication).settings.value
                     AppLifecycleObserver.setBackgroundTimeout(settings.backgroundPowerSavingDelay.delayMs)
@@ -57,8 +53,6 @@ class SingBoxApplication : Application(), Configuration.Provider {
                     android.util.Log.w("SingBoxApp", "Failed to read power saving setting", e)
                 }
 
-                // 预缓存物理网络
-                // VPN 启动时可直接使用已缓存的网络，避免应用二次加载
                 val cm = getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager
                 if (cm != null) {
                     DefaultNetworkListener.start(cm, this@SingBoxApplication) { network ->
@@ -66,12 +60,11 @@ class SingBoxApplication : Application(), Configuration.Provider {
                     }
                 }
 
-                // 订阅自动更新
+                // 注释已清理。
                 SubscriptionAutoUpdateWorker.rescheduleAll(this@SingBoxApplication)
-                // 规则集自动更新
+                // 注释已清理。
                 RuleSetAutoUpdateWorker.rescheduleAll(this@SingBoxApplication)
-                // VPN 进程保活机制
-                // 优化: 定期检查后台进程状态,防止系统杀死导致 VPN 意外断开
+
                 VpnKeepaliveWorker.schedule(this@SingBoxApplication)
             }
         }
@@ -94,8 +87,8 @@ class SingBoxApplication : Application(), Configuration.Provider {
     }
 
     /**
-     * 清理遗留的临时数据库文件
-     * 在应用启动时执行,清理因崩溃或强制停止而残留的测试数据库文件
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun cleanupOrphanedTempFiles() {
         try {
@@ -104,7 +97,7 @@ class SingBoxApplication : Application(), Configuration.Provider {
 
             val cleaned = mutableListOf<String>()
             tempDir.listFiles()?.forEach { file ->
-                // 清理所有测试数据库文件及其 WAL/SHM 辅助文件
+
                 if (file.name.startsWith("test_") || file.name.startsWith("batch_test_")) {
                     if (file.delete()) {
                         cleaned.add(file.name)

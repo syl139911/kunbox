@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.components
+﻿package com.kunk.singbox.ui.components
 
 import android.content.Intent
 import androidx.compose.ui.res.stringResource
@@ -274,7 +274,6 @@ fun AppMultiSelectDialog(
     onDismiss: () -> Unit
 ) {
 
-    // 内部数据类，用于增强应用信息（添加 hasLauncher 属性）
     data class EnhancedApp(
         val label: String,
         val packageName: String,
@@ -285,17 +284,15 @@ fun AppMultiSelectDialog(
     val context = LocalContext.current
     val pm = context.packageManager
 
-    // 使用 Repository 获取缓存的应用列表
     val repository = remember { InstalledAppsRepository.getInstance(context) }
     val installedApps by repository.installedApps.collectAsState()
     val loadingState by repository.loadingState.collectAsState()
 
-    // 触发加载
+    // 注释已清理。
     LaunchedEffect(Unit) {
         repository.loadApps()
     }
 
-    // 增强应用信息（添加 hasLauncher 属性）
     val allApps = remember(installedApps) {
         installedApps.map { app: InstalledApp ->
             val hasLauncher = pm.getLaunchIntentForPackage(app.packageName) != null
@@ -1004,28 +1001,28 @@ fun AboutDialog(onDismiss: () -> Unit) {
     val githubUrl = "https://github.com/roseforljh/singboxforandriod.git"
     val linkColor = MaterialTheme.colorScheme.primary
 
-    // 获取版本信息
+    // 注释已清理。
     val appVersion = remember { com.kunk.singbox.utils.VersionInfo.getAppVersionName(context) }
     val appVersionCode = remember { com.kunk.singbox.utils.VersionInfo.getAppVersionCode(context) }
 
-    // 使用协程异步获取内核版本
+    // 注释已清理。
     val kernelLoadingMsg = stringResource(R.string.about_kernel_loading)
     val kernelBuiltinMsg = stringResource(R.string.about_kernel_builtin)
     var singBoxVersion by remember { mutableStateOf(kernelLoadingMsg) }
     LaunchedEffect(Unit) {
         singBoxVersion = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                // 确保 libbox 已初始化
+                // 缁绢収鍠曠换?libbox 鐎瑰憡褰冮崹鍨叏鐎ｎ亜顕?
                 com.kunk.singbox.core.SingBoxCore.ensureLibboxSetup(context)
                 val version = io.nekohasekai.libbox.Libbox.version()
-                // 如果版本是 "unknown"，显示更友好的信息
+
                 when {
                     version.isNullOrBlank() -> kernelBuiltinMsg
                     version.equals("unknown", ignoreCase = true) -> kernelBuiltinMsg
                     else -> version
                 }
             } catch (t: Throwable) {
-                "sing-box (内置)"
+                "sing-box (·告劕鎳愰悿?"
             }
         }
     }
@@ -1110,7 +1107,7 @@ fun NodeFilterDialog(
     onDismiss: () -> Unit
 ) {
     var filterMode by remember { mutableStateOf(currentFilter.filterMode) }
-    // 分别保存 INCLUDE 和 EXCLUDE 的关键字，切换模式时不会丢失
+
     var includeKeywordsText by remember {
         mutableStateOf(currentFilter.effectiveIncludeKeywords.joinToString(", "))
     }
@@ -1134,7 +1131,6 @@ fun NodeFilterDialog(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 过滤模式选择
             Text(
                 text = stringResource(R.string.node_filter_mode),
                 style = MaterialTheme.typography.bodyMedium,
@@ -1143,7 +1139,6 @@ fun NodeFilterDialog(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 不过滤选项
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1167,7 +1162,6 @@ fun NodeFilterDialog(
                 )
             }
 
-            // 只显示包含选项
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1191,7 +1185,6 @@ fun NodeFilterDialog(
                 )
             }
 
-            // 排除包含选项
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1215,7 +1208,6 @@ fun NodeFilterDialog(
                 )
             }
 
-            // 关键字输入区域（当模式不为NONE时显示）
             if (filterMode != FilterMode.NONE) {
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -1273,12 +1265,12 @@ fun NodeFilterDialog(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 按钮区域
+            // 注释已清理。
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 清空按钮
+
                 TextButton(
                     onClick = {
                         filterMode = FilterMode.NONE
@@ -1292,7 +1284,6 @@ fun NodeFilterDialog(
                     Text(stringResource(R.string.common_clear))
                 }
 
-                // 取消按钮
                 TextButton(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f).height(50.dp),
@@ -1301,10 +1292,10 @@ fun NodeFilterDialog(
                     Text(stringResource(R.string.common_cancel))
                 }
 
-                // 确定按钮
+                // 缁绢収鍠栭悾楣冨箰婢舵劖灏?
                 Button(
                     onClick = {
-                        // 解析两个关键字列表
+
                         val includeKeywords = includeKeywordsText
                             .split(",", "，")
                             .map { it.trim() }
@@ -1313,7 +1304,7 @@ fun NodeFilterDialog(
                             .split(",", "，")
                             .map { it.trim() }
                             .filter { it.isNotEmpty() }
-                        // 保存两个独立的关键字列表，切换模式不会丢失
+
                         onConfirm(NodeFilter(
                             filterMode = filterMode,
                             includeKeywords = includeKeywords,

@@ -7,14 +7,14 @@ import android.util.Log
 import io.nekohasekai.libbox.Libbox
 
 /**
- * 版本信息工具类
- * 提供获取应用版本号和 sing-box 内核版本号的方法
+ * 鐗堟湰淇℃伅宸ュ叿绫?
+ * [乱码注释已清理]
  */
 object VersionInfo {
     private const val TAG = "VersionInfo"
 
     /**
-     * 获取应用版本名称
+     * 鑾峰彇搴旂敤鐗堟湰鍚嶇О
      */
     fun getAppVersionName(context: Context): String {
         return try {
@@ -35,7 +35,7 @@ object VersionInfo {
     }
 
     /**
-     * 获取应用版本号 (versionCode)
+     * [乱码注释已清理]
      */
     fun getAppVersionCode(context: Context): Long {
         return try {
@@ -61,7 +61,7 @@ object VersionInfo {
     }
 
     /**
-     * 获取 sing-box 内核版本
+     * 注释已清理。
      */
     fun getSingBoxVersion(): String {
         return try {
@@ -79,7 +79,7 @@ object VersionInfo {
     }
 
     /**
-     * 获取格式化的版本信息字符串
+     * [乱码注释已清理]
      */
     fun getFormattedVersionInfo(context: Context): String {
         val appVersion = getAppVersionName(context)
@@ -87,8 +87,8 @@ object VersionInfo {
         val singBoxVersion = getSingBoxVersion()
 
         return buildString {
-            appendLine("应用版本: $appVersion ($appVersionCode)")
-            appendLine("内核版本: $singBoxVersion")
+            appendLine("搴旂敤鐗堟湰: $appVersion ($appVersionCode)")
+            appendLine("·呮牳鐗堟湰: $singBoxVersion")
         }.trimEnd()
     }
 }

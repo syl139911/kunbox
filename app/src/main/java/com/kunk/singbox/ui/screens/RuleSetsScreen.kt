@@ -414,7 +414,7 @@ fun RuleSetsScreen(
                     }) {
                         Icon(
                             if (isSelectionMode) Icons.Rounded.Close else Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = if (isSelectionMode) "取消" else "返回",
+                            contentDescription = if (isSelectionMode) "Close" else "Back",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -428,16 +428,16 @@ fun RuleSetsScreen(
                         ) {
                             Icon(
                                 Icons.Rounded.Delete,
-                                contentDescription = "删除",
+                                contentDescription = "Delete",
                                 tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     } else {
                         IconButton(onClick = { navController.navigate(Screen.RuleSetHub.route) }) {
-                            Icon(Icons.Rounded.CloudDownload, contentDescription = "导入", tint = MaterialTheme.colorScheme.onBackground)
+                            Icon(Icons.Rounded.CloudDownload, contentDescription = "Download", tint = MaterialTheme.colorScheme.onBackground)
                         }
                         IconButton(onClick = { showAddDialog = true }) {
-                            Icon(Icons.Rounded.Add, contentDescription = "添加", tint = MaterialTheme.colorScheme.onBackground)
+                            Icon(Icons.Rounded.Add, contentDescription = "Add", tint = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 },
@@ -715,7 +715,6 @@ fun RuleSetItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        // 状态标签 - 绿色
                         Surface(
                             color = Color(0xFF2E7D32).copy(alpha = 0.8f),
                             shape = RoundedCornerShape(4.dp)
@@ -729,15 +728,14 @@ fun RuleSetItem(
                         }
                     }
                     Spacer(modifier = Modifier.width(6.dp))
-                    // 出站标签 - 根据模式显示不同颜色
                     val outboundMode = ruleSet.outboundMode ?: RuleSetOutboundMode.DIRECT
                     val outboundText = stringResource(outboundMode.displayNameRes)
                     val outboundColor = when (outboundMode) {
-                        RuleSetOutboundMode.DIRECT -> Color(0xFF1565C0) // 蓝色
-                        RuleSetOutboundMode.BLOCK -> Color(0xFFC62828) // 红色
-                        RuleSetOutboundMode.PROXY -> Color(0xFF7B1FA2) // 紫色
-                        RuleSetOutboundMode.NODE -> Color(0xFFE65100) // 橙色
-                        RuleSetOutboundMode.PROFILE -> Color(0xFF00838F) // 青色
+                        RuleSetOutboundMode.DIRECT -> Color(0xFF1565C0)
+                        RuleSetOutboundMode.BLOCK -> Color(0xFFC62828)
+                        RuleSetOutboundMode.PROXY -> Color(0xFF7B1FA2)
+                        RuleSetOutboundMode.NODE -> Color(0xFFE65100)
+                        RuleSetOutboundMode.PROFILE -> Color(0xFF00838F)
                     }
                     Surface(
                         color = outboundColor.copy(alpha = 0.8f),
@@ -751,11 +749,10 @@ fun RuleSetItem(
                         )
                     }
                     Spacer(modifier = Modifier.width(6.dp))
-                    // 入站标签 - 黄色/橙色
                     val inbounds = ruleSet.inbounds ?: emptyList()
                     val inboundText = if (inbounds.isEmpty()) stringResource(R.string.common_all) else inbounds.joinToString(",")
                     Surface(
-                        color = Color(0xFFFF8F00).copy(alpha = 0.8f), // 琥珀色
+                        color = Color(0xFFFF8F00).copy(alpha = 0.8f),
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
@@ -768,7 +765,7 @@ fun RuleSetItem(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${stringResource(ruleSet.type.displayNameRes)} • ${ruleSet.format}",
+                    text = "${stringResource(ruleSet.type.displayNameRes)} - ${ruleSet.format}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -802,7 +799,7 @@ fun RuleSetItem(
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = "更多选项",
+                                contentDescription = "More actions",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -946,7 +943,7 @@ fun RuleSetEditorDialog(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 StyledTextField(
-                    label = "标识 (Tag)",
+                    label = "Rule Set Tag",
                     value = tag,
                     onValueChange = { tag = it },
                     placeholder = "geoip-cn"

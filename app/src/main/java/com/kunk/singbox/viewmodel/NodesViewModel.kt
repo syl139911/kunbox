@@ -1,4 +1,4 @@
-package com.kunk.singbox.viewmodel
+﻿package com.kunk.singbox.viewmodel
 
 import com.kunk.singbox.R
 import android.app.Application
@@ -31,7 +31,6 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
     private val configRepository = ConfigRepository.getInstance(application)
     private val settingsRepository = SettingsRepository.getInstance(application)
 
-    // 使用共享的设置状态，避免多个 ViewModel 各自收集相同的 Flow
     private val displaySettings = NodeDisplaySettings.getInstance(application)
 
     private var testingJob: Job? = null
@@ -39,19 +38,16 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
     private val _isTesting = MutableStateFlow(false)
     val isTesting: StateFlow<Boolean> = _isTesting.asStateFlow()
 
-    // 正在测试延迟的节点 ID 集合
     private val _testingNodeIds = MutableStateFlow<Set<String>>(emptySet())
     val testingNodeIds: StateFlow<Set<String>> = _testingNodeIds.asStateFlow()
 
-    // 直接暴露共享状态，不再使用本地 MutableStateFlow
     val sortType: StateFlow<NodeSortType> = displaySettings.sortType
     val nodeFilter: StateFlow<NodeFilter> = displaySettings.nodeFilter
 
-    // customNodeOrder 需要本地可写，用于批量测速时冻结顺序
     private val _customNodeOrder = MutableStateFlow<List<String>>(emptyList())
 
     init {
-        // 从共享状态同步 customOrder 到本地
+
         viewModelScope.launch {
             displaySettings.customOrder.collect { order ->
                 _customNodeOrder.value = order
@@ -65,7 +61,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
         displaySettings.nodeFilter,
         _customNodeOrder
     ) { nodes: List<NodeUi>, sortType: NodeSortType, filter: NodeFilter, customOrder: List<String> ->
-        // 先过滤
+        // 注释已清理。
         val filtered = when (filter.filterMode) {
             FilterMode.NONE -> nodes
             FilterMode.INCLUDE -> {
@@ -93,12 +89,12 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
-        // 再排序
+        // 注释已清理。
         when (sortType) {
             NodeSortType.DEFAULT -> filtered
             NodeSortType.LATENCY -> filtered.sortedWith(compareBy<NodeUi> {
                 val l = it.latencyMs
-                // 将未测试(null)和超时/失败(<=0)的节点排到最后
+
                 if (l == null || l <= 0) Long.MAX_VALUE else l
             })
             NodeSortType.NAME -> filtered.sortedBy { it.name }
@@ -118,34 +114,33 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun getRegionWeight(flag: String?): Int {
         if (flag.isNullOrBlank()) return 9999
-        // Priority order: CN, HK, MO, TW, JP, KR, SG, US, Others
         return when (flag) {
-            "🇨🇳" -> 0 // China
-            "🇭🇰" -> 1 // Hong Kong
-            "🇲🇴" -> 2 // Macau
-            "🇹🇼" -> 3 // Taiwan
-            "🇯🇵" -> 4 // Japan
-            "🇰🇷" -> 5 // South Korea
-            "🇸🇬" -> 6 // Singapore
-            "🇺🇸" -> 7 // USA
-            "🇻🇳" -> 8 // Vietnam
-            "🇹🇭" -> 9 // Thailand
-            "🇵🇭" -> 10 // Philippines
-            "🇲🇾" -> 11 // Malaysia
-            "🇮🇩" -> 12 // Indonesia
-            "🇮🇳" -> 13 // India
-            "🇷🇺" -> 14 // Russia
-            "🇹🇷" -> 15 // Turkey
-            "🇮🇹" -> 16 // Italy
-            "🇩🇪" -> 17 // Germany
-            "🇫🇷" -> 18 // France
-            "🇳🇱" -> 19 // Netherlands
-            "🇬🇧" -> 20 // UK
-            "🇦🇺" -> 21 // Australia
-            "🇨🇦" -> 22 // Canada
-            "🇧🇷" -> 23 // Brazil
-            "🇦🇷" -> 24 // Argentina
-            else -> 1000 // Others
+            "CN" -> 0
+            "HK" -> 1
+            "MO" -> 2
+            "TW" -> 3
+            "JP" -> 4
+            "KR" -> 5
+            "SG" -> 6
+            "US" -> 7
+            "VN" -> 8
+            "TH" -> 9
+            "PH" -> 10
+            "MY" -> 11
+            "ID" -> 12
+            "IN" -> 13
+            "RU" -> 14
+            "TR" -> 15
+            "IT" -> 16
+            "DE" -> 17
+            "FR" -> 18
+            "NL" -> 19
+            "UK", "GB" -> 20
+            "AU" -> 21
+            "CA" -> 22
+            "BR" -> 23
+            "AR" -> 24
+            else -> 1000
         }
     }
 
@@ -192,8 +187,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
                 getRegionWeight(it.regionFlag)
             }.thenBy { it.name })
             NodeSortType.CUSTOM -> {
-                // filteredAllNodes 不使用 customOrder，或者我们可以简单地回退到 DEFAULT
-                // 既然 filteredAllNodes 目前主要用于后台逻辑，这里暂时使用 DEFAULT
+
                 filtered
             }
         }
@@ -227,15 +221,12 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
     private val _switchResult = MutableStateFlow<String?>(null)
     val switchResult: StateFlow<String?> = _switchResult.asStateFlow()
 
-    // 单节点测速反馈信息（仅在失败/超时时提示）
     private val _latencyMessage = MutableStateFlow<String?>(null)
     val latencyMessage: StateFlow<String?> = _latencyMessage.asStateFlow()
 
-    // 批量测速进度 (已完成数 / 总数)
     private val _testProgress = MutableStateFlow<Pair<Int, Int>?>(null)
     val testProgress: StateFlow<Pair<Int, Int>?> = _testProgress.asStateFlow()
 
-    // 添加节点结果反馈
     private val _addNodeResult = MutableStateFlow<String?>(null)
     val addNodeResult: StateFlow<String?> = _addNodeResult.asStateFlow()
 
@@ -247,15 +238,13 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setActiveNode(nodeId: String) {
-        // 2025-fix: 先同步更新 activeNodeId，避免竞态条件
-        // 场景：用户在节点页面连续快速切换节点后立即到首页启动 VPN
-        // 如果不同步更新，generateConfigFile() 可能读取到旧的节点 ID
+
         configRepository.setActiveNodeIdOnly(nodeId)
 
         viewModelScope.launch {
-            // 使用 configRepository 获取节点，避免因过滤导致找不到节点名称
+
             val node = configRepository.getNodeById(nodeId)
-            // 异步处理热切换（如果 VPN 正在运行）
+
             val success = configRepository.setActiveNode(nodeId)
 
             // Only show toast when VPN is running
@@ -374,7 +363,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setSortType(type: NodeSortType) {
-        // 写入持久化存储，SharedFlow 会自动更新 displaySettings.sortType
+        // 注释已清理。
         viewModelScope.launch {
             settingsRepository.setNodeSortType(type)
         }
@@ -397,7 +386,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearLatency() {
         viewModelScope.launch {
-            // 清空前冻结当前顺序，防止列表跳动
+
             val currentOrder = nodes.value.map { it.id }
             setCustomNodeOrder(currentOrder)
             setSortType(NodeSortType.CUSTOM)

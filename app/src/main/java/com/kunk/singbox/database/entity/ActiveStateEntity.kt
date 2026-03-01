@@ -4,10 +4,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * 活跃状态实体
+ * 娲昏穬鐘舵€佸疄浣?
  *
- * 存储当前活跃的 Profile 和 Node ID
- * 使用单例模式（固定 ID = 1）
+ * [乱码注释已清理]
+ * [乱码注释已清理]
  */
 @Entity(tableName = "active_state")
 data class ActiveStateEntity(

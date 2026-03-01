@@ -7,11 +7,6 @@ import androidx.room.Query
 import com.kunk.singbox.database.entity.NodeLatencyEntity
 import kotlinx.coroutines.flow.Flow
 
-/**
- * 节点延迟缓存数据访问对象
- *
- * 管理节点的延迟测试结果
- */
 @Dao
 interface NodeLatencyDao {
 
@@ -43,8 +38,8 @@ interface NodeLatencyDao {
     suspend fun deleteAll()
 
     /**
-     * 批量更新延迟
-     * 使用 INSERT OR REPLACE 策略
+     * 鎵归噺鏇存柊寤惰繜
+     * 浣跨敤 INSERT OR REPLACE 绛栫暐
      */
     @Query("INSERT OR REPLACE INTO node_latencies (nodeId, latencyMs, testedAt) VALUES (:nodeId, :latencyMs, :testedAt)")
     suspend fun upsert(nodeId: String, latencyMs: Long, testedAt: Long = System.currentTimeMillis())

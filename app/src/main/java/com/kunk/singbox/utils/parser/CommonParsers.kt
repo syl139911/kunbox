@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils.parser
+﻿package com.kunk.singbox.utils.parser
 
 import android.util.Base64
 import android.util.Log
@@ -9,9 +9,9 @@ import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.SingBoxConfig
 
 /**
- * Sing-box JSON 格式解析器
- * 只提取 outbounds 节点，忽略规则配置
- * 防止因 sing-box 规则版本更新导致解析失败
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 class SingBoxParser(private val gson: Gson) : SubscriptionParser {
     companion object {
@@ -28,17 +28,15 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
     override fun parse(content: String): SingBoxConfig? {
         val trimmed = content.trim()
 
-        // 如果是数组格式，直接解析为 outbounds 列表
         if (trimmed.startsWith("[")) {
             return parseAsOutboundArray(trimmed)
         }
 
-        // 对象格式：只提取 outbounds 字段，忽略其他可能不兼容的字段
         return parseAsConfigObject(trimmed)
     }
 
     /**
-     * 解析 JSON 数组格式（直接是 outbounds 列表）
+     * 注释已清理。
      */
     private fun parseAsOutboundArray(content: String): SingBoxConfig? {
         return try {
@@ -53,13 +51,12 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
     }
 
     /**
-     * 解析 JSON 对象格式，只提取 outbounds/proxies 字段
+     * 注释已清理。
      */
     private fun parseAsConfigObject(content: String): SingBoxConfig? {
         return try {
             val jsonObject = JsonParser.parseString(content).asJsonObject
 
-            // 优先尝试 outbounds 字段，其次 proxies
             val outboundsElement = jsonObject.get("outbounds") ?: jsonObject.get("proxies")
 
             if (outboundsElement != null && outboundsElement.isJsonArray) {
@@ -77,7 +74,7 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
 }
 
 /**
- * Base64 订阅格式解析器（通用链接）
+ * 注释已清理。
  */
 class Base64Parser(private val nodeParser: (String) -> Outbound?) : SubscriptionParser {
     private val LINK_PREFIXES = listOf(
@@ -108,7 +105,6 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
         android.util.Log.d("Base64Parser", "Parsing content, length: ${content.length}, starts with: ${content.take(20)}")
         val trimmed = content.trim()
 
-        // 如果内容已经是协议链接，不要尝试 base64 解码
         val isAlreadyLink = LINK_PREFIXES.any { trimmed.startsWith(it) }
         val decoded = if (isAlreadyLink) trimmed else (tryDecodeBase64(trimmed) ?: trimmed)
         val normalized = decoded
@@ -140,18 +136,15 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
         val normalized = line.trim()
             .trimStart('\uFEFF', '\u200B', '\u200C', '\u200D')
             .removePrefix("- ")
-            .removePrefix("• ")
+            .removePrefix("·")
             .trim()
             .trim('`', '"', '\'')
 
         if (normalized.isBlank()) return emptyList()
 
-        // 按前缀长度降序排列，确保长前缀（如 vmess://）先于短前缀（如 ss://）被匹配
-        // 这样可以避免 vmess:// 被误识别为 ss://
         val sortedPrefixes = LINK_PREFIXES.sortedByDescending { it.length }
 
-        // 找到所有链接的起始位置，使用贪婪匹配（最长前缀优先）
-        val linkPositions = mutableListOf<Pair<Int, String>>() // (位置, 前缀)
+        val linkPositions = mutableListOf<Pair<Int, String>>() // (·达絽绉堕悿? ·告挸绉剁槐?
         val usedPositions = mutableSetOf<Int>()
 
         for (prefix in sortedPrefixes) {
@@ -160,7 +153,6 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
                 val index = normalized.indexOf(prefix, searchFrom)
                 if (index < 0) break
 
-                // 检查这个位置是否已经被更长的前缀占用
                 val isOverlapped = usedPositions.any { usedPos ->
                     index >= usedPos && index < usedPos + sortedPrefixes.find {
                         normalized.substring(usedPos).startsWith(it)
@@ -177,7 +169,7 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
 
         if (linkPositions.isEmpty()) return emptyList()
 
-        // 按位置排序
+        // 注释已清理。
         val sortedPositions = linkPositions.sortedBy { it.first }
 
         val results = mutableListOf<String>()
@@ -204,7 +196,7 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
             try {
                 val decoded = Base64.decode(content, flags)
                 val text = String(decoded)
-                // 验证解码结果是否看起来像文本 (包含常见协议头或换行)
+
                 if (text.isNotBlank() && (
                         text.contains("://") ||
                             text.contains("\n") ||

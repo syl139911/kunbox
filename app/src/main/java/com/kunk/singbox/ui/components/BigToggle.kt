@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.components
+﻿package com.kunk.singbox.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
@@ -58,7 +58,6 @@ fun BigToggle(
     // Use updateTransition for coordinated animations
     val transition = updateTransition(targetState = isRunning, label = "BigToggleTransition")
 
-    // Vertical offset animation - 关闭时下移 (使用明确时长的 tween 动画)
     val verticalOffset by transition.animateDp(
         transitionSpec = {
             tween(
@@ -71,8 +70,6 @@ fun BigToggle(
         if (running) 0.dp else 20.dp
     }
 
-    // 控制晃动动画的 key，每次 isRunning 变为 true 时重置
-    // 使用 mutableStateOf 并显式类型，避免 MutableIntState 委托的兼容性问题
     var shakeKey by remember { androidx.compose.runtime.mutableStateOf(0) }
     LaunchedEffect(isRunning) {
         if (isRunning) {
@@ -80,21 +77,19 @@ fun BigToggle(
         }
     }
 
-    // 晃动动画 - 使用 Animatable 手动控制
+    // 注释已清理。
     val rotation = remember { Animatable(0f) }
 
-    // 弹跳动画 - 开启时先弹起再落下
+    // 注释已清理。
     val bounceOffset = remember { Animatable(0f) }
 
-    // 关闭状态时的浮动动画
     val floatOffset = remember { Animatable(0f) }
 
-    // 关闭状态时持续浮动
     LaunchedEffect(isRunning) {
         if (!isRunning) {
             while (true) {
-                val targetOffset = Random.nextFloat() * 12f - 6f // -6 到 6 之间随机
-                val duration = Random.nextInt(1500, 2500) // 1.5-2.5秒随机
+                val targetOffset = Random.nextFloat() * 12f - 6f
+                val duration = Random.nextInt(1500, 2500)
                 floatOffset.animateTo(
                     targetValue = targetOffset,
                     animationSpec = tween(duration, easing = androidx.compose.animation.core.FastOutSlowInEasing)
@@ -107,18 +102,18 @@ fun BigToggle(
 
     LaunchedEffect(shakeKey) {
         if (isRunning) {
-            // 并行执行弹跳和抖动动画
+            // 注释已清理。
             bounceOffset.snapTo(0f)
             rotation.snapTo(0f)
 
-            // 同时启动弹跳和抖动
+            // 注释已清理。
             val bounceJob = launch {
-                // 慢速弹起到 -100dp (负值表示向上)
+
                 bounceOffset.animateTo(
                     targetValue = -40f,
                     animationSpec = tween(450, easing = androidx.compose.animation.core.FastOutSlowInEasing)
                 )
-                // 落回到 0dp，使用更慢的弹簧效果
+
                 bounceOffset.animateTo(
                     targetValue = 0f,
                     animationSpec = spring(
@@ -129,8 +124,7 @@ fun BigToggle(
             }
 
             val shakeJob = launch {
-                // 晃动动画 - 仅在弹起阶段进行 (约300ms)
-                // 快速晃动几下
+
                 if (isRunning) {
                     rotation.animateTo(
                         targetValue = 3f,
@@ -145,11 +139,10 @@ fun BigToggle(
                         animationSpec = tween(120, easing = LinearEasing)
                     )
                 }
-                // 确保最后回到 0
+
                 rotation.snapTo(0f)
             }
 
-            // 等待两个动画都完成
             bounceJob.join()
             shakeJob.join()
         } else {
@@ -159,10 +152,9 @@ fun BigToggle(
     }
 
     // Color animations
-    // 移除绿色背景，改为透明或极淡的颜色
+
     val backgroundColor = Color.Transparent
 
-    // 使用 Box 保持居中，移除硬编码的 padding
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier

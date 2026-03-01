@@ -1,4 +1,4 @@
-package com.kunk.singbox.viewmodel
+﻿package com.kunk.singbox.viewmodel
 
 import com.kunk.singbox.R
 import android.app.Application
@@ -27,7 +27,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
 
     private val configRepository = ConfigRepository.getInstance(application)
 
-    // 用于跟踪当前的导入任务，以便可以取消
     private var importJob: Job? = null
 
     val profiles: StateFlow<List<ProfileUi>> = configRepository.profiles
@@ -44,11 +43,11 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
             initialValue = null
         )
 
-    // 导入状态
+    // 注释已清理。
     private val _importState = MutableStateFlow<ImportState>(ImportState.Idle)
     val importState: StateFlow<ImportState> = _importState.asStateFlow()
 
-    // 单个配置更新状态
+    // 注释已清理。
     private val _updateStatus = MutableStateFlow<String?>(null)
     val updateStatus: StateFlow<String?> = _updateStatus.asStateFlow()
 
@@ -70,7 +69,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                 emitToast(getApplication<Application>().getString(R.string.profiles_updated) + ": $name")
             }
 
-            // 2025-fix: 切换配置后自动触发节点切换，确保VPN加载新配置
             viewModelScope.launch {
                 delay(100)
                 val currentNodeId = configRepository.activeNodeId.value
@@ -112,7 +110,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
 
             val result = configRepository.updateProfile(profileId)
 
-            // 根据结果生成提示消息
             _updateStatus.value = when (result) {
                 is SubscriptionUpdateResult.SuccessWithChanges -> {
                     val changes = mutableListOf<String>()
@@ -151,7 +148,7 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 导入订阅配置
+     * 注释已清理。
      */
     fun importSubscription(
         name: String,
@@ -160,7 +157,7 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
         dnsPreResolve: Boolean = false,
         dnsServer: String? = null
     ) {
-        // 防止重复导入
+
         if (_importState.value is ImportState.Loading) {
             return
         }
@@ -179,7 +176,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                 }
             )
 
-            // 防止取消后仍然更新状态
             coroutineContext.ensureActive()
 
             result.fold(
@@ -187,7 +183,7 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                     _importState.value = ImportState.Success(profile)
                 },
                 onFailure = { error ->
-                    // 检查是否是由于取消导致的
+
                     if (error is kotlinx.coroutines.CancellationException) {
                         _importState.value = ImportState.Idle
                     } else {
@@ -223,7 +219,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                 }
             )
 
-            // 防止取消后仍然更新状态
             coroutineContext.ensureActive()
 
             result.fold(
@@ -231,7 +226,7 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                     _importState.value = ImportState.Success(profile)
                 },
                 onFailure = { error ->
-                    // 检查是否是由于取消导致的
+
                     if (error is kotlinx.coroutines.CancellationException) {
                         _importState.value = ImportState.Idle
                     } else {
@@ -243,7 +238,7 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 取消当前的导入操作
+     * 注释已清理。
      */
     fun cancelImport() {
         importJob?.cancel()

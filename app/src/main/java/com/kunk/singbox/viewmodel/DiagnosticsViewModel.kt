@@ -1,4 +1,4 @@
-package com.kunk.singbox.viewmodel
+﻿package com.kunk.singbox.viewmodel
 
 import com.kunk.singbox.R
 import android.app.Application
@@ -95,7 +95,7 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
                     )
                 }
             } catch (e: Exception) {
-                _resultMessage.value = "读取运行配置失败: ${e.message}"
+                _resultMessage.value = "Failed to read runtime config: ${e.message}"
             } finally {
                 _isRunConfigLoading.value = false
                 _showResultDialog.value = true
@@ -238,7 +238,7 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
         if (_isConnectivityLoading.value) return
         viewModelScope.launch {
             _isConnectivityLoading.value = true
-            _resultTitle.value = "连通性检查"
+            _resultTitle.value = "连通性诊断"
             try {
                 // Dual-channel diagnostics:
                 // - DIRECT: reflects local network quality (this app is excluded from TUN in VPN mode)
@@ -319,8 +319,6 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
             try {
                 val results = mutableListOf<Long>()
                 val count = 4
-
-                // 执行 TCP Ping 4 次
                 repeat(count) {
                     val rtt = TcpPing.connect(host, port)
                     if (rtt >= 0) {
@@ -395,7 +393,7 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
         if (_isAppRoutingDiagLoading.value) return
         viewModelScope.launch {
             _isAppRoutingDiagLoading.value = true
-            _resultTitle.value = "应用分流诊断"
+            _resultTitle.value = "App Routing Diagnostics"
             try {
                 val procPaths = listOf(
                     "/proc/net/tcp",
@@ -459,7 +457,10 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
                     appendLine("Interpretation:")
                     appendLine("- If uidResolved=0 and securityDenied>0: System denied getConnectionOwnerUid; package_name will not work.")
                     appendLine("- If uidResolved=0 and invalidArgs is high: addresses/ports may be incomplete.")
-                    appendLine("- If calls ≈ 0: traffic didn't trigger owner lookup (feature disabled or different path taken).")
+                    appendLine(
+                        "- If calls ·0: traffic didn't trigger owner lookup " +
+                            "(feature disabled or different path taken)."
+                    )
                 }
             } catch (e: Exception) {
                 _resultMessage.value = "Failed to read stats: ${e.message}"

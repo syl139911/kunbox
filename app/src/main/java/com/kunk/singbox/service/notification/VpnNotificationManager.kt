@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.notification
+﻿package com.kunk.singbox.service.notification
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * VPN 通知管理器
- * 负责 VPN 服务通知的创建、更新和生命周期管理
+ * 注释已清理。
+ * 注释已清理。
  */
 class VpnNotificationManager(
     private val context: Context,
@@ -55,7 +55,7 @@ class VpnNotificationManager(
     private var lastTextLogged: String? = null
 
     /**
-     * 通知状态数据
+     * 注释已清理。
      */
     data class NotificationState(
         val isRunning: Boolean = false,
@@ -67,11 +67,11 @@ class VpnNotificationManager(
     )
 
     /**
-     * 创建通知渠道 (Android 8.0+)
+     * 注释已清理。
      */
     fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // 清理旧渠道
+
             runCatching { notificationManager.deleteNotificationChannel("singbox_vpn") }
             runCatching { notificationManager.deleteNotificationChannel(LEGACY_CHANNEL_ID) }
 
@@ -92,9 +92,9 @@ class VpnNotificationManager(
     }
 
     /**
-     * 更新通知
-     * @param state 当前通知状态
-     * @param service VPN 服务实例 (用于 startForeground)
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     fun updateNotification(state: NotificationState, service: SingBoxService) {
         val notification = createNotification(state)
@@ -108,7 +108,6 @@ class VpnNotificationManager(
             Log.i(TAG, "Notification content: $text")
         }
 
-        // 修复华为设备提示音问题: 只在首次调用 startForeground, 后续使用 notify
         if (!hasForegroundStarted.get()) {
             runCatching {
                 service.startForeground(NOTIFICATION_ID, notification)
@@ -127,10 +126,10 @@ class VpnNotificationManager(
     }
 
     /**
-     * 请求更新通知 (带防抖)
-     * @param state 当前通知状态
-     * @param service VPN 服务实例
-     * @param force 是否强制立即更新
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     fun requestNotificationUpdate(
         state: NotificationState,
@@ -169,10 +168,10 @@ class VpnNotificationManager(
     }
 
     /**
-     * 创建通知
+     * 注释已清理。
      */
     fun createNotification(state: NotificationState): Notification {
-        // 停止中状态显示简化通知
+
         if (state.isStopping) {
             return buildNotificationBuilder()
                 .setContentTitle("KunBox VPN")
@@ -182,7 +181,6 @@ class VpnNotificationManager(
                 .build()
         }
 
-        // 主界面 PendingIntent
         val mainIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -191,7 +189,7 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        // 切换节点按钮
+        // 注释已清理。
         val switchIntent = Intent(context, SingBoxService::class.java).apply {
             action = ACTION_SWITCH_NODE
         }
@@ -200,7 +198,7 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // 断开连接按钮
+        // 注释已清理。
         val stopIntent = Intent(context, SingBoxService::class.java).apply {
             action = ACTION_STOP
         }
@@ -209,7 +207,7 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // 重置连接按钮
+        // 注释已清理。
         val resetIntent = Intent(context, SingBoxService::class.java).apply {
             action = ACTION_RESET_CONNECTIONS
         }
@@ -218,10 +216,10 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // 节点名称
+        // 注释已清理。
         val nodeName = state.activeNodeName ?: context.getString(R.string.connection_connected)
 
-        // 内容文本
+        // 注释已清理。
         val contentText = if (state.showSpeed) {
             val uploadStr = formatSpeed(state.uploadSpeed)
             val downloadStr = formatSpeed(state.downloadSpeed)
@@ -261,7 +259,7 @@ class VpnNotificationManager(
     }
 
     /**
-     * 创建启动中通知
+     * 注释已清理。
      */
     fun createStartingNotification(message: String): Notification {
         return buildNotificationBuilder()
@@ -273,29 +271,29 @@ class VpnNotificationManager(
     }
 
     /**
-     * 显示临时通知
+     * 注释已清理。
      */
     fun showTemporaryNotification(id: Int, notification: Notification) {
         notificationManager.notify(NOTIFICATION_ID + id, notification)
     }
 
     /**
-     * 取消通知
+     * 注释已清理。
      */
     fun cancelNotification(id: Int = NOTIFICATION_ID) {
         notificationManager.cancel(id)
     }
 
     /**
-     * 设置是否抑制更新
+     * 注释已清理。
      */
     fun setSuppressUpdates(suppress: Boolean) {
         suppressUpdates = suppress
     }
 
     /**
-     * 重置状态
-     * 在 VPN 停止时调用
+     * 注释已清理。
+     * 注释已清理。
      */
     fun resetState() {
         updateJob?.cancel()
@@ -305,13 +303,10 @@ class VpnNotificationManager(
         lastTextLogged = null
     }
 
-    /**
-     * 检查是否已调用过 startForeground
-     */
     fun hasForegroundStarted(): Boolean = hasForegroundStarted.get()
 
     /**
-     * 设置已启动前台服务
+     * 注释已清理。
      */
     fun markForegroundStarted() {
         hasForegroundStarted.set(true)

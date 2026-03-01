@@ -1,4 +1,4 @@
-package com.kunk.singbox.viewmodel
+﻿package com.kunk.singbox.viewmodel
 
 import com.kunk.singbox.R
 import android.app.Application
@@ -64,7 +64,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var defaultRuleSetDownloadJob: Job? = null
     private val defaultRuleSetDownloadTags = mutableSetOf<String>()
 
-    // 导入导出状态
+    // 注释已清理。
     private val _exportState = MutableStateFlow<ExportState>(ExportState.Idle)
     val exportState: StateFlow<ExportState> = _exportState.asStateFlow()
 
@@ -163,7 +163,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 通用设置
     fun setAutoConnect(value: Boolean) {
         viewModelScope.launch { repository.setAutoConnect(value) }
     }
@@ -187,7 +186,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setBackgroundPowerSavingDelay(value: BackgroundPowerSavingDelay) {
         viewModelScope.launch {
             repository.setBackgroundPowerSavingDelay(value)
-            // 同步更新 AppLifecycleObserver 的超时时间
+
             com.kunk.singbox.lifecycle.AppLifecycleObserver.setBackgroundTimeout(value.delayMs)
         }
     }
@@ -196,7 +195,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.setShowNotificationSpeed(value)
 
-            // 跨进程通知 Service 立即更新设置 (因为 Service 运行在独立进程，无法实时监听 DataStore)
             if (com.kunk.singbox.ipc.SingBoxRemote.isRunning.value) {
                 try {
                     val intent = android.content.Intent(getApplication(), com.kunk.singbox.service.SingBoxService::class.java).apply {
@@ -212,7 +210,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // TUN/VPN 设置
+    // 注释已清理。
     fun setTunEnabled(value: Boolean) {
         viewModelScope.launch { repository.setTunEnabled(value) }
     }
@@ -265,7 +263,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setVpnBlocklist(value) }
     }
 
-    // DNS 设置
+    // 注释已清理。
     fun setLocalDns(value: String) {
         viewModelScope.launch { repository.setLocalDns(value) }
     }
@@ -302,7 +300,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setDnsCacheEnabled(value) }
     }
 
-    // 路由设置
+    // 注释已清理。
     fun setRoutingMode(value: RoutingMode, notifyRestartRequired: Boolean = true) {
         viewModelScope.launch { repository.setRoutingMode(value, notifyRestartRequired) }
     }
@@ -355,7 +353,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setSubscriptionUpdateTimeout(value) }
     }
 
-    // 代理设置
+    // 注释已清理。
     fun updateProxyPort(value: Int) {
         viewModelScope.launch { repository.setProxyPort(value) }
     }
@@ -368,7 +366,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setAppendHttpProxy(value) }
     }
 
-    // 高级路由
+    // 濡ゅ倹顭囨鍥╂崉椤栨粍鏆?
     fun addCustomRule(rule: CustomRule) {
         viewModelScope.launch {
             val currentRules = settings.value.customRules.toMutableList()
@@ -402,10 +400,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val rawPrefix = "https://raw.githubusercontent.com/"
                 val cdnPrefix = "https://cdn.jsdelivr.net/gh/"
 
-                // 先还原到原始 URL
+                // 注释已清理。
                 var rawUrl = url
 
-                // 1. 如果是 jsDelivr 格式，还原为 raw 格式
                 if (rawUrl.startsWith(cdnPrefix)) {
                     val path = rawUrl.removePrefix(cdnPrefix)
                     val parts = path.split("@", limit = 2)
@@ -415,7 +412,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         rawUrl = "$rawPrefix$userRepo/$branchPath"
                     }
                 } else {
-                    // 2. 如果是其他前缀代理，移除前缀
+
                     val oldMirrors = listOf(
                         "https://ghp.ci/",
                         "https://mirror.ghproxy.com/",
@@ -430,7 +427,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             rawUrl = rawUrl.replace(mirror, rawPrefix)
                         }
                     }
-                    // 3. 处理已有的 raw 链接被代理的情况
+
                     if (rawUrl.contains("raw.githubusercontent.com") && !rawUrl.startsWith(rawPrefix)) {
                         val path = rawUrl.substringAfter("raw.githubusercontent.com/")
                         rawUrl = rawPrefix + path
@@ -439,7 +436,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 var updatedUrl = rawUrl
 
-                // 应用当前选择的镜像
                 if (mirrorUrl.contains("cdn.jsdelivr.net")) {
                     if (rawUrl.startsWith(rawPrefix)) {
                         val path = rawUrl.removePrefix(rawPrefix)
@@ -506,10 +502,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val rawPrefix = "https://raw.githubusercontent.com/"
                 val cdnPrefix = "https://cdn.jsdelivr.net/gh/"
 
-                // 先还原到原始 URL
+                // 注释已清理。
                 var rawUrl = url
 
-                // 1. 如果是 jsDelivr 格式，还原为 raw 格式
                 if (rawUrl.startsWith(cdnPrefix)) {
                     val path = rawUrl.removePrefix(cdnPrefix)
                     val parts = path.split("@", limit = 2)
@@ -519,7 +514,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         rawUrl = "$rawPrefix$userRepo/$branchPath"
                     }
                 } else {
-                    // 2. 如果是其他前缀代理，移除前缀
+
                     val oldMirrors = listOf(
                         "https://ghp.ci/",
                         "https://mirror.ghproxy.com/",
@@ -534,7 +529,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             rawUrl = rawUrl.replace(mirror, rawPrefix)
                         }
                     }
-                    // 3. 处理已有的 raw 链接被代理的情况
+
                     if (rawUrl.contains("raw.githubusercontent.com") && !rawUrl.startsWith(rawPrefix)) {
                         val path = rawUrl.substringAfter("raw.githubusercontent.com/")
                         rawUrl = rawPrefix + path
@@ -543,7 +538,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 var updatedUrl = rawUrl
 
-                // 应用当前选择的镜像
                 if (mirrorUrl.contains("cdn.jsdelivr.net")) {
                     if (rawUrl.startsWith(rawPrefix)) {
                         val path = rawUrl.removePrefix(rawPrefix)
@@ -644,13 +638,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 全局规则集自动更新设置
     fun setRuleSetAutoUpdateEnabled(value: Boolean) {
         viewModelScope.launch {
             val currentSettings = repository.settings.first()
             repository.setRuleSetAutoUpdateEnabled(value)
 
-            // 根据开关状态调度或取消自动更新任务
             if (value && currentSettings.ruleSetAutoUpdateInterval > 0) {
                 RuleSetAutoUpdateWorker.schedule(
                     getApplication(),
@@ -667,7 +659,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val currentSettings = repository.settings.first()
             repository.setRuleSetAutoUpdateInterval(value)
 
-            // 如果自动更新已启用，重新调度任务
             if (currentSettings.ruleSetAutoUpdateEnabled && value > 0) {
                 RuleSetAutoUpdateWorker.schedule(getApplication(), value)
             }
@@ -680,11 +671,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // App 分流规则
+    // 注释已清理。
     fun addAppRule(rule: AppRule) {
         viewModelScope.launch {
             val currentRules = settings.value.appRules.toMutableList()
-            // 避免重复添加同一个应用
+
             currentRules.removeAll { it.packageName == rule.packageName }
             currentRules.add(rule)
             repository.setAppRules(currentRules)
@@ -722,7 +713,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // App 分组
+    // 注释已清理。
     fun addAppGroup(group: AppGroup) {
         viewModelScope.launch {
             val currentGroups = settings.value.appGroups.toMutableList()
@@ -762,10 +753,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // ==================== 导入导出功能 ====================
+    // 注释已清理。
 
     /**
-     * 导出数据到文件
+     * 注释已清理。
      */
     fun exportData(uri: Uri) {
         viewModelScope.launch {
@@ -782,7 +773,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 验证导入文件（用于预览）
+     * 注释已清理。
      */
     fun validateImportFile(uri: Uri) {
         viewModelScope.launch {
@@ -801,7 +792,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 确认导入数据
+     * 注释已清理。
      */
     fun confirmImport(uri: Uri, options: ImportOptions = ImportOptions()) {
         viewModelScope.launch {
@@ -830,14 +821,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 重置导出状态
+     * 注释已清理。
      */
     fun resetExportState() {
         _exportState.value = ExportState.Idle
     }
 
     /**
-     * 重置导入状态
+     * 注释已清理。
      */
     fun resetImportState() {
         _importState.value = ImportState.Idle
@@ -845,7 +836,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 }
 
 /**
- * 导出状态
+ * 注释已清理。
  */
 sealed class ExportState {
     object Idle : ExportState()
@@ -855,7 +846,7 @@ sealed class ExportState {
 }
 
 /**
- * 导入状态
+ * 注释已清理。
  */
 sealed class ImportState {
     object Idle : ImportState()

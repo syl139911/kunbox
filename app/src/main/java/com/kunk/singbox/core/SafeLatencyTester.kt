@@ -1,4 +1,4 @@
-package com.kunk.singbox.core
+﻿package com.kunk.singbox.core
 
 import android.util.Log
 import com.kunk.singbox.model.Outbound
@@ -12,12 +12,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 安全延迟测试器 - 保护主网络连接不受测试影响
+ * 注释已清理。
  *
- * 当前版本 适配:
- * - 使用 CommandClient.urlTest(groupTag) 触发整组测试
- * - 通过 CommandManager.urlTestGroup() 获取结果
- * - 不再支持单节点测试，改为整组测试
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 @Suppress("TooManyFunctions")
 class SafeLatencyTester private constructor() {
@@ -25,17 +25,15 @@ class SafeLatencyTester private constructor() {
     companion object {
         private const val TAG = "SafeLatencyTester"
 
-        // 默认 group 标签
+        // 注释已清理。
         private const val DEFAULT_GROUP_TAG = "PROXY"
 
-        // 测试超时
         private const val URL_TEST_TIMEOUT_MS = 15000L
 
-        // 熔断参数
         private const val CIRCUIT_BREAKER_THRESHOLD = 3
         private const val CIRCUIT_BREAKER_COOLDOWN_MS = 10000L
 
-        /** 当前版本 中不再使用并发测试，保留兼容 */
+        /* 注释已清理。 */
         const val DEFAULT_CONCURRENCY = 1
 
         @Volatile
@@ -48,22 +46,21 @@ class SafeLatencyTester private constructor() {
         }
     }
 
-    // 状态追踪
+    // 注释已清理。
     private val isTestingActive = AtomicBoolean(false)
     private val consecutiveFailures = AtomicInteger(0)
     private val lastCircuitBreakerTrip = AtomicLong(0)
 
-    // 主连接保护
     private var guardJob: Job? = null
 
     /**
-     * 安全的批量延迟测试
-     * 当前版本: 使用 CommandClient.urlTest(groupTag) 触发整组测试
+     * 注释已清理。
+     * 注释已清理。
      *
-     * @param outbounds 待测试的节点列表
-     * @param targetUrl 测试 URL (当前版本 中忽略，使用配置中的 URL)
-     * @param timeoutMs 超时时间
-     * @param onResult 每个节点测试完成的回调
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER", "CyclomaticComplexMethod", "CognitiveComplexMethod")
     suspend fun testOutboundsLatencySafe(
@@ -93,7 +90,6 @@ class SafeLatencyTester private constructor() {
         try {
             Log.i(TAG, "Starting URL test for ${outbounds.size} nodes via group API")
 
-            // 触发整组测试并获取结果
             val results = triggerGroupUrlTest(DEFAULT_GROUP_TAG)
 
             if (results.isEmpty()) {
@@ -103,10 +99,9 @@ class SafeLatencyTester private constructor() {
                 return
             }
 
-            // 重置失败计数
+            // 注释已清理。
             consecutiveFailures.set(0)
 
-            // 返回结果
             var successCount = 0
             outbounds.forEach { outbound ->
                 val delay = results[outbound.tag]
@@ -131,8 +126,8 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 触发 Group URL 测试
-     * 使用 CommandManager.urlTestGroup() API
+     * 注释已清理。
+     * 注释已清理。
      */
     private suspend fun triggerGroupUrlTest(groupTag: String): Map<String, Int> {
         val service = SingBoxService.instance
@@ -171,13 +166,13 @@ class SafeLatencyTester private constructor() {
             if (result.isNotEmpty()) {
                 return result
             }
-            delay(200)
+            delay(500)
         }
         return emptyMap()
     }
 
     /**
-     * 处理测试失败
+     * 注释已清理。
      */
     private fun handleTestFailure() {
         val failures = consecutiveFailures.incrementAndGet()
@@ -186,9 +181,6 @@ class SafeLatencyTester private constructor() {
         }
     }
 
-    /**
-     * 检查熔断器状态
-     */
     private fun isCircuitBreakerOpen(): Boolean {
         val lastTrip = lastCircuitBreakerTrip.get()
         if (lastTrip == 0L) return false
@@ -198,7 +190,7 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 触发熔断
+     * 注释已清理。
      */
     private fun tripCircuitBreaker() {
         lastCircuitBreakerTrip.set(System.currentTimeMillis())
@@ -206,7 +198,7 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 取消当前测试
+     * 注释已清理。
      */
     fun cancelTest() {
         guardJob?.cancel()
@@ -214,7 +206,7 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 检查是否正在测试
+     * 注释已清理。
      */
     fun isTesting(): Boolean = isTestingActive.get()
 }

@@ -112,10 +112,8 @@ fun NodesScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    // FAB显隐逻辑：上滑隐藏，下滑显示（即使列表不可滚动也生效）
     var isFabVisible by remember { mutableStateOf(true) }
 
-    // nestedScroll 处理列表可滚动时的情况
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -129,7 +127,6 @@ fun NodesScreen(
         }
     }
 
-    // pointerInput 处理列表不可滚动时的手势检测
     var lastY by remember { mutableStateOf(0f) }
 
     val nodes by viewModel.nodes.collectAsState()
@@ -213,7 +210,6 @@ fun NodesScreen(
         )
     }
 
-    // 节点筛选对话框
     if (showFilterDialog) {
         NodeFilterDialog(
             currentFilter = nodeFilter,
@@ -225,7 +221,6 @@ fun NodesScreen(
         )
     }
 
-    // 协议选择对话框（手动创建节点）
     if (showProtocolSelectDialog) {
         val protocolOptions = listOf(
             "VMess", "VLESS", "Trojan", "Shadowsocks", "Hysteria2", "Hysteria",
@@ -427,7 +422,7 @@ fun NodesScreen(
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // 筛选按钮
+                    // 缁涙盯鈧瀵滈柦?
                     IconButton(onClick = { showFilterDialog = true }) {
                         val hasFilter = nodeFilter.filterMode != FilterMode.NONE
                         Icon(
@@ -442,7 +437,6 @@ fun NodesScreen(
                 }
             }
 
-            // 2. Search Bar (在标题下方)
             NodeSearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
@@ -585,7 +579,7 @@ private fun NodeSearchBar(
             .height(40.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        // 左侧搜索图标按钮
+        // 注释已清理。
         IconButton(
             onClick = onToggle,
             modifier = Modifier.size(40.dp)
@@ -598,7 +592,6 @@ private fun NodeSearchBar(
             )
         }
 
-        // 未展开时显示统计信息
         AnimatedVisibility(
             visible = !isExpanded,
             enter = fadeIn(),
@@ -612,7 +605,7 @@ private fun NodeSearchBar(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 节点数量统计
+
                 Text(
                     text = if (filteredCount != totalCount) {
                         "$filteredCount / $totalCount ${stringResource(R.string.nodes_count_suffix)}"
@@ -623,7 +616,6 @@ private fun NodeSearchBar(
                     color = Neutral500
                 )
 
-                // 活跃节点
                 if (activeNodeName != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -651,7 +643,6 @@ private fun NodeSearchBar(
             }
         }
 
-        // 右侧胶囊搜索框(仅展开时显示,从左侧按钮右边开始)
         AnimatedVisibility(
             visible = isExpanded,
             enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),

@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.screens
+﻿package com.kunk.singbox.ui.screens
 
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
@@ -97,16 +97,12 @@ fun DashboardScreen(
     val nodesForSelector by nodesViewModel.nodes.collectAsState()
     val testingNodeIds by nodesViewModel.testingNodeIds.collectAsState()
 
-    // 优化: 使用 derivedStateOf 避免不必要的重组
-    // 原因: profiles 或 activeProfileId 变化时,只有实际名称改变才触发重组
     val activeProfileName by remember {
         derivedStateOf {
             profiles.find { it.id == activeProfileId }?.name
         }
     }
 
-    // 优化: 缓存活跃节点名称计算
-    // 重要：必须依赖 activeNodeId 的变化，否则节点选择后不会更新显示
     val activeNodeName by remember(activeNodeId) {
         derivedStateOf {
             viewModel.getActiveNodeName()
@@ -126,28 +122,25 @@ fun DashboardScreen(
     val actionStatus by viewModel.actionStatus.collectAsState()
     val vpnPermissionNeeded by viewModel.vpnPermissionNeeded.collectAsState()
 
-    // VPN 权限请求处理
     val vpnPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         viewModel.onVpnPermissionResult(result.resultCode == Activity.RESULT_OK)
     }
 
-    // 当需要 VPN 权限时启动请求
+    // 注释已清理。
     LaunchedEffect(vpnPermissionNeeded) {
         if (vpnPermissionNeeded) {
             val prepareIntent = VpnService.prepare(context)
             if (prepareIntent != null) {
                 vpnPermissionLauncher.launch(prepareIntent)
             } else {
-                // 已有权限
+                // 鐎圭寮跺﹢渚€寮堕崘顔筋€?
                 viewModel.onVpnPermissionResult(true)
             }
         }
     }
 
-    // 已移除连接状态的 Toast 提示，避免干扰用户
-    // 用户可以通过 UI 上的连接状态指示器（表情、文字）来了解当前状态
     LaunchedEffect(connectionState) {
         lastConnectionState = connectionState
     }
@@ -337,7 +330,7 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = statusBarPadding.calculateTopPadding()) // 为状态栏添加顶部内边距
+                .padding(top = statusBarPadding.calculateTopPadding())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
@@ -426,7 +419,7 @@ fun DashboardScreen(
                 }
             }
 
-            // 2. Main Toggle - 居中显示
+            // 注释已清理。
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.weight(1f)
@@ -446,11 +439,11 @@ fun DashboardScreen(
             ) {
                 // Always show InfoCard but with placeholder data when not connected
                 val isConnected = connectionState == ConnectionState.Connected
-                // 首页延迟直接使用节点列表同源数据，避免双状态不一致
+
                 val displayPing = activeNodeLatency
-                // 使用明确的 isPingTesting 状态来控制加载动画
+
                 val isPingLoading = isConnected && isPingTesting
-                // 格式化延迟显示：超时显示"超时"，未测试显示"-"
+
                 val timeoutMsg = stringResource(R.string.common_timeout)
                 val unavailableMsg = stringResource(R.string.common_unavailable)
                 val ipv6OnlyMsg = stringResource(R.string.common_ipv6_only)

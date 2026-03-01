@@ -257,8 +257,8 @@ cd Kkunbox\singbox-core
 # 1. Fetch latest upstream tags
 git fetch upstream --tags
 
-# 2. Rebase onto the new version tag (e.g. v1.12.22)
-git rebase v1.12.22
+# 2. Rebase onto the new version tag (e.g. v1.13.0)
+git rebase v1.13.0
 
 # 3. Go back to project root and rebuild the kernel
 cd ..\..

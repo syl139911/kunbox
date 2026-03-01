@@ -1,19 +1,17 @@
-package com.kunk.singbox.repository.store
+﻿package com.kunk.singbox.repository.store
 
 import com.kunk.singbox.model.*
 
 /**
- * SettingsStore 扩展方法 - 提供类型安全的设置更新
+ * 注释已清理。
  *
- * 使用示例：
+ * 注释已清理。
  * ```
  * settingsStore.setAutoConnect(true)
  * settingsStore.setTunStack(TunStack.MIXED)
  * settingsStore.setRuleSets(newRuleSets)
  * ```
  */
-
-// ==================== 通用设置 ====================
 
 fun SettingsStore.setAutoConnect(value: Boolean) {
     updateSettings { it.copy(autoConnect = value) }
@@ -35,7 +33,7 @@ fun SettingsStore.setShowNotificationSpeed(value: Boolean) {
     updateSettings { it.copy(showNotificationSpeed = value) }
 }
 
-// ==================== TUN/VPN 设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setTunEnabled(value: Boolean) {
     updateSettings { it.copy(tunEnabled = value) }
@@ -89,7 +87,7 @@ fun SettingsStore.setVpnBlocklist(value: String) {
     updateSettings { it.copy(vpnBlocklist = value) }
 }
 
-// ==================== 代理端口设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setProxyPort(value: Int) {
     updateSettings { it.copy(proxyPort = value) }
@@ -103,7 +101,7 @@ fun SettingsStore.setAppendHttpProxy(value: Boolean) {
     updateSettings { it.copy(appendHttpProxy = value) }
 }
 
-// ==================== DNS 设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setLocalDns(value: String) {
     updateSettings { it.copy(localDns = value) }
@@ -141,7 +139,7 @@ fun SettingsStore.setDnsCacheEnabled(value: Boolean) {
     updateSettings { it.copy(dnsCacheEnabled = value) }
 }
 
-// ==================== 路由设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setRoutingMode(value: RoutingMode) {
     updateSettings { it.copy(routingMode = value) }
@@ -163,13 +161,13 @@ fun SettingsStore.setDebugLoggingEnabled(value: Boolean) {
     updateSettings { it.copy(debugLoggingEnabled = value) }
 }
 
-// ==================== 连接重置设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setWakeResetConnections(value: Boolean) {
     updateSettings { it.copy(wakeResetConnections = value) }
 }
 
-// ==================== 延迟测试设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setLatencyTestMethod(value: LatencyTestMethod) {
     updateSettings { it.copy(latencyTestMethod = value) }
@@ -187,13 +185,11 @@ fun SettingsStore.setLatencyTestConcurrency(value: Int) {
     updateSettings { it.copy(latencyTestConcurrency = value) }
 }
 
-// ==================== 镜像设置 ====================
-
 fun SettingsStore.setGhProxyMirror(value: GhProxyMirror) {
     updateSettings { it.copy(ghProxyMirror = value) }
 }
 
-// ==================== 高级路由 ====================
+// ==================== 濡ゅ倹顭囨鍥╂崉椤栨粍鏆?====================
 
 fun SettingsStore.setCustomRules(value: List<CustomRule>) {
     updateSettings { it.copy(customRules = value) }
@@ -211,7 +207,7 @@ fun SettingsStore.setAppGroups(value: List<AppGroup>) {
     updateSettings { it.copy(appGroups = value) }
 }
 
-// ==================== 规则集自动更新 ====================
+// 注释已清理。
 
 fun SettingsStore.setRuleSetAutoUpdateEnabled(value: Boolean) {
     updateSettings { it.copy(ruleSetAutoUpdateEnabled = value) }
@@ -221,13 +217,13 @@ fun SettingsStore.setRuleSetAutoUpdateInterval(value: Int) {
     updateSettings { it.copy(ruleSetAutoUpdateInterval = value) }
 }
 
-// ==================== 订阅更新超时 ====================
+// 注释已清理。
 
 fun SettingsStore.setSubscriptionUpdateTimeout(value: Int) {
     updateSettings { it.copy(subscriptionUpdateTimeout = value) }
 }
 
-// ==================== 节点列表设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setNodeFilter(value: NodeFilter) {
     updateSettings { it.copy(nodeFilter = value) }
@@ -241,7 +237,7 @@ fun SettingsStore.setCustomNodeOrder(value: List<String>) {
     updateSettings { it.copy(customNodeOrder = value) }
 }
 
-// ==================== 版本更新设置 ====================
+// 注释已清理。
 
 fun SettingsStore.setAutoCheckUpdate(value: Boolean) {
     updateSettings { it.copy(autoCheckUpdate = value) }

@@ -1,4 +1,4 @@
-package com.kunk.singbox.database
+﻿package com.kunk.singbox.database
 
 import android.content.Context
 import androidx.room.Database
@@ -19,15 +19,15 @@ import com.kunk.singbox.database.entity.ProfileEntity
 import com.kunk.singbox.database.entity.SettingsEntity
 
 /**
- * 应用数据库
+ * 注释已清理。
  *
- * 使用 Room 存储 Profile、Node 和 Settings 数据
+ * 注释已清理。
  *
- * 优势：
- * - 支持高效的查询和过滤
- * - 支持 Flow 实时观察数据变化
- * - 支持索引加速查询
- * - 内置事务支持
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 @Database(
     entities = [
@@ -67,17 +67,17 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 DATABASE_NAME
             )
-                .allowMainThreadQueries() // 设置加载需要同步读取
+                .allowMainThreadQueries()
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
         }
 
         /**
-         * 数据库迁移: v1 -> v2 (添加 settings 表)
+         * 注释已清理。
          */
         private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("""
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS settings (
                         id INTEGER NOT NULL PRIMARY KEY,
                         version INTEGER NOT NULL,
@@ -89,40 +89,40 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * 数据库迁移: v2 -> v3 (移除 node_latencies 外键约束)
-         * 由于 SQLite 不支持直接删除外键，需要重建表
+         * 注释已清理。
+         * 注释已清理。
          */
         private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("""
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS node_latencies_new (
                         nodeId TEXT NOT NULL PRIMARY KEY,
                         latencyMs INTEGER NOT NULL,
                         testedAt INTEGER NOT NULL
                     )
                 """.trimIndent())
-                database.execSQL("""
+                db.execSQL("""
                     INSERT OR IGNORE INTO node_latencies_new (nodeId, latencyMs, testedAt)
                     SELECT nodeId, latencyMs, testedAt FROM node_latencies
                 """.trimIndent())
-                database.execSQL("DROP TABLE IF EXISTS node_latencies")
-                database.execSQL("ALTER TABLE node_latencies_new RENAME TO node_latencies")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_node_latencies_nodeId ON node_latencies(nodeId)")
+                db.execSQL("DROP TABLE IF EXISTS node_latencies")
+                db.execSQL("ALTER TABLE node_latencies_new RENAME TO node_latencies")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_node_latencies_nodeId ON node_latencies(nodeId)")
             }
         }
 
         /**
-         * 数据库迁移: v3 -> v4 (添加 DNS 预解析字段)
+         * 注释已清理。
          */
         private val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE profiles ADD COLUMN dnsPreResolve INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE profiles ADD COLUMN dnsServer TEXT DEFAULT NULL")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN dnsPreResolve INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE profiles ADD COLUMN dnsServer TEXT DEFAULT NULL")
             }
         }
 
         /**
-         * 仅用于测试
+         * 注释已清理。
          */
         fun getInMemoryDatabase(context: Context): AppDatabase {
             return Room.inMemoryDatabaseBuilder(

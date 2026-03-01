@@ -1,4 +1,4 @@
-package com.kunk.singbox.model
+﻿package com.kunk.singbox.model
 
 import android.content.Context
 import androidx.annotation.Keep
@@ -12,7 +12,7 @@ import com.kunk.singbox.R
 data class ProfileUi(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
-    @SerializedName("type") val type: ProfileType,
+    @SerializedName("type") val type: ProfileType = ProfileType.Subscription, // Profile type
     @SerializedName("url") val url: String?,
     @SerializedName("lastUpdated") val lastUpdated: Long,
     @SerializedName("enabled") val enabled: Boolean,
@@ -21,7 +21,7 @@ data class ProfileUi(
     @SerializedName("expireDate") val expireDate: Long = 0,
     @SerializedName("totalTraffic") val totalTraffic: Long = 0,
     @SerializedName("usedTraffic") val usedTraffic: Long = 0,
-    // DNS 预解析设置
+
     @SerializedName("dnsPreResolve") val dnsPreResolve: Boolean = false,
     @SerializedName("dnsServer") val dnsServer: String? = null
 )
@@ -42,15 +42,15 @@ enum class UpdateStatus {
 }
 
 /**
- * 订阅更新结果
+ * 注释已清理。
  */
 sealed class SubscriptionUpdateResult {
     /**
-     * 更新成功，有变化
-     * @param profileName 配置名称
-     * @param addedCount 新增节点数
-     * @param removedCount 移除节点数
-     * @param totalCount 总节点数
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     data class SuccessWithChanges(
         val profileName: String,
@@ -60,9 +60,9 @@ sealed class SubscriptionUpdateResult {
     ) : SubscriptionUpdateResult()
 
     /**
-     * 更新成功，无变化
-     * @param profileName 配置名称
-     * @param totalCount 总节点数
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     data class SuccessNoChanges(
         val profileName: String,
@@ -70,9 +70,9 @@ sealed class SubscriptionUpdateResult {
     ) : SubscriptionUpdateResult()
 
     /**
-     * 更新失败
-     * @param profileName 配置名称
-     * @param error 错误信息
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     data class Failed(
         val profileName: String,
@@ -81,7 +81,7 @@ sealed class SubscriptionUpdateResult {
 }
 
 /**
- * 批量更新订阅的汇总结果
+ * 注释已清理。
  */
 data class BatchUpdateResult(
     val successWithChanges: Int = 0,
@@ -122,13 +122,13 @@ data class NodeUi(
         get() = name
 
     /**
-     * 获取协议的显示名称
-     * 将内部协议类型转换为用户友好的显示名称
+     * 注释已清理。
+     * 注释已清理。
      */
     val protocolDisplay: String
         get() = when (protocol.lowercase()) {
-            "http" -> "HTTPS" // HTTP 类型配置了 TLS 就是 HTTPS
-            "socks" -> "SOCKS5" // SOCKS 协议的现代版本
+            "http" -> "HTTPS" // HTTP ·侇偉顕ч悗鐑芥煀瀹ュ洨鏋傚ù?TLS ·忓繗椴稿Σ?HTTPS
+            "socks" -> "SOCKS5"
             "shadowsocks" -> "SS"
             "vmess" -> "VMess"
             "vless" -> "VLESS"
@@ -189,20 +189,20 @@ data class SavedProfilesData(
 )
 
 /**
- * VMess 链接配置格式
+ * 注释已清理。
  */
 @Keep
 data class VMessLinkConfig(
     @SerializedName("v") val v: String? = null,
-    @SerializedName("ps") val ps: String? = null, // 名称
-    @SerializedName("add") val add: String? = null, // 服务器地址
+    @SerializedName("ps") val ps: String? = null, // 备注
+    @SerializedName("add") val add: String? = null,
     @SerializedName("port") val port: String? = null, // 端口
     @SerializedName("id") val id: String? = null, // UUID
     @SerializedName("aid") val aid: String? = null, // alterId
     @SerializedName("scy") val scy: String? = null, // 加密方式
-    @SerializedName("net") val net: String? = null, // 传输协议
-    @SerializedName("type") val type: String? = null, // 伪装类型
-    @SerializedName("host") val host: String? = null, // 伪装域名
+    @SerializedName("net") val net: String? = null, // 传输网络
+    @SerializedName("type") val type: String? = null, // 传输类型
+    @SerializedName("host") val host: String? = null, // 主机
     @SerializedName("path") val path: String? = null, // 路径
     @SerializedName("tls") val tls: String? = null, // TLS
     @SerializedName("sni") val sni: String? = null, // SNI

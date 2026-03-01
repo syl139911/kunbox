@@ -113,9 +113,9 @@ fun TrafficStatsScreen(
 
     if (showClearDialog) {
         ConfirmDialog(
-            title = "清除流量统计",
-            message = "确定要清除所有流量统计数据吗？此操作不可撤销。",
-            confirmText = "清除",
+            title = "Clear Traffic Statistics",
+            message = "Are you sure you want to clear all traffic statistics? This action cannot be undone.",
+            confirmText = "Clear",
             onConfirm = {
                 viewModel.clearAllStats()
                 showClearDialog = false
@@ -129,12 +129,12 @@ fun TrafficStatsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("流量统计", color = MaterialTheme.colorScheme.onBackground) },
+                title = { Text("Traffic Statistics", color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.Rounded.ArrowBack,
-                            contentDescription = "返回",
+                            contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -161,7 +161,7 @@ fun TrafficStatsScreen(
                     ) {
                         Icon(
                             Icons.Rounded.Refresh,
-                            contentDescription = "刷新",
+                            contentDescription = "Refresh",
                             tint = if (uiState.isLoading) {
                                 MaterialTheme.colorScheme.primary
                             } else {
@@ -177,7 +177,7 @@ fun TrafficStatsScreen(
                     IconButton(onClick = { showClearDialog = true }) {
                         Icon(
                             Icons.Rounded.Delete,
-                            contentDescription = "清除统计",
+                            contentDescription = "Clear statistics",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -249,10 +249,10 @@ private fun PeriodSelector(
     ) {
         TrafficPeriod.entries.forEach { period ->
             val label = when (period) {
-                TrafficPeriod.TODAY -> "今日"
-                TrafficPeriod.THIS_WEEK -> "本周"
-                TrafficPeriod.THIS_MONTH -> "本月"
-                TrafficPeriod.ALL_TIME -> "全部"
+                TrafficPeriod.TODAY -> "Today"
+                TrafficPeriod.THIS_WEEK -> "This Week"
+                TrafficPeriod.THIS_MONTH -> "This Month"
+                TrafficPeriod.ALL_TIME -> "All"
             }
             FilterChip(
                 selected = selectedPeriod == period,
@@ -275,7 +275,7 @@ private fun TotalTrafficCard(
     StandardCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "总流量",
+                text = "Total Traffic",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -289,13 +289,13 @@ private fun TotalTrafficCard(
             ) {
                 TrafficStatItem(
                     icon = Icons.Rounded.ArrowUpward,
-                    label = "上传",
+                    label = "Upload",
                     value = formatBytes(totalUpload),
                     color = Color(0xFF22C55E)
                 )
                 TrafficStatItem(
                     icon = Icons.Rounded.ArrowDownward,
-                    label = "下载",
+                    label = "Download",
                     value = formatBytes(totalDownload),
                     color = Color(0xFF3B82F6)
                 )
@@ -308,7 +308,7 @@ private fun TotalTrafficCard(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "总计: ${formatBytes(totalUpload + totalDownload)}",
+                    text = "Total: ${formatBytes(totalUpload + totalDownload)}",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -363,7 +363,7 @@ private fun TrafficDistributionCard(
     StandardCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "流量分布",
+                text = "Traffic Distribution",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -487,7 +487,7 @@ private fun NodeRankingCard(
     StandardCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "节点排行",
+                text = "Top Nodes by Traffic",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -569,13 +569,13 @@ private fun NodeRankingItem(
                 )
                 Row {
                     Text(
-                        text = "↑${formatBytes(stats.upload)}",
+                        text = "U: ${formatBytes(stats.upload)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF22C55E)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "↓${formatBytes(stats.download)}",
+                        text = "D: ${formatBytes(stats.download)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF3B82F6)
                     )
@@ -614,13 +614,13 @@ private fun EmptyStateCard() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "暂无流量数据",
+                text = "No traffic data",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "连接 VPN 后开始记录流量统计",
+                text = "Connect and use VPN, then come back to view statistics.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )

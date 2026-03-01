@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.components
+﻿package com.kunk.singbox.ui.components
 
 import com.kunk.singbox.R
 import androidx.compose.foundation.layout.*
@@ -25,7 +25,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * 导出进度对话框
+ * 注释已清理。
  */
 @Composable
 fun ExportProgressDialog(
@@ -122,7 +122,7 @@ fun ExportProgressDialog(
 }
 
 /**
- * 导入预览对话框
+ * 注释已清理。
  */
 @Composable
 fun ImportPreviewDialog(
@@ -156,7 +156,7 @@ fun ImportPreviewDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 数据摘要
+                // 注释已清理。
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -188,7 +188,7 @@ fun ImportPreviewDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 警告信息
+                // 注释已清理。
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -218,7 +218,7 @@ fun ImportPreviewDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 按钮
+                // 注释已清理。
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -258,14 +258,14 @@ private fun SummaryRow(label: String, value: String) {
 }
 
 /**
- * 导入进度/结果对话框
+ * 注释已清理。
  */
 @Composable
 fun ImportProgressDialog(
     state: ImportState,
     onDismiss: () -> Unit
 ) {
-    // 只处理正在导入、成功、部分成功、错误状态
+
     val shouldShow = when (state) {
         is ImportState.Importing,
         is ImportState.Success,
@@ -386,14 +386,14 @@ fun ImportProgressDialog(
                                 ) {
                                     state.errors.take(3).forEach { error ->
                                         Text(
-                                            text = "• $error",
+                                            text = "- $error",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.error
                                         )
                                     }
                                     if (state.errors.size > 3) {
                                         Text(
-                                            text = "... 还有 ${state.errors.size - 3} 个错误",
+                                            text = "... and ${state.errors.size - 3} more errors",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.error
                                         )
@@ -439,7 +439,7 @@ fun ImportProgressDialog(
 }
 
 /**
- * 验证中对话框
+ * 注释已清理。
  */
 @Composable
 fun ValidatingDialog() {

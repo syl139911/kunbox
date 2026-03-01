@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.theme
+﻿package com.kunk.singbox.ui.theme
 
 import android.app.Activity
 import android.graphics.Color
@@ -64,16 +64,16 @@ fun SingBoxTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // 设置透明状态栏和导航栏，让内容延伸到系统栏下方
+
             window.statusBarColor = Color.TRANSPARENT
             window.navigationBarColor = Color.TRANSPARENT
-            // 禁用导航栏对比度强制（防止系统添加黑色遮罩）
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.isNavigationBarContrastEnforced = false
             }
-            // 确保边到边显示正确配置
+            // 启用沉浸式布局，内容延伸到系统栏区域。
             WindowCompat.setDecorFitsSystemWindows(window, false)
-            // 亮色模式下使用深色图标
+
             val insetsController = WindowCompat.getInsetsController(window, view)
             insetsController.isAppearanceLightStatusBars = !useDarkTheme
             insetsController.isAppearanceLightNavigationBars = !useDarkTheme

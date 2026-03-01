@@ -498,7 +498,7 @@
     <string name="notification_switch_node">Switch Node</string>
     <string name="notification_reset_connections">Reset</string>
     <string name="notification_disconnect">Disconnect</string>
-    <string name="notification_speed_format">↑ %s  ↓ %s</string>
+    <string name="notification_speed_format">↑ %1$s  ↓ %2$s</string>
 
     <!-- Connection Settings -->
     <string name="connection_settings_show_notification_speed">Show Speed in Notification</string>

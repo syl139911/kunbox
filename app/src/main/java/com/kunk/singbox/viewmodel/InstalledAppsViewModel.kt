@@ -9,21 +9,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * 已安装应用的 ViewModel
- * 负责管理应用列表的加载状态
+ * 宸插畨瑁呭簲鐢ㄧ殑 ViewModel
+ * [乱码注释已清理]
  */
 class InstalledAppsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = InstalledAppsRepository.getInstance(application)
 
-    /** 已安装应用列表 */
+    /** 宸插畨瑁呭簲鐢ㄥ垪琛?*/
     val installedApps: StateFlow<List<InstalledApp>> = repository.installedApps
 
-    /** 加载状态 */
+    /** 鍔犺浇鐘舵€?*/
     val loadingState: StateFlow<InstalledAppsRepository.LoadingState> = repository.loadingState
 
     /**
-     * 加载应用列表（如果需要）
+     * [乱码注释已清理]
      */
     fun loadAppsIfNeeded() {
         if (repository.needsLoading()) {
@@ -34,7 +34,7 @@ class InstalledAppsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
-     * 强制重新加载应用列表
+     * 寮哄埗閲嶆柊鍔犺浇搴旂敤鍒楄〃
      */
     fun reloadApps() {
         viewModelScope.launch {
@@ -42,8 +42,5 @@ class InstalledAppsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    /**
-     * 检查是否已加载完成
-     */
     fun isLoaded(): Boolean = repository.isLoaded()
 }

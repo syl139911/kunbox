@@ -4,12 +4,12 @@ import android.util.Log
 import com.tencent.mmkv.MMKV
 
 /**
- * VPN 状态存储 - 使用 MMKV 实现跨进程安全访问
+ * [乱码注释已清理]
  *
- * MMKV 优势:
- * - 跨进程安全 (MULTI_PROCESS_MODE)
- * - 原子写入，无竞态条件
- * - 性能比 SharedPreferences 快 100x
+ * MMKV 浼樺娍:
+ * 注释已清理。
+ * [乱码注释已清理]
+ * - 鎬ц兘姣?SharedPreferences 蹇?100x
  */
 @Suppress("TooManyFunctions")
 object VpnStateStore {
@@ -29,6 +29,7 @@ object VpnStateStore {
     // Sender-side throttle for ACTION_PREPARE_RESTART to reduce repeated network oscillations.
     private const val KEY_LAST_PREPARE_RESTART_AT_MS = "last_prepare_restart_at_ms"
     private const val KEY_TRAFFIC_CLEAR_TIMESTAMP = "traffic_clear_timestamp"
+    private const val KEY_LAST_MANUAL_STOP_AT_MS = "last_manual_stop_at_ms"
 
     enum class CoreMode {
         NONE,
@@ -68,7 +69,12 @@ object VpnStateStore {
 
     fun setManuallyStopped(value: Boolean) {
         mmkv.encode(KEY_VPN_MANUALLY_STOPPED, value)
+        if (value) {
+            mmkv.encode(KEY_LAST_MANUAL_STOP_AT_MS, System.currentTimeMillis())
+        }
     }
+
+    fun getLastManualStopAtMs(): Long = mmkv.decodeLong(KEY_LAST_MANUAL_STOP_AT_MS, 0L)
 
     fun getMode(): CoreMode {
         val raw = mmkv.decodeString(KEY_CORE_MODE, CoreMode.NONE.name) ?: CoreMode.NONE.name
@@ -188,7 +194,7 @@ object VpnStateStore {
     }
 
     /**
-     * 清除所有状态 (用于重置)
+     * [乱码注释已清理]
      */
     fun clear() {
         mmkv.clearAll()

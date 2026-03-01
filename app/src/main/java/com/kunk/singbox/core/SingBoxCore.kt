@@ -1,4 +1,4 @@
-package com.kunk.singbox.core
+﻿package com.kunk.singbox.core
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -36,10 +36,10 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Sing-box 核心封装类
- * 负责与 libbox 交互，提供延迟测试等功能
+ * 注释已清理。
+ * 注释已清理。
  *
- * 如果 libbox 不可用，将使用降级方案进行测试
+ * 注释已清理。
  */
 class SingBoxCore private constructor(private val context: Context) {
 
@@ -47,23 +47,20 @@ class SingBoxCore private constructor(private val context: Context) {
     private val workDir: File = File(context.filesDir, "singbox_work")
     private val tempDir: File = File(context.cacheDir, "singbox_temp")
 
-    // libbox 是否可用
     private var libboxAvailable = false
 
     // Global lock for libbox operations to prevent native concurrency issues
-    // 注意: 这个 mutex 只用于需要独占资源的操作(如 HTTP proxy fallback)
+
     @Suppress("UnusedPrivateProperty")
     private val libboxMutex = kotlinx.coroutines.sync.Mutex()
 
-    // 优化: 使用 Semaphore 限制 HTTP 代理并发数,允许一定程度的并发
-    // 批量测试时,不再完全串行化,性能提升 2-3倍
-    private val httpProxySemaphore = Semaphore(3) // 最多3个并发HTTP代理测试
+    private val httpProxySemaphore = Semaphore(3)
 
     companion object {
         private const val TAG = "SingBoxCore"
 
         private val libboxSetupDone = AtomicBoolean(false)
-        // 最近一次原生测速预热时间（避免每次都预热）
+
         @Volatile
         private var lastNativeWarmupAt: Long = 0
 
@@ -102,11 +99,10 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     init {
-        // 确保工作目录存在
+        // 注释已清理。
         workDir.mkdirs()
         tempDir.mkdirs()
 
-        // 尝试初始化 libbox
         libboxAvailable = initLibbox()
 
         if (!libboxAvailable) {
@@ -131,13 +127,13 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 检查 libbox 是否可用
+     * 注释已清理。
      */
     fun isLibboxAvailable(): Boolean = libboxAvailable
 
     /**
-     * 使用 Libbox 原生方法进行延迟测试
-     * 优先尝试调用内核的 urlTest 方法，失败则回退到本地 HTTP 代理测速
+     * 注释已清理。
+     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     private suspend fun testOutboundLatencyWithLibbox(
@@ -151,7 +147,7 @@ class SingBoxCore private constructor(private val context: Context) {
         val url = adjustUrlForMode(finalSettings.latencyTestUrl, finalSettings.latencyTestMethod)
         val timeoutMs = finalSettings.latencyTestTimeout
 
-        // 尝试使用原生 urlTest
+        // 注释已清理。
         // Remove mutex to allow concurrent testing
         val nativeRtt = testWithLibboxStaticUrlTest(outbound, url, timeoutMs, finalSettings.latencyTestMethod)
 
@@ -159,15 +155,14 @@ class SingBoxCore private constructor(private val context: Context) {
             return@withContext nativeRtt
         }
 
-        // 2025-fix: VPN 运行时不回退到 testWithLocalHttpProxy
-        // 因为 testWithLocalHttpProxy 会创建临时 CommandServer，与主 VPN 服务的 CommandServer 冲突
-        // 导致 "command.sock: bind: address already in use" 错误
+        // 注释已清理。
+
+        // 注释已清理。
         if (VpnStateStore.getActive()) {
             Log.d(TAG, "VPN is running, skipping local HTTP proxy fallback to avoid command.sock conflict")
             return@withContext -1L
         }
 
-        // 回退方案：本地 HTTP 代理测速（仅在 VPN 未运行时）
         return@withContext try {
             val fallbackUrl = try {
                 if (finalSettings.latencyTestMethod == com.kunk.singbox.model.LatencyTestMethod.TCP) {
@@ -187,11 +182,11 @@ class SingBoxCore private constructor(private val context: Context) {
     // private var discoveredMethodType: Int = 0 // 0: long, 1: URLTest object
 
     /**
-     * 解析 outbound 的依赖 outbounds
-     * 例如 SS + ShadowTLS 节点，SS 的 detour 字段指向 shadowtls outbound
-     * @param outbound 主节点
-     * @param allOutbounds 完整的 outbound 列表（包含所有潜在依赖）
-     * @return 依赖的 outbound 列表（不包含主节点本身）
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun resolveDependencyOutbounds(
         outbound: Outbound,
@@ -208,7 +203,7 @@ class SingBoxCore private constructor(private val context: Context) {
             val detourOutbound = allOutbounds.find { it.tag == detourTag }
             if (detourOutbound != null) {
                 dependencies.add(detourOutbound)
-                // 递归解析依赖的依赖
+
                 resolve(detourOutbound)
             }
         }
@@ -245,9 +240,7 @@ class SingBoxCore private constructor(private val context: Context) {
         timeoutMs: Int,
         dependencyOutbounds: List<Outbound> = emptyList()
     ): Long = withContext(Dispatchers.IO) {
-        // 优化: 使用 Semaphore 替代 Mutex,允许有限并发
-        // 原因: 虽然每个测试都启动临时 service,但通过限制并发数(3个)
-        //       可以在保证稳定性的同时,显著提升批量测试性能
+
         httpProxySemaphore.withPermit {
             testWithLocalHttpProxyInternal(outbound, targetUrl, fallbackUrl, timeoutMs, dependencyOutbounds)
         }
@@ -260,7 +253,6 @@ class SingBoxCore private constructor(private val context: Context) {
         timeoutMs: Int,
         dependencyOutbounds: List<Outbound> = emptyList()
     ): Long {
-        // 当前版本: urlTestOutbound API 已移除，直接使用本地 HTTP 代理测速
 
         val port = allocateLocalPort()
         val inbound = com.kunk.singbox.model.Inbound(
@@ -270,8 +262,6 @@ class SingBoxCore private constructor(private val context: Context) {
             listenPort = port
         )
 
-        // 关键修复: 在 VPN 未运行时,将进程绑定到默认网络
-        // 这样 sing-box 创建的所有 socket 都会使用物理网络,而不是尝试 auto-detect
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val vpnRunning = com.kunk.singbox.service.SingBoxService.instance != null || VpnStateStore.getActive()
         var previousNetwork: Network? = null
@@ -294,18 +284,15 @@ class SingBoxCore private constructor(private val context: Context) {
         return try {
             val direct = com.kunk.singbox.model.Outbound(type = "direct", tag = "direct")
 
-            // 构建 outbound 列表，包含主节点和依赖的辅助节点（如 shadowtls）
             val allOutbounds = mutableListOf(outbound)
             allOutbounds.addAll(dependencyOutbounds)
             allOutbounds.add(direct)
 
-            // 为测试服务生成唯一的临时数据库路径,避免与 VPN 服务的数据库冲突
-            // 使用 UUID 确保绝对唯一性,防止高并发时时间戳重复导致路径冲突
             val testDbPath = File(tempDir, "test_${UUID.randomUUID()}.db").absolutePath
 
             val config = SingBoxConfig(
-                log = com.kunk.singbox.model.LogConfig(level = "debug", timestamp = true), // 使用 debug 级别诊断问题
-                // 测速服务 DNS：A/AAAA 分流，确保 IPv6-only 节点在离线测速也可解析
+                log = com.kunk.singbox.model.LogConfig(level = "debug", timestamp = true),
+
                 dns = com.kunk.singbox.model.DnsConfig(
                     servers = listOf(
                         com.kunk.singbox.model.DnsServer(
@@ -342,17 +329,14 @@ class SingBoxCore private constructor(private val context: Context) {
                         com.kunk.singbox.model.RouteRule(inbound = listOf("test-in"), outbound = outbound.tag)
                     ),
                     finalOutbound = "direct",
-                    // 关键修复: 不设置 defaultInterface，因为测速服务没有权限绑定到特定接口
-                    // 只启用 autoDetectInterface，通过 autoDetectInterfaceControl 回调来保护 socket
+
                     autoDetectInterface = true
                 ),
-                // 完全禁用测试服务的缓存,避免数据库冲突
-                // 关键: 必须指定唯一的临时路径,防止与 VPN 服务的 cache.db 冲突
-                // bbolt 不支持多进程并发访问同一数据库文件,会触发 "page already freed" panic
+
                 experimental = com.kunk.singbox.model.ExperimentalConfig(
                     cacheFile = com.kunk.singbox.model.CacheFileConfig(
-                        enabled = false, // 禁用缓存
-                        path = testDbPath, // 使用唯一的临时路径
+                        enabled = false,
+                        path = testDbPath,
                         storeFakeip = false
                     )
                 )
@@ -360,19 +344,18 @@ class SingBoxCore private constructor(private val context: Context) {
 
             val configJson = gson.toJson(config)
             var commandServer: io.nekohasekai.libbox.CommandServer? = null
-            var boxService: io.nekohasekai.libbox.BoxService? = null
             try {
                 ensureLibboxSetup(context)
                 val platformInterface = TestPlatformInterface(context)
                 val serverHandler = TestCommandServerHandler()
-                // 当前版本: newCommandServer(handler, maxLines) 签名
-                commandServer = Libbox.newCommandServer(serverHandler, 100)
+                // 注释已清理。
+                commandServer = Libbox.newCommandServer(serverHandler, platformInterface)
                 commandServer.start()
 
-                // 当前版本: 使用 BoxService 模式
-                boxService = Libbox.newService(configJson, platformInterface)
-                boxService.start()
-                commandServer.setService(boxService)
+                val overrideOptions = OverrideOptions().apply {
+                    autoRedirect = false
+                }
+                commandServer.startOrReloadService(configJson, overrideOptions)
 
                 val deadline = System.currentTimeMillis() + 500L
                 while (System.currentTimeMillis() < deadline) {
@@ -401,22 +384,21 @@ class SingBoxCore private constructor(private val context: Context) {
                 }
             } finally {
                 try {
-                    // 当前版本: 先关闭 BoxService，再关闭 CommandServer
-                    boxService?.close()
+                    runCatching { commandServer?.closeService() }
                     commandServer?.close()
                 } catch (e: Exception) { Log.w(TAG, "Failed to close command server", e) }
-                // 清理临时数据库文件,防止泄漏
+
                 try {
                     File(testDbPath).delete()
-                    File("$testDbPath-shm").delete() // SQLite WAL 模式的共享内存文件
-                    File("$testDbPath-wal").delete() // SQLite WAL 日志文件
+                    File("$testDbPath-shm").delete()
+                    File("$testDbPath-wal").delete() // SQLite WAL ·哄啨鍎辩换鏃堝棘閸ワ附顐?
                 } catch (e: Exception) { Log.w(TAG, "Failed to delete temp db files", e) }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Local HTTP proxy setup failed", e)
             -1L
         } finally {
-            // 恢复进程网络绑定状态
+
             if (!vpnRunning) {
                 try {
                     connectivityManager.bindProcessToNetwork(previousNetwork)
@@ -427,15 +409,15 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 尝试使用 libbox 原生 urlTest 方法进行延迟测试
+     * 注释已清理。
      *
-     * 扩展内核 (v1.1.0+) 包含 URLTestOutbound 和 URLTestStandalone 方法:
-     * - URLTestOutbound: VPN 运行时，使用当前 BoxService 实例测试
-     * - URLTestStandalone: VPN 未运行时，创建临时实例测试
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      *
-     * 当前版本: urlTestOutbound API 已移除，始终返回 -1 触发回退
+     * 注释已清理。
      *
-     * @return 延迟时间(毫秒), -1 表示不支持或测试失败
+     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER")
     private suspend fun testWithLibboxStaticUrlTest(
@@ -444,8 +426,8 @@ class SingBoxCore private constructor(private val context: Context) {
         timeoutMs: Int,
         method: LatencyTestMethod
     ): Long = withContext(Dispatchers.IO) {
-        // 当前版本: urlTestOutbound API 已移除，始终返回 -1 触发回退到本地测试
-        Log.d(TAG, "Native URLTest not available in 当前版本, returning -1")
+
+        Log.d(TAG, "Native URLTest not available in current core, returning -1")
         return@withContext -1L
     }
 
@@ -457,16 +439,15 @@ class SingBoxCore private constructor(private val context: Context) {
         method: LatencyTestMethod,
         dependencyOutbounds: List<Outbound> = emptyList()
     ): Long = withContext(Dispatchers.IO) {
-        // 尝试调用 native 方法 (如果 VPN 正在运行)
+
         if (VpnStateStore.getActive() && libboxAvailable) {
             val rtt = testWithLibboxStaticUrlTest(outbound, targetUrl, timeoutMs, method)
             if (rtt >= 0) return@withContext rtt
-            // 2025-fix: VPN 运行时不回退到临时服务测速，避免 command.sock 冲突
+
             Log.d(TAG, "VPN is running, skipping temporary service fallback to avoid command.sock conflict")
             return@withContext -1L
         }
 
-        // VPN 未运行时，使用临时服务测速
         testWithLocalHttpProxyInternal(outbound, targetUrl, fallbackUrl, timeoutMs, dependencyOutbounds)
     }
 
@@ -477,24 +458,21 @@ class SingBoxCore private constructor(private val context: Context) {
         method: LatencyTestMethod,
         onResult: (tag: String, latency: Long) -> Unit
     ) = withContext(Dispatchers.IO) {
-        // 使用批量测试优化
-        // 为了避免单次启动配置过大，我们按 50 个节点一批进行处理
-        // 这样既能享受批量优势，又能避免内存或配置过大问题
+
         val batchSize = 50
 
-        // 获取设置中的并发数
         val settings = SettingsRepository.getInstance(context).settings.first()
         val concurrency = settings.latencyTestConcurrency
 
         outbounds.chunked(batchSize).forEach { batch ->
-            // 对每一批节点启动一次服务
+
             testOutboundsLatencyBatchInternal(batch, targetUrl, timeoutMs, concurrency, onResult)
         }
     }
 
     /**
-     * 批量测试节点延迟的内部实现
-     * 为每个节点分配独立端口，启动临时 sing-box 服务进行并发测试
+     * 注释已清理。
+     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod", "LongMethod")
     private suspend fun testOutboundsLatencyBatchInternal(
@@ -506,8 +484,6 @@ class SingBoxCore private constructor(private val context: Context) {
     ) {
         if (batchOutbounds.isEmpty()) return
 
-        // 2025-fix: 防御性检查 - VPN 运行时禁止创建临时服务，使用 native 批量测速
-        // 临时服务的 closeService() 会污染全局 Libbox.isRunning() 状态
         if (VpnStateStore.getActive() && BoxWrapperManager.isAvailable()) {
             Log.i(TAG, "VPN is running, using native batch URL test instead of temporary service")
             val results = BoxWrapperManager.urlTestBatch(
@@ -537,19 +513,18 @@ class SingBoxCore private constructor(private val context: Context) {
         val configJson = gson.toJson(config)
 
         var commandServer: CommandServer? = null
-        var boxService: BoxService? = null
         try {
             ensureLibboxSetup(context)
             val platformInterface = TestPlatformInterface(context)
             val serverHandler = TestCommandServerHandler()
-            // 当前版本: newCommandServer(handler, maxLines) 签名
-            commandServer = Libbox.newCommandServer(serverHandler, 100)
+            // 注释已清理。
+            commandServer = Libbox.newCommandServer(serverHandler, platformInterface)
             commandServer.start()
 
-            // 当前版本: 使用 BoxService 模式
-            boxService = Libbox.newService(configJson, platformInterface)
-            boxService.start()
-            commandServer.setService(boxService)
+            val overrideOptions = OverrideOptions().apply {
+                autoRedirect = false
+            }
+            commandServer.startOrReloadService(configJson, overrideOptions)
 
             val portsReady = waitForPortsReady(ports)
             if (!portsReady) {
@@ -563,8 +538,7 @@ class SingBoxCore private constructor(private val context: Context) {
             Log.e(TAG, "Batch test failed", e)
             batchOutbounds.forEach { onResult(it.tag, -1L) }
         } finally {
-            // 当前版本: 先关闭 BoxService，再关闭 CommandServer
-            runCatching { boxService?.close() }
+            runCatching { commandServer?.closeService() }
             runCatching { commandServer?.close() }
         }
     }
@@ -747,15 +721,15 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 分配多个本地端口用于批量测试
+     * 注释已清理。
      *
-     * @param count 需要分配的端口数量
-     * @return 已分配的端口列表
-     * @throws RuntimeException 如果无法分配足够的端口
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      *
-     * 注意: 此方法存在微小的竞态条件窗口 (TOCTOU - Time-of-check to time-of-use)
-     * 在 ServerSocket 关闭后到 sing-box 绑定端口之间,理论上其他进程可能占用端口。
-     * 但在本地回环接口上,此风险极低。如果发生冲突,上层逻辑会捕获异常并重试。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun allocateMultipleLocalPorts(count: Int): List<Int> {
         val ports = mutableListOf<Int>()
@@ -776,10 +750,10 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 测试单个节点的延迟
-     * @param outbound 节点出站配置
-     * @param allOutbounds 可选的完整 outbound 列表，用于解析依赖（如 SS+ShadowTLS）
-     * @return 延迟时间（毫秒），-1 表示测试失败
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun testOutboundLatency(
         outbound: Outbound,
@@ -845,9 +819,9 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 批量测试节点延迟
-     * @param outbounds 节点列表
-     * @param onResult 每个节点测试完成后的回调
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun testOutboundsLatency(
         outbounds: List<Outbound>,
@@ -855,18 +829,15 @@ class SingBoxCore private constructor(private val context: Context) {
     ) = withContext(Dispatchers.IO) {
         val settings = SettingsRepository.getInstance(context).settings.first()
 
-        // 2025-fix: 当 VPN 运行时，使用安全测试器保护主网络连接
-        // SafeLatencyTester 提供:
-        // 1. 主连接保护 - 测试期间持续监控，发现异常立即熔断
-        // 2. 自适应并发 - 根据网络状况动态调整并发数
-        // 3. 批次让路 - 给主流量喘息空间
+        // 注释已清理。
+
         val isNativeUrlTestSupported = BoxWrapperManager.isAvailable()
 
         if (libboxAvailable && VpnStateStore.getActive() && isNativeUrlTestSupported) {
             val url = adjustUrlForMode(settings.latencyTestUrl, settings.latencyTestMethod)
             val timeoutMs = settings.latencyTestTimeout
 
-            // 使用安全测试器
+            // 注释已清理。
             SafeLatencyTester.getInstance().testOutboundsLatencySafe(
                 outbounds = outbounds,
                 targetUrl = url,
@@ -910,8 +881,8 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 获取当前活动的物理网络接口名称（非 VPN）
-     * 用于测速服务显式绑定到物理网络，避免流量被 VPN 拦截
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun getPhysicalNetworkInterface(): String? {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -941,7 +912,7 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 验证配置是否有效
+     * 注释已清理。
      */
     suspend fun validateConfig(config: SingBoxConfig): Result<Unit> = withContext(Dispatchers.IO) {
         if (!libboxAvailable) {
@@ -964,15 +935,14 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 验证单个 Outbound 是否有效
-     * 构造一个最小配置来验证 outbound
+     * 注释已清理。
+     * 注释已清理。
      */
     fun validateOutbound(outbound: Outbound): Boolean {
         if (!libboxAvailable) {
             return true
         }
 
-        // 跳过特殊类型的 outbound
         if (outbound.type in listOf("direct", "block", "dns", "selector", "urltest", "url-test")) {
             return true
         }
@@ -1007,7 +977,7 @@ class SingBoxCore private constructor(private val context: Context) {
         private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         override fun autoDetectInterfaceControl(fd: Int) {
-            // 如果 VPN 正在运行，必须 protect 测速 socket，否则流量会被 VPN 拦截
+
             val service = com.kunk.singbox.service.SingBoxService.instance
             if (service != null) {
                 try {
@@ -1023,18 +993,16 @@ class SingBoxCore private constructor(private val context: Context) {
                 return
             }
 
-            // VPN 未运行时，需要将 socket 绑定到默认网络
-            // 否则 sing-box 无法确定使用哪个网络接口，报错 "no available network interface"
             try {
                 val network = connectivityManager.activeNetwork
                 if (network != null) {
-                    // 使用 ParcelFileDescriptor 包装 fd，然后绑定到网络
+
                     val pfd = android.os.ParcelFileDescriptor.adoptFd(fd)
                     try {
                         network.bindSocket(pfd.fileDescriptor)
                         Log.d(TAG, "autoDetectInterfaceControl: bound fd=$fd to network")
                     } finally {
-                        // detachFd 防止 ParcelFileDescriptor.close() 关闭原始 fd
+
                         pfd.detachFd()
                     }
                 } else {
@@ -1052,10 +1020,9 @@ class SingBoxCore private constructor(private val context: Context) {
         }
 
         override fun startDefaultInterfaceMonitor(listener: InterfaceUpdateListener?) {
-            // 关键修复: 必须立即通知 sing-box 当前的默认网络接口
-            // 否则 sing-box 会报 "no available network interface" 错误
-            // 注意: 不能在 cgo 回调中注册 NetworkCallback，会导致 Go runtime 栈溢出崩溃
-            // 但我们可以同步获取当前网络状态并立即通知
+
+            // 注释已清理。
+
             if (listener == null) return
 
             try {
@@ -1083,7 +1050,6 @@ class SingBoxCore private constructor(private val context: Context) {
         }
 
         override fun closeDefaultInterfaceMonitor(listener: InterfaceUpdateListener?) {
-            // 测速服务是短暂的，无需清理网络监听
         }
 
         override fun getInterfaces(): NetworkInterfaceIterator? {
@@ -1118,42 +1084,18 @@ class SingBoxCore private constructor(private val context: Context) {
             } catch (e: Exception) { null }
         }
 
-        // 关键: 必须返回 true，否则 sing-box 不会调用 autoDetectInterfaceControl 来 protect socket
-        // 这会导致 VPN 运行时测速流量被拦截，形成回环，返回 502 错误
         override fun usePlatformAutoDetectInterfaceControl(): Boolean = true
         override fun useProcFS(): Boolean = false
 
-        // 当前版本: findConnectionOwner 返回 Int (UID) 而不是 ConnectionOwner
+        // 注释已清理。
         override fun findConnectionOwner(
             p0: Int,
             p1: String?,
             p2: Int,
             p3: String?,
             p4: Int
-        ): Int {
-            // 测速服务不需要连接所有者信息，返回 -1
-            return -1
-        }
-
-        // 当前版本: 新增 packageNameByUid 方法
-        override fun packageNameByUid(uid: Int): String {
-            return try {
-                val pm = context.packageManager
-                pm.getPackagesForUid(uid)?.firstOrNull() ?: ""
-            } catch (e: Exception) {
-                ""
-            }
-        }
-
-        // 当前版本: 新增 uidByPackageName 方法
-        override fun uidByPackageName(packageName: String): Int {
-            return try {
-                val pm = context.packageManager
-                val appInfo = pm.getApplicationInfo(packageName, 0)
-                appInfo.uid
-            } catch (e: Exception) {
-                -1
-            }
+        ): ConnectionOwner {
+            return ConnectionOwner()
         }
 
         override fun underNetworkExtension(): Boolean = false
@@ -1165,24 +1107,19 @@ class SingBoxCore private constructor(private val context: Context) {
             return com.kunk.singbox.core.LocalResolverImpl
         }
         override fun systemCertificates(): StringIterator? = null
-
-        // 当前版本: 新增 writeLog 方法
-        override fun writeLog(message: String?) {
-            if (message.isNullOrBlank()) return
-            Log.d(TAG, "TestPlatformInterface: $message")
-        }
     }
 
 /**
-     * 测速服务用的 CommandServerHandler 实现
-     * 仅提供必要的空实现，因为测速服务不需要处理任何命令回调
-     * 当前版本: 使用 postServiceClose 替代 serviceStop，移除 writeDebugMessage
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     private class TestCommandServerHandler : io.nekohasekai.libbox.CommandServerHandler {
-        override fun postServiceClose() {}
+        override fun serviceStop() {}
         override fun serviceReload() {}
         override fun getSystemProxyStatus(): io.nekohasekai.libbox.SystemProxyStatus? = null
         override fun setSystemProxyEnabled(isEnabled: Boolean) {}
+        override fun writeDebugMessage(message: String?) {}
     }
 
     private class StringIteratorImpl(private val list: List<String>) : StringIterator {
@@ -1193,14 +1130,13 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 检查是否有活跃的连接
-     * 用于连接健康监控
+     * 注释已清理。
+     * 注释已清理。
      */
     fun hasActiveConnections(): Boolean {
         if (!libboxAvailable) return false
 
         return try {
-            // 检查 sing-box 核心是否正在运行
             BoxWrapperManager.isAvailable() && VpnStateStore.getActive()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to check active connections", e)
@@ -1209,20 +1145,19 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 获取活跃连接列表
-     * 注意：已简化，始终返回空列表
+     * 注释已清理。
+     * 注释已清理。
      */
     @Suppress("FunctionOnlyReturningConstant")
     fun getActiveConnections(): List<ActiveConnection> = emptyList()
 
     /**
-     * 关闭指定应用的连接
-     * 当前版本: Libbox.closeConnectionsForApp() 已移除，使用 BoxWrapperManager 替代
+     * 注释已清理。
+     * 注释已清理。
      */
     fun closeConnectionsForApp(packageName: String): Int {
         if (!libboxAvailable) return 0
 
-        // 当前版本: 使用 BoxWrapperManager 的实现
         return BoxWrapperManager.closeConnectionsForApp(packageName)
     }
 

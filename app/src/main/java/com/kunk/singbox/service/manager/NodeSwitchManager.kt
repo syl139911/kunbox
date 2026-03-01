@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.content.Context
 import android.content.Intent
@@ -9,8 +9,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * 节点切换管理器
- * 负责热切换和下一节点切换逻辑
+ * 注释已清理。
+ * 注释已清理。
  */
 class NodeSwitchManager(
     private val context: Context,
@@ -18,14 +18,12 @@ class NodeSwitchManager(
 ) {
     companion object {
         private const val TAG = "NodeSwitchManager"
-        private const val SWITCH_DEBOUNCE_MS = 800L // 防抖间隔
+        private const val SWITCH_DEBOUNCE_MS = 800L
     }
 
-    // 防抖：上次切换时间戳
     @Volatile
     private var lastSwitchTimeMs: Long = 0
 
-    // 防抖：是否正在切换中
     @Volatile
     private var isSwitching: Boolean = false
 
@@ -46,7 +44,7 @@ class NodeSwitchManager(
     }
 
     /**
-     * 执行热切换
+     * 注释已清理。
      */
     fun performHotSwitch(
         nodeId: String,
@@ -71,7 +69,7 @@ class NodeSwitchManager(
             if (success) {
                 Log.i(TAG, "Hot switch successful for $nodeTag")
                 val displayName = node?.name ?: nodeTag
-                // 2025-fix: 持久化 activeLabel 到 VpnStateStore，确保跨进程/重启后通知栏显示正确
+
                 VpnStateStore.setActiveLabel(displayName)
                 callbacks?.setRealTimeNodeName(displayName)
                 runCatching { configRepository.syncActiveNodeFromProxySelection(displayName) }
@@ -90,8 +88,8 @@ class NodeSwitchManager(
     }
 
     /**
-     * 切换到下一个节点
-     * 优化：直接使用内存中的节点列表，先执行切换再异步更新状态
+     * 注释已清理。
+     * 注释已清理。
      */
     fun switchNextNode(
         serviceClass: Class<*>,
@@ -103,7 +101,6 @@ class NodeSwitchManager(
             return
         }
 
-        // 防抖检查：如果正在切换中或距离上次切换时间太短，忽略请求
         val now = System.currentTimeMillis()
         if (isSwitching) {
             Log.d(TAG, "switchNextNode: already switching, ignored")
@@ -114,7 +111,6 @@ class NodeSwitchManager(
             return
         }
 
-        // 同步获取节点信息（从内存），避免协程切换开销
         val configRepository = ConfigRepository.getInstance(context)
         val nodes = configRepository.nodes.value
         if (nodes.isEmpty()) {
@@ -136,12 +132,12 @@ class NodeSwitchManager(
             try {
                 val success = callbacks?.hotSwitchNode(nextNode.name) == true
                 if (success) {
-                    // 2025-fix: 持久化 activeLabel 到 VpnStateStore，确保跨进程/重启后通知栏显示正确
+
                     VpnStateStore.setActiveLabel(nextNode.name)
                     callbacks?.setRealTimeNodeName(nextNode.name)
                     callbacks?.requestNotificationUpdate(force = true)
                     callbacks?.notifyRemoteStateUpdate(force = true)
-                    // 异步更新持久化状态，不阻塞切换
+
                     runCatching {
                         configRepository.setActiveNodeIdOnly(nextNode.id)
                         configRepository.syncActiveNodeFromProxySelection(nextNode.name)

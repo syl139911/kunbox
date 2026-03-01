@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils.parser
+﻿package com.kunk.singbox.utils.parser
 
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
@@ -11,7 +11,7 @@ import android.util.Log
 import com.google.gson.Gson
 
 /**
- * 各种节点链接解析器集合
+ * 注释已清理。
  */
 class NodeLinkParser(private val gson: Gson) {
 
@@ -49,14 +49,14 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     /**
-     * 预处理 URI 字符串，清理常见格式问题
-     * - 对 fragment 和 query 中的空格进行 URL 编码
-     * - 移除参数名和值周围的空格 (security =tls -> security=tls)
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun sanitizeUri(link: String): String {
         var result = link
 
-        // 分离 fragment
+        // 注释已清理。
         val hashIndex = result.indexOf('#')
         var fragment = ""
         if (hashIndex != -1) {
@@ -64,12 +64,11 @@ class NodeLinkParser(private val gson: Gson) {
             result = result.substring(0, hashIndex)
         }
 
-        // 清理 query 部分的空格
         val questionIndex = result.indexOf('?')
         if (questionIndex != -1) {
             val base = result.substring(0, questionIndex)
             val query = result.substring(questionIndex + 1)
-            // 移除参数中 = 和 & 周围的空格
+
             val cleanedQuery = query
                 .replace(Regex("\\s*=\\s*"), "=")
                 .replace(Regex("\\s*&\\s*"), "&")
@@ -77,7 +76,7 @@ class NodeLinkParser(private val gson: Gson) {
             result = "$base?$cleanedQuery"
         }
 
-        // 重新附加 fragment
+        // 注释已清理。
         if (fragment.isNotEmpty()) {
             result = "$result#${fragment.replace(" ", "%20")}"
         }
@@ -255,17 +254,16 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     private fun tryDecodeBase64(content: String): String? {
-        // 清理内容中的空白字符
+
         val cleaned = content.trim()
             .replace("\n", "")
             .replace("\r", "")
             .replace(" ", "")
 
-        // 首先尝试 java.util.Base64 (在 JVM 单元测试和 Android API 26+ 上可用)
         try {
-            // 尝试 URL-safe 解码 (处理 - 和 _ 字符)
+            // 注释已清理。
             val urlSafeDecoder = java.util.Base64.getUrlDecoder()
-            // 添加 padding 如果需要
+
             val padded = when (cleaned.length % 4) {
                 2 -> cleaned + "=="
                 3 -> cleaned + "="
@@ -276,11 +274,10 @@ class NodeLinkParser(private val gson: Gson) {
                 return String(decoded, Charsets.UTF_8)
             }
         } catch (_: Exception) {
-            // 继续尝试其他方式
         }
 
         try {
-            // 尝试标准 Base64 解码
+            // 注释已清理。
             val standardDecoder = java.util.Base64.getDecoder()
             val padded = when (cleaned.length % 4) {
                 2 -> cleaned + "=="
@@ -292,10 +289,9 @@ class NodeLinkParser(private val gson: Gson) {
                 return String(decoded, Charsets.UTF_8)
             }
         } catch (_: Exception) {
-            // 继续尝试 Android Base64
         }
 
-        // 回退到 android.util.Base64 (兼容 Android API 24-25)
+        // 注释已清理。
         val candidates = arrayOf(
             android.util.Base64.DEFAULT,
             android.util.Base64.NO_WRAP,
@@ -346,7 +342,7 @@ class NodeLinkParser(private val gson: Gson) {
                 return null
             }
             Log.d("NodeLinkParser", "VMess decoded successfully, JSON length: ${decoded.length}")
-            // 这里需要一个简单的内部类来映射 VMess 链接的 JSON
+
             val json = gson.fromJson(decoded, Map::class.java)
 
             val add = json["add"] as? String ?: ""
@@ -403,7 +399,7 @@ class NodeLinkParser(private val gson: Gson) {
                 else -> null
             }
 
-            // sing-box 1.9+ 支持 alter_id (legacy VMess MD5)
+            // 注释已清理。
             if (aid != 0) {
                 Log.d("NodeLinkParser", "VMess node '$ps' uses legacy protocol (alterId=$aid)")
             }
@@ -676,7 +672,6 @@ class NodeLinkParser(private val gson: Gson) {
             val server = uri.host
             val port = if (uri.port > 0) uri.port else 443
 
-            // 解析 query 参数
             val params = mutableMapOf<String, String>()
             uri.query?.split("&")?.forEach { param ->
                 val parts = param.split("=", limit = 2)
@@ -694,7 +689,6 @@ class NodeLinkParser(private val gson: Gson) {
             val alpnList = params["alpn"]?.split(",")?.filter { it.isNotBlank() }
             val fingerprint = params["fp"]?.takeIf { it.isNotBlank() }
 
-            // AnyTLS 特有参数
             val idleSessionCheckInterval = params["idle_session_check_interval"]
             val idleSessionTimeout = params["idle_session_timeout"]
             val minIdleSession = params["min_idle_session"]?.toIntOrNull()
@@ -729,13 +723,11 @@ class NodeLinkParser(private val gson: Gson) {
             val server = uri.host
             val port = if (uri.port > 0) uri.port else 443
 
-            // 解析 userInfo: 可能是 uuid:password 或只有 uuid
             val userInfo = uri.userInfo ?: ""
             val colonIndex = userInfo.indexOf(':')
             val uuid = if (colonIndex > 0) userInfo.substring(0, colonIndex) else userInfo
             var password = if (colonIndex > 0) userInfo.substring(colonIndex + 1) else ""
 
-            // 解析 query 参数
             val params = mutableMapOf<String, String>()
             uri.query?.split("&")?.forEach { param ->
                 val parts = param.split("=", limit = 2)
@@ -748,7 +740,6 @@ class NodeLinkParser(private val gson: Gson) {
                 }
             }
 
-            // 如果 password 为空，尝试从 query 参数中获取，或使用 UUID 作为密码
             if (password.isBlank()) {
                 password = params["password"] ?: params["token"] ?: uuid
             }
@@ -758,7 +749,6 @@ class NodeLinkParser(private val gson: Gson) {
             val alpnList = params["alpn"]?.split(",")?.filter { it.isNotBlank() }
             val fingerprint = params["fp"]?.takeIf { it.isNotBlank() }
 
-            // TUIC 特有参数
             val congestionControl = params["congestion_control"] ?: params["congestion"] ?: "bbr"
             val udpRelayMode = params["udp_relay_mode"] ?: "native"
             val zeroRtt = params["reduce_rtt"] == "1" || params["zero_rtt"] == "1"
@@ -843,8 +833,8 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     /**
-     * 解析 HTTP/HTTPS 代理链接
-     * 格式: http://[username:password@]host:port[#name]
+     * 注释已清理。
+     * 注释已清理。
      *       https://[username:password@]host:port[#name]
      */
     private fun parseHttpLink(link: String, useTls: Boolean): Outbound? {
@@ -857,7 +847,7 @@ class NodeLinkParser(private val gson: Gson) {
             val server = uri.host ?: return null
             val port = if (uri.port > 0) uri.port else if (useTls) 443 else 8080
 
-            // 解析用户名和密码
+            // 注释已清理。
             var username: String? = null
             var password: String? = null
             if (uri.userInfo != null) {
@@ -884,13 +874,13 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     /**
-     * 解析 SOCKS5 代理链接
-     * 格式: socks5://[username:password@]host:port[#name]
+     * 注释已清理。
+     * 注释已清理。
      *       socks://[username:password@]host:port[#name]
      */
     private fun parseSocks5Link(link: String): Outbound? {
         try {
-            // 统一转换为标准 URI 格式
+
             val normalizedLink = link
                 .replace("socks5://", "socks://")
             val uri = java.net.URI(sanitizeUri(normalizedLink))
@@ -898,7 +888,7 @@ class NodeLinkParser(private val gson: Gson) {
             val server = uri.host ?: return null
             val port = if (uri.port > 0) uri.port else 1080
 
-            // 解析用户名和密码
+            // 注释已清理。
             var username: String? = null
             var password: String? = null
             if (uri.userInfo != null) {

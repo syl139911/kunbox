@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository
+﻿package com.kunk.singbox.repository
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
@@ -24,11 +24,9 @@ class LogRepository private constructor() {
     private val _logs = MutableStateFlow<List<String>>(emptyList())
     val logs: StateFlow<List<String>> = _logs.asStateFlow()
 
-    // 当前过滤的日志类别（null = 显示全部）
     private val _currentFilter = MutableStateFlow<String?>(null)
     val currentFilter: StateFlow<String?> = _currentFilter.asStateFlow()
 
-    // 可用的日志类别列表
     val availableCategories = listOf("CONN", "VPN", "CFG", "NET", "ERR", "DBG", "INFO")
 
     private val maxLogSize = 500
@@ -70,12 +68,11 @@ class LogRepository private constructor() {
     @Suppress("CyclomaticComplexMethod", "ComplexCondition")
     fun addLog(message: String) {
         val timestamp = synchronized(dateFormat) { dateFormat.format(Date()) }
-        // 过滤掉过于频繁的无用日志，保留关键的启动和状态日志
-        // 1. TRACE 级别日志 (sing-box 内核的详细追踪日志)
+
         if (message.contains("TRACE")) {
             return
         }
-        // 2. DEBUG 级别中的高频日志
+
         if (message.contains("DEBUG")) {
             val isHighFreq = message.contains("selector: selected outbound") ||
                 message.contains("dns: exchange") ||
@@ -86,7 +83,7 @@ class LogRepository private constructor() {
 
             if (isHighFreq) return
         }
-        // 3. INFO 级别中的高频日志 (每个连接都会产生)
+
         if (message.contains("INFO") &&
             (message.contains("inbound/tun") ||
                 message.contains("inbound/mixed") ||
@@ -169,8 +166,8 @@ class LogRepository private constructor() {
     }
 
     /**
-     * 设置日志过滤类别
-     * @param category 类别前缀（如 "CONN", "VPN", "ERR"），null 表示显示全部
+     * 注释已清理。
+     * 注释已清理。
      */
     fun setFilter(category: String?) {
         _currentFilter.value = category
@@ -178,7 +175,7 @@ class LogRepository private constructor() {
     }
 
     /**
-     * 获取过滤后的日志
+     * 注释已清理。
      */
     fun getFilteredLogs(): List<String> {
         val filter = _currentFilter.value
@@ -188,16 +185,16 @@ class LogRepository private constructor() {
             allLogs
         } else {
             allLogs.filter { log ->
-                // 匹配格式: [时间] emoji [类别][级别] ...
+
                 log.contains("[$filter]")
             }
         }
     }
 
     /**
-     * 搜索日志
-     * @param keyword 关键词
-     * @return 匹配的日志列表
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     fun searchLogs(keyword: String): List<String> {
         if (keyword.isBlank()) return getFilteredLogs()
@@ -209,12 +206,12 @@ class LogRepository private constructor() {
     }
 
     /**
-     * 获取错误日志摘要（用于快速定位问题）
+     * 注释已清理。
      */
     fun getErrorSummary(): List<String> {
         return synchronized(buffer) {
             buffer.filter { log ->
-                log.contains("[ERR]") || log.contains("[E]") || log.contains("❌")
+                log.contains("[ERR]") || log.contains("[E]") || log.contains("error", ignoreCase = true)
             }.toList()
         }
     }
@@ -222,10 +219,10 @@ class LogRepository private constructor() {
     fun getLogsAsText(): String {
         val exportDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val header = buildString {
-            appendLine("=== KunBox 运行日志 ===")
-            appendLine("导出时间: ${exportDateFormat.format(Date())}")
-            appendLine("设备型号: ${Build.MANUFACTURER} ${Build.MODEL}")
-            appendLine("Android 版本: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            appendLine("=== KunBox Logs ===")
+            appendLine("Export Time: ${exportDateFormat.format(Date())}")
+            appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
+            appendLine("Android Version: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
             appendLine("========================")
             appendLine()
         }

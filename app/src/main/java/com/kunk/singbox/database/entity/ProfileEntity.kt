@@ -1,4 +1,4 @@
-package com.kunk.singbox.database.entity
+﻿package com.kunk.singbox.database.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -7,9 +7,9 @@ import com.kunk.singbox.model.ProfileUi
 import com.kunk.singbox.model.UpdateStatus
 
 /**
- * Profile 数据库实体
+ * 注释已清理。
  *
- * 对应 ProfileUi，使用 Room 存储以提升查询性能
+ * 注释已清理。
  */
 @Entity(tableName = "profiles")
 data class ProfileEntity(
@@ -26,12 +26,12 @@ data class ProfileEntity(
     val totalTraffic: Long = 0,
     val usedTraffic: Long = 0,
     val sortOrder: Int = 0,
-    // DNS 预解析设置
+
     val dnsPreResolve: Boolean = false,
     val dnsServer: String? = null
 ) {
     /**
-     * 转换为 UI 模型
+     * 注释已清理。
      */
     fun toUiModel(): ProfileUi = ProfileUi(
         id = id,
@@ -51,7 +51,7 @@ data class ProfileEntity(
 
     companion object {
         /**
-         * 从 UI 模型创建实体
+         * 注释已清理。
          */
         fun fromUiModel(ui: ProfileUi, sortOrder: Int = 0): ProfileEntity = ProfileEntity(
             id = ui.id,

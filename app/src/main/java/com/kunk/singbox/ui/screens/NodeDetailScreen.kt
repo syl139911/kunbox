@@ -327,7 +327,6 @@ fun NodeDetailScreen(
                                 icon = Icons.Rounded.Security,
                                 onValueChange = { editingOutbound = outbound.copy(security = it) }
                             )
-                            // 此字段已从模型中移除
                         }
 
                         if (type == "vless") {
@@ -717,7 +716,7 @@ fun NodeDetailScreen(
                         if (currentType == "ws") {
                             Spacer(modifier = Modifier.height(8.dp))
                             EditableTextItem(
-                                title = "WebSocket 主机",
+                                title = "WebSocket Host",
                                 value = transport.headers?.get("Host") ?: "",
                                 icon = Icons.Rounded.Language,
                                 onValueChange = {
@@ -913,21 +912,21 @@ fun NodeDetailScreen(
                                 onCheckedChange = { editingOutbound = outbound.copy(tls = tls.copy(insecure = it)) }
                             )
                             EditableTextItem(
-                                title = "CA 证书 (PEM)",
+                                title = "CA Certificate (PEM)",
                                 value = tls.ca ?: "",
                                 icon = Icons.Rounded.Security,
                                 onValueChange = { editingOutbound = outbound.copy(tls = tls.copy(ca = if (it.isEmpty()) null else it)) }
                             )
 
                             EditableTextItem(
-                                title = "客户端证书 (PEM)",
+                                title = "Client Certificate (PEM)",
                                 value = tls.certificate ?: "",
                                 icon = Icons.Rounded.Security,
                                 onValueChange = { editingOutbound = outbound.copy(tls = tls.copy(certificate = if (it.isEmpty()) null else it)) }
                             )
 
                             EditableTextItem(
-                                title = "客户端私钥 (PEM)",
+                                title = "Client Key (PEM)",
                                 value = tls.key ?: "",
                                 icon = Icons.Rounded.Key,
                                 onValueChange = { editingOutbound = outbound.copy(tls = tls.copy(key = if (it.isEmpty()) null else it)) }
@@ -978,7 +977,7 @@ fun NodeDetailScreen(
                             )
                             if (ech.enabled == true) {
                                 EditableTextItem(
-                                    title = "ECH 配置 (Base64)",
+                                    title = "ECH Config (Base64)",
                                     value = ech.config?.joinToString("\n") ?: "",
                                     icon = Icons.Rounded.Tune,
                                     onValueChange = {
@@ -987,7 +986,7 @@ fun NodeDetailScreen(
                                     }
                                 )
                                 EditableTextItem(
-                                    title = "ECH 私钥 (Base64)",
+                                    title = "ECH Key (Base64)",
                                     value = ech.key?.joinToString("\n") ?: "",
                                     icon = Icons.Rounded.Key,
                                     onValueChange = {
@@ -1034,13 +1033,13 @@ fun NodeDetailScreen(
                                 onValueChange = { editingOutbound = outbound.copy(multiplex = mux.copy(maxConnections = it.toIntOrNull())) }
                             )
                             EditableTextItem(
-                                title = "最小流数量 (Min Streams)",
+                                title = "Min Streams",
                                 value = mux.minStreams?.toString() ?: "",
                                 icon = Icons.Rounded.Numbers,
                                 onValueChange = { editingOutbound = outbound.copy(multiplex = mux.copy(minStreams = it.toIntOrNull())) }
                             )
                             EditableTextItem(
-                                title = "最大流数量 (Max Streams)",
+                                title = "Max Streams",
                                 value = mux.maxStreams?.toString() ?: "",
                                 icon = Icons.Rounded.Numbers,
                                 onValueChange = { editingOutbound = outbound.copy(multiplex = mux.copy(maxStreams = it.toIntOrNull())) }
@@ -1071,7 +1070,7 @@ fun NodeDetailScreen(
                             if (profileName.isNullOrBlank()) {
                                 selectedNode.name
                             } else {
-                                "${selectedNode.name} · $profileName"
+                                "${selectedNode.name} ($profileName)"
                             }
                         }
                         else -> outbound.detour ?: noneText
@@ -1085,9 +1084,9 @@ fun NodeDetailScreen(
                     val selectedRef = selectedNode?.let { toNodeRef(it.sourceProfileId, it.name) }
 
                     SettingItem(
-                        title = "前置代理",
+                        title = "Detour Proxy",
                         value = detourSelectionText,
-                        subtitle = "可选择所有配置下的节点",
+                        subtitle = "Select a proxy node from all profiles",
                         icon = Icons.Rounded.Route,
                         onClick = {
                             pendingDetourRef = selectedRef
@@ -1110,10 +1109,10 @@ fun NodeDetailScreen(
                     }
 
                     EditableTextItem(
-                        title = "前置代理标签（高级）",
+                        title = "Detour Tag (Advanced)",
                         value = outbound.detour ?: "",
                         icon = Icons.Rounded.Route,
-                        subtitle = "可手动输入标签；留空为不使用",
+                        subtitle = "Manual outbound tag; leave empty to disable",
                         onValueChange = { editingOutbound = outbound.copy(detour = if (it.isEmpty()) null else it) }
                     )
                     SettingSwitchItem(
@@ -1169,7 +1168,7 @@ private fun DetourNodeSelectDialog(
                 .padding(24.dp)
         ) {
             Text(
-                text = "选择前置代理节点",
+                text = "Select Detour Node",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -1215,7 +1214,7 @@ private fun DetourNodeSelectDialog(
 
                 groupedNodes.forEach { (profileId, profileNodes) ->
                     val profileName = profiles.firstOrNull { it.id == profileId }?.name
-                        ?: "未知配置($profileId)"
+                        ?: "Unknown profile ($profileId)"
                     val isExpanded = expandedProfileId == profileId
 
                     item(key = "group_$profileId") {

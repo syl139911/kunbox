@@ -5,9 +5,9 @@ import com.google.gson.Gson
 import com.tencent.mmkv.MMKV
 
 /**
- * DNS 解析结果存储
+ * [乱码注释已清理]
  *
- * 使用 MMKV 持久化存储解析后的 IP 地址，支持 TTL 过期机制
+ * [乱码注释已清理]
  */
 class DnsResolveStore private constructor() {
 
@@ -15,7 +15,7 @@ class DnsResolveStore private constructor() {
         private const val TAG = "DnsResolveStore"
         private const val MMKV_ID = "dns_resolve_cache"
 
-        // 默认 TTL: 1 小时
+        // 榛樿 TTL: 1 灏忔椂
         const val DEFAULT_TTL_SECONDS = 3600
 
         @Volatile
@@ -35,7 +35,7 @@ class DnsResolveStore private constructor() {
     private val gson = Gson()
 
     /**
-     * 存储的解析条目
+     * [乱码注释已清理]
      */
     data class ResolvedEntry(
         val ip: String,
@@ -43,16 +43,14 @@ class DnsResolveStore private constructor() {
         val ttlSeconds: Int = DEFAULT_TTL_SECONDS,
         val source: String = "doh"
     ) {
-        /**
-         * 检查是否已过期
-         */
+
         fun isExpired(): Boolean {
             val now = System.currentTimeMillis()
             return now - resolvedAt > ttlSeconds * 1000L
         }
 
         /**
-         * 获取剩余有效时间 (秒)
+         * [乱码注释已清理]
          */
         fun remainingSeconds(): Long {
             val elapsed = (System.currentTimeMillis() - resolvedAt) / 1000
@@ -61,14 +59,14 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 生成存储 key
+     * 鐢熸垚瀛樺偍 key
      */
     private fun makeKey(profileId: String, domainName: String): String {
         return profileId + "_" + domainName
     }
 
     /**
-     * 保存解析结果
+     * [乱码注释已清理]
      */
     fun save(
         profileId: String,
@@ -90,12 +88,12 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 获取解析结果
+     * [乱码注释已清理]
      *
-     * @param profileId 配置 ID
-     * @param domain 域名
-     * @param allowExpired 是否允许返回过期的结果
-     * @return 解析条目，如果不存在或已过期则返回 null
+     * @param profileId 閰嶇疆 ID
+     * @param domain 鍩熷悕
+     * [乱码注释已清理]
+     * [乱码注释已清理]
      */
     fun get(
         profileId: String,
@@ -123,16 +121,16 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 获取解析的 IP 地址
+     * [乱码注释已清理]
      *
-     * @return IP 地址，如果不存在或已过期则返回 null
+     * [乱码注释已清理]
      */
     fun getIp(profileId: String, domain: String): String? {
         return get(profileId, domain)?.ip
     }
 
     /**
-     * 删除指定域名的解析结果
+     * [乱码注释已清理]
      */
     fun remove(profileId: String, domain: String) {
         val key = makeKey(profileId, domain)
@@ -140,7 +138,7 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 删除指定配置的所有解析结果
+     * [乱码注释已清理]
      */
     fun removeAllForProfile(profileId: String) {
         val prefix = "${profileId}_"
@@ -150,7 +148,7 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 批量保存解析结果
+     * [乱码注释已清理]
      */
     fun saveBatch(
         profileId: String,
@@ -169,7 +167,7 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 获取配置的所有有效解析结果
+     * [乱码注释已清理]
      */
     fun getAllForProfile(profileId: String): Map<String, ResolvedEntry> {
         val prefix = "${profileId}_"
@@ -187,7 +185,7 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 清理所有过期的条目
+     * [乱码注释已清理]
      */
     fun cleanupExpired(): Int {
         var cleanedCount = 0
@@ -212,7 +210,7 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * 获取统计信息
+     * [乱码注释已清理]
      */
     fun getStats(): Stats {
         var total = 0
@@ -247,7 +245,7 @@ class DnsResolveStore private constructor() {
     )
 
     /**
-     * 清空所有数据
+     * [乱码注释已清理]
      */
     fun clear() {
         mmkv.clearAll()

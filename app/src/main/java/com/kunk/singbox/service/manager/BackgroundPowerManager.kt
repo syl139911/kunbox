@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.os.SystemClock
 import android.util.Log
@@ -6,12 +6,12 @@ import com.kunk.singbox.repository.LogRepository
 import kotlinx.coroutines.CoroutineScope
 
 /**
- * 后台省电管理器（降级为状态记录器）
+ * 注释已清理。
  *
- * 说明：
- * - 保留原有 API 形状与调用入口，兼容现有调用方。
- * - 不再执行任何会影响连接稳定性的省电动作。
- * - 主进程后台超时自杀由 AppLifecycleObserver 负责，这里仅记录状态。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 class BackgroundPowerManager(
     @Suppress("unused")
@@ -20,30 +20,30 @@ class BackgroundPowerManager(
     companion object {
         private const val TAG = "BackgroundPowerManager"
 
-        /** 默认后台省电阈值: 30 分钟 */
+        /* 注释已清理。 */
         const val DEFAULT_BACKGROUND_THRESHOLD_MS = 30 * 60 * 1000L
 
-        /** 最小阈值: 5 分钟 (防止过于激进) */
+        /* 注释已清理。 */
         const val MIN_THRESHOLD_MS = 5 * 60 * 1000L
 
-        /** 最大阈值: 2 小时 */
+        /* 注释已清理。 */
         const val MAX_THRESHOLD_MS = 2 * 60 * 60 * 1000L
 
-        /** 恢复触发最小离开时长: 1 秒（降低以更快响应网络变化） */
+        /* 注释已清理。 */
         private const val MIN_RECOVERY_AWAY_MS = 1_000L
 
-        /** App 回前台时超过该离开时长后走强制恢复，跳过恢复防抖 */
+        /* 注释已清理。 */
         private const val FORCE_RECOVERY_AWAY_MS_APP_FOREGROUND = 3_000L
 
-        /** 仅屏幕点亮时的强制恢复阈值（更保守，避免与 AppForeground 重叠） */
+        /* 注释已清理。 */
         private const val FORCE_RECOVERY_AWAY_MS_SCREEN_ON = 8_000L
 
-        /** 前台返回事件合并窗口，避免 screen_on/app_foreground 短时重复触发 */
+        /* 注释已清理。 */
         private const val RETURN_RECOVERY_COALESCE_MS = 2_500L
     }
 
     /**
-     * 省电模式状态（兼容保留）
+     * 注释已清理。
      */
     enum class PowerMode {
         NORMAL,
@@ -51,19 +51,19 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 回调接口 - 由 SingBoxService 实现（兼容保留）
+     * 注释已清理。
      */
     interface Callbacks {
-        /** VPN 是否正在运行 */
+        /* 注释已清理。 */
         val isVpnRunning: Boolean
 
-        /** 暂停非核心进程 (进入省电模式) */
+        /* 注释已清理。 */
         fun suspendNonEssentialProcesses()
 
-        /** 恢复非核心进程 (退出省电模式) */
+        /* 注释已清理。 */
         fun resumeNonEssentialProcesses()
 
-        /** 请求核心网络恢复（由 Service 网关统一决策） */
+        /* 注释已清理。 */
         fun requestCoreNetworkRecovery(reason: String, force: Boolean = false)
     }
 
@@ -76,7 +76,6 @@ class BackgroundPowerManager(
     @Volatile
     private var userAwayAtMs: Long = 0L
 
-    // 双信号状态
     @Volatile
     private var isAppInBackground: Boolean = false
 
@@ -100,22 +99,22 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 当前省电模式
+     * 注释已清理。
      */
     val powerMode: PowerMode get() = currentMode
 
     /**
-     * 是否处于省电模式
+     * 注释已清理。
      */
     val isPowerSaving: Boolean get() = currentMode == PowerMode.POWER_SAVING
 
     /**
-     * 用户是否离开 (后台或息屏)
+     * 注释已清理。
      */
     private val isUserAway: Boolean get() = isAppInBackground || isScreenOff
 
     /**
-     * 初始化管理器
+     * 注释已清理。
      */
     fun init(callbacks: Callbacks, thresholdMs: Long = DEFAULT_BACKGROUND_THRESHOLD_MS) {
         this.callbacks = callbacks
@@ -129,7 +128,7 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 更新后台省电阈值
+     * 注释已清理。
      */
     fun setThreshold(thresholdMs: Long) {
         backgroundThresholdMs = if (thresholdMs == Long.MAX_VALUE) {
@@ -141,10 +140,8 @@ class BackgroundPowerManager(
         Log.i(TAG, "Threshold updated to $thresholdDisplay")
     }
 
-    // ==================== 信号1: 主进程 IPC 通知 ====================
-
     /**
-     * App 进入后台 (来自主进程 IPC)
+     * 注释已清理。
      */
     fun onAppBackground() {
         if (isAppInBackground) return
@@ -155,7 +152,7 @@ class BackgroundPowerManager(
     }
 
     /**
-     * App 返回前台 (来自主进程 IPC)
+     * 注释已清理。
      */
     fun onAppForeground() {
         if (!isAppInBackground) {
@@ -188,10 +185,10 @@ class BackgroundPowerManager(
         evaluateUserPresence()
     }
 
-    // ==================== 信号2: 屏幕状态 ====================
+    // 注释已清理。
 
     /**
-     * 屏幕关闭 (来自 ScreenStateManager)
+     * 注释已清理。
      */
     fun onScreenOff() {
         if (isScreenOff) return
@@ -201,7 +198,7 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 屏幕点亮 (来自 ScreenStateManager)
+     * 注释已清理。
      */
     fun onScreenOn() {
         if (!isScreenOff) return
@@ -225,10 +222,8 @@ class BackgroundPowerManager(
         evaluateUserPresence()
     }
 
-    // ==================== 统一判断逻辑（状态记录 + 轻量恢复桥接） ====================
-
     /**
-     * 在用户回到可交互态时按需触发核心网络恢复
+     * 注释已清理。
      */
     private fun maybeRequestRecoveryOnReturn(
         source: String,
@@ -272,7 +267,7 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 评估用户状态（仅状态记录）
+     * 注释已清理。
      */
     private fun shouldCoalesceReturnRecovery(source: String): Boolean {
         val lastAt = lastReturnRecoveryAtMs
@@ -314,7 +309,6 @@ class BackgroundPowerManager(
         }
         userAwayAtMs = 0L
 
-        // 兼容兜底：若旧状态残留为 POWER_SAVING，则复位为 NORMAL，但不触发任何恢复动作
         if (currentMode == PowerMode.POWER_SAVING) {
             Log.i(TAG, "Resetting legacy POWER_SAVING state to NORMAL (no-op)")
             currentMode = PowerMode.NORMAL
@@ -322,35 +316,35 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 进入省电模式（兼容保留，no-op）
+     * 注释已清理。
      */
     private fun enterPowerSavingMode() {
         Log.d(TAG, "enterPowerSavingMode ignored: state-recorder-only mode")
     }
 
     /**
-     * 退出省电模式（兼容保留，no-op）
+     * 注释已清理。
      */
     private fun exitPowerSavingMode() {
         Log.d(TAG, "exitPowerSavingMode ignored: state-recorder-only mode")
     }
 
     /**
-     * 强制进入省电模式 (用于测试或手动触发)
+     * 注释已清理。
      */
     fun forceEnterPowerSaving() {
         enterPowerSavingMode()
     }
 
     /**
-     * 强制退出省电模式
+     * 注释已清理。
      */
     fun forceExitPowerSaving() {
         exitPowerSavingMode()
     }
 
     /**
-     * 清理资源
+     * 注释已清理。
      */
     fun cleanup() {
         currentMode = PowerMode.NORMAL
@@ -365,7 +359,7 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 获取统计信息 (用于调试)
+     * 注释已清理。
      */
     fun getStats(): Map<String, Any> {
         return mapOf(

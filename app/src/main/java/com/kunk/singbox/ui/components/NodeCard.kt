@@ -93,7 +93,7 @@ fun NodeCard(
 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 如果名称中已经包含该国旗，则不重复显示
+
                         if (regionFlag != null && !name.contains(regionFlag)) {
                             Text(
                                 text = regionFlag,

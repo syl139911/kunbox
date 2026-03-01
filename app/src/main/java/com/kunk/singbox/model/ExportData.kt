@@ -1,51 +1,51 @@
-package com.kunk.singbox.model
+﻿package com.kunk.singbox.model
 
 import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 /**
- * 导出数据的根模型
- * 用于应用数据的备份和恢复
+ * 注释已清理。
+ * 注释已清理。
  */
 @Keep
 data class ExportData(
-    @SerializedName("version") val version: Int = 1, // 数据格式版本号
-    @SerializedName("exportTime") val exportTime: Long, // 导出时间戳
-    @SerializedName("appVersion") val appVersion: String, // 应用版本号
-    @SerializedName("settings") val settings: AppSettings, // 应用设置
-    @SerializedName("profiles") val profiles: List<ProfileExportData>, // 配置列表
-    @SerializedName("activeProfileId") val activeProfileId: String?, // 活跃配置 ID
-    @SerializedName("activeNodeId") val activeNodeId: String? // 活跃节点 ID
+    @SerializedName("version") val version: Int = 1,
+    @SerializedName("exportTime") val exportTime: Long,
+    @SerializedName("appVersion") val appVersion: String,
+    @SerializedName("settings") val settings: AppSettings, // 閹煎瓨姊婚弫·囨媼閸撗呮瀭
+    @SerializedName("profiles") val profiles: List<ProfileExportData>, // 注释已清理。
+    @SerializedName("activeProfileId") val activeProfileId: String?,
+    @SerializedName("activeNodeId") val activeNodeId: String?
 )
 
 /**
- * 配置导出数据
- * 包含配置元数据和完整的节点配置
+ * 注释已清理。
+ * 注释已清理。
  */
 @Keep
 data class ProfileExportData(
-    @SerializedName("profile") val profile: ProfileUi, // 配置元数据
-    @SerializedName("config") val config: SingBoxConfig // 完整的节点配置
+    @SerializedName("profile") val profile: ProfileUi, // 注释已清理。
+    @SerializedName("config") val config: SingBoxConfig
 )
 
 /**
- * 导入选项
+ * 注释已清理。
  */
 @Keep
 data class ImportOptions(
-    val overwriteExisting: Boolean = true, // 是否覆盖现有数据（默认覆盖）
-    val importSettings: Boolean = true, // 是否导入设置
-    val importProfiles: Boolean = true, // 是否导入配置
-    val importRules: Boolean = true // 是否导入规则
+    val overwriteExisting: Boolean = true,
+    val importSettings: Boolean = true, // ·哄嫷鍨伴幆浣衡·鐢靛帶閸欏棛鎷嬮崜褏鏋?
+    val importProfiles: Boolean = true, // ·哄嫷鍨伴幆浣衡·鐢靛帶閸欏棝鏌婂鍥╂瀭
+    val importRules: Boolean = true // ·哄嫷鍨伴幆浣衡·鐢靛帶閸欏棛鎲撮崟顐㈢仧
 )
 
 /**
- * 导入结果
+ * 注释已清理。
  */
 @Keep
 sealed class ImportResult {
     /**
-     * 导入成功
+     * 注释已清理。
      */
     data class Success(
         val profilesImported: Int,
@@ -54,7 +54,7 @@ sealed class ImportResult {
     ) : ImportResult()
 
     /**
-     * 部分成功
+     * 注释已清理。
      */
     data class PartialSuccess(
         val profilesImported: Int,
@@ -63,14 +63,14 @@ sealed class ImportResult {
     ) : ImportResult()
 
     /**
-     * 导入失败
+     * 注释已清理。
      */
     data class Failed(val error: String) : ImportResult()
 }
 
 /**
- * 导出数据摘要
- * 用于在导入前展示给用户确认
+ * 注释已清理。
+ * 注释已清理。
  */
 @Keep
 data class ExportDataSummary(

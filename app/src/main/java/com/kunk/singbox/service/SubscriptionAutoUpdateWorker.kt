@@ -1,4 +1,4 @@
-package com.kunk.singbox.service
+﻿package com.kunk.singbox.service
 
 import android.content.Context
 import android.util.Log
@@ -11,8 +11,8 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 /**
- * 订阅自动更新 Worker
- * 使用 WorkManager 在后台定期更新订阅
+ * 注释已清理。
+ * 注释已清理。
  */
 class SubscriptionAutoUpdateWorker(
     context: Context,
@@ -24,22 +24,21 @@ class SubscriptionAutoUpdateWorker(
         private const val WORK_NAME_PREFIX = "subscription_auto_update_"
 
         /**
-         * 调度订阅自动更新任务
+         * 注释已清理。
          * @param context Context
-         * @param profileId 配置 ID
-         * @param intervalMinutes 更新间隔（分钟），0 表示禁用
+         * 注释已清理。
+         * 注释已清理。
          */
         fun schedule(context: Context, profileId: String, intervalMinutes: Int) {
             val workManager = WorkManager.getInstance(context)
             val workName = "$WORK_NAME_PREFIX$profileId"
 
             if (intervalMinutes <= 0) {
-                // 禁用自动更新，取消现有任务
+
                 workManager.cancelUniqueWork(workName)
                 return
             }
 
-            // 创建周期性工作请求
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
@@ -61,7 +60,6 @@ class SubscriptionAutoUpdateWorker(
                 )
                 .build()
 
-            // 使用 REPLACE 策略，如果已有相同名称的任务则替换
             workManager.enqueueUniquePeriodicWork(
                 workName,
                 ExistingPeriodicWorkPolicy.REPLACE,
@@ -70,7 +68,7 @@ class SubscriptionAutoUpdateWorker(
         }
 
         /**
-         * 取消订阅自动更新任务
+         * 注释已清理。
          */
         fun cancel(context: Context, profileId: String) {
             val workManager = WorkManager.getInstance(context)
@@ -79,7 +77,7 @@ class SubscriptionAutoUpdateWorker(
         }
 
         /**
-         * 取消所有订阅自动更新任务
+         * 注释已清理。
          */
         fun cancelAll(context: Context) {
             val workManager = WorkManager.getInstance(context)
@@ -87,8 +85,8 @@ class SubscriptionAutoUpdateWorker(
         }
 
         /**
-         * 根据已保存的配置重新调度所有自动更新任务
-         * 在应用启动时调用
+         * 注释已清理。
+         * 注释已清理。
          */
         suspend fun rescheduleAll(context: Context) = withContext(Dispatchers.IO) {
             try {
@@ -119,7 +117,6 @@ class SubscriptionAutoUpdateWorker(
         try {
             val configRepository = ConfigRepository.getInstance(applicationContext)
 
-            // 检查配置是否仍然存在且启用
             val profile = configRepository.profiles.first().find { it.id == profileId }
             if (profile == null) {
                 Log.w(TAG, "Profile not found: $profileId, cancelling auto-update")
@@ -136,14 +133,13 @@ class SubscriptionAutoUpdateWorker(
                 return@withContext Result.success()
             }
 
-            // 执行更新
+            // 注释已清理。
             val result = configRepository.updateProfile(profileId)
 
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Auto-update failed for profile: $profileId", e)
 
-            // 如果失败，返回 retry 让 WorkManager 根据退避策略重试
             Result.retry()
         }
     }

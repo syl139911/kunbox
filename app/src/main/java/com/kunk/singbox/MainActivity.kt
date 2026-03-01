@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        // 从 SharedPreferences 读取语言设置
+
         val prefs = newBase.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val languageName = prefs.getString("app_language_cache", null)
         val language = if (languageName != null) {
@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 在 super.onCreate 之前启用边到边显示
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
@@ -156,14 +156,10 @@ fun SingBoxApp() {
     val settings by settingsRepository.settings.collectAsState(initial = null)
     val dashboardViewModel: DashboardViewModel = viewModel()
 
-    // 前台恢复时统一走 refreshState（内部已包含 ensureBound + MMKV 即时恢复）
-    // 不再在 ON_START 单独调用 ensureBound，避免与 ON_RESUME 的 refreshState 竞争
-    // 导致 rebind 打断正在进行的连接，触发 STOPPED 闪烁
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         dashboardViewModel.refreshState()
     }
 
-    // 当语言设置变化时,缓存到 SharedPreferences 供 attachBaseContext 使用
     LaunchedEffect(settings?.appLanguage) {
         settings?.appLanguage?.let { language ->
             val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -171,7 +167,6 @@ fun SingBoxApp() {
         }
     }
 
-    // 自动检查更新 - 当 VPN 连接后检查，或 App 启动 10 秒后检查（直连尝试）
     val isVpnRunningForUpdate by SingBoxRemote.isRunning.collectAsState()
     var updateChecked by remember { mutableStateOf(false) }
 
@@ -179,14 +174,13 @@ fun SingBoxApp() {
         if (settings?.autoCheckUpdate != true || updateChecked) return@LaunchedEffect
 
         if (isVpnRunningForUpdate) {
-            // VPN 已连接，延迟 1 秒后通过代理检查
+
             kotlinx.coroutines.delay(1000L)
             updateChecked = true
             com.kunk.singbox.utils.AppUpdateChecker.checkAndNotify(context)
         }
     }
 
-    // 兜底：如果 10 秒后 VPN 仍未连接，尝试直连检查
     LaunchedEffect(settings?.autoCheckUpdate) {
         if (settings?.autoCheckUpdate != true) return@LaunchedEffect
         kotlinx.coroutines.delay(10000L)
@@ -209,31 +203,28 @@ fun SingBoxApp() {
                     intent.action = null
                 }
                 "com.kunk.singbox.action.SWITCH_NODE" -> {
-                    // 设置待导航目标，等待 navController 初始化后执行
                     pendingNavigation = "nodes"
                     intent.action = null
                 }
                 android.content.Intent.ACTION_VIEW -> {
-                    // 处理 URL Scheme (singbox:// 或 kunbox://)
+
                     intent.data?.let { uri ->
                         val scheme = uri.scheme
                         val host = uri.host
 
                         if ((scheme == "singbox" || scheme == "kunbox") && host == "install-config") {
                             val url = uri.getQueryParameter("url")
-                            val name = uri.getQueryParameter("name") ?: "导入的订阅"
+                            val name = uri.getQueryParameter("name") ?: "Imported Subscription"
                             val intervalStr = uri.getQueryParameter("interval")
                             val interval = intervalStr?.toIntOrNull() ?: 0
 
                             if (!url.isNullOrBlank()) {
-                                // 使用 DeepLinkHandler 存储数据
                                 DeepLinkHandler.setPendingSubscriptionImport(name, url, interval)
-                                // 导航到 profiles 页面
+
                                 pendingNavigation = "profiles"
                             }
                         }
                     }
-                    // 清除 data 防止重复处理
                     intent.data = null
                 }
             }
@@ -244,17 +235,13 @@ fun SingBoxApp() {
     val isStarting by SingBoxRemote.isStarting.collectAsState()
     val manuallyStopped by SingBoxRemote.manuallyStopped.collectAsState()
 
-    // 监听 VPN 状态变化，清理网络连接池，避免复用失效的 Socket
     LaunchedEffect(isRunning, isStarting) {
-        // 当 VPN 状态发生重大变化（启动、停止、重启）时，底层的网络接口可能已变更
-        // 此时必须清理连接池，防止 OkHttp 复用绑定在旧网络接口上的连接导致 "use of closed network connection"
-        // 必须在 IO 线程执行，因为 connectionPool.evictAll() 会关闭 SSL socket，涉及网络 I/O
+
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             com.kunk.singbox.utils.NetworkClient.clearConnectionPool()
         }
     }
 
-    // 自动连接逻辑
     LaunchedEffect(settings?.autoConnect, connectionState) {
         if (settings?.autoConnect == true &&
             connectionState == ConnectionState.Idle &&
@@ -270,7 +257,6 @@ fun SingBoxApp() {
         }
     }
 
-    // 在最近任务中隐藏逻辑
     LaunchedEffect(settings?.excludeFromRecent) {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
         am?.appTasks?.forEach {
@@ -282,10 +268,9 @@ fun SingBoxApp() {
 
     LaunchedEffect(Unit) {
         SettingsRepository.restartRequiredEvents.collectLatest {
-            // 如果 VPN 没有在运行，也没有正在启动，就不弹窗（因为下次启动自然生效）
+
             if (!SingBoxRemote.isRunning.value && !SingBoxRemote.isStarting.value) return@collectLatest
 
-            // 新提示出现时，立即关闭旧的，只保留最新的那一个
             snackbarHostState.currentSnackbarData?.dismiss()
 
             snackbarHostState.showSnackbar(
@@ -303,7 +288,7 @@ fun SingBoxApp() {
         // Handle pending navigation from App Shortcuts
         LaunchedEffect(pendingNavigation) {
             pendingNavigation?.let { route ->
-                delay(100) // 确保 navController 已初始化
+                delay(100)
                 navController.navigate(route) {
                     popUpTo(navController.graph.startDestinationId) {
                         saveState = true
@@ -397,12 +382,12 @@ fun SingBoxApp() {
                         AppNavBar(navController = navController)
                     }
                 },
-                contentWindowInsets = WindowInsets(0, 0, 0, 0) // 不自动添加系统栏 insets
+                contentWindowInsets = WindowInsets(0, 0, 0, 0)
             ) { innerPadding ->
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding()) // 只应用底部 padding
+                        .padding(bottom = innerPadding.calculateBottomPadding())
                 ) {
                     AppNavigation(navController)
                 }

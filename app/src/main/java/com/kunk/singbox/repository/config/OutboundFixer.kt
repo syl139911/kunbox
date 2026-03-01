@@ -1,23 +1,21 @@
-package com.kunk.singbox.repository.config
+﻿package com.kunk.singbox.repository.config
 
 import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.repository.SettingsRepository
 
 /**
- * Outbound 运行时修复器
- * 处理各种协议的配置修复和规范化
+ * 注释已清理。
+ * 注释已清理。
  */
 object OutboundFixer {
-
-    // TCP Keepalive 配置缓存
     @Volatile private var cachedTcpKeepAliveEnabled: Boolean? = null
     @Volatile private var cachedTcpKeepAliveInterval: String? = null
     @Volatile private var cachedConnectTimeout: String? = null
 
     /**
-     * 获取 TCP Keepalive 配置
-     * 从 SettingsRepository 读取并缓存
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun getTcpKeepAliveConfig(context: android.content.Context): Triple<Boolean, String?, String?> {
         cachedTcpKeepAliveEnabled?.let { enabled ->
@@ -42,10 +40,6 @@ object OutboundFixer {
         }
     }
 
-    /**
-     * 清除 TCP Keepalive 配置缓存
-     * 当设置变更时调用
-     */
     fun clearTcpKeepAliveCache() {
         synchronized(this) {
             cachedTcpKeepAliveEnabled = null
@@ -54,7 +48,7 @@ object OutboundFixer {
         }
     }
 
-    // 正则表达式常量
+    // 注释已清理。
     private val REGEX_INTERVAL_DIGITS = Regex("^\\d+$")
     private val REGEX_INTERVAL_DECIMAL = Regex("^\\d+\\.\\d+$")
     private val REGEX_INTERVAL_UNIT = Regex("^\\d+(\\.\\d+)?[smhSMH]$")
@@ -64,8 +58,8 @@ object OutboundFixer {
     private val REGEX_ED_PARAM_MID = Regex("&ed=\\d+")
 
     /**
-     * 运行时修复 Outbound 配置
-     * 包括：修复 interval 单位、清理 flow、补充 ALPN、补充 User-Agent、补充缺省值
+     * 注释已清理。
+     * 注释已清理。
      */
     fun fix(outbound: Outbound): Outbound {
         var result = outbound
@@ -244,17 +238,15 @@ object OutboundFixer {
             }
         }
 
-        // 强制清理 VLESS 协议中的 security 字段 (sing-box 不支持)
         if (result.type == "vless" && result.security != null) {
             result = result.copy(security = null)
         }
 
-        // Hysteria/Hysteria2: 补充缺省带宽，清理空字符串字段，修复端口范围格式
         if (result.type == "hysteria" || result.type == "hysteria2") {
             val up = result.upMbps
             val down = result.downMbps
             val defaultMbps = 50
-            // 清理空的 serverPorts 列表，并将短横线端口范围 (40000-50000) 转换为 sing-box 格式 (40000:50000)
+
             val cleanedServerPorts = result.serverPorts
                 ?.filter { it.isNotBlank() }
                 ?.map { convertPortRangeFormat(it) }
@@ -267,13 +259,10 @@ object OutboundFixer {
                 hopInterval = cleanedHopInterval
             )
         }
-
-        // 补齐 VMess packetEncoding 缺省值
         if (result.type == "vmess" && result.packetEncoding.isNullOrBlank()) {
             result = result.copy(packetEncoding = "xudp")
         }
 
-        // 清理 TLS 配置中的空 ALPN 列表（sing-box 不接受空数组）
         val currentTls = result.tls
         if (currentTls != null && currentTls.alpn?.isEmpty() == true) {
             result = result.copy(tls = currentTls.copy(alpn = null))
@@ -283,14 +272,14 @@ object OutboundFixer {
     }
 
     /**
-     * 构建运行时 Outbound，只保留必要字段
-     * @param context Android Context，用于读取 TCP Keepalive 配置
+     * 注释已清理。
+     * 注释已清理。
      */
     @Suppress("LongMethod")
     fun buildForRuntime(context: android.content.Context, outbound: Outbound): Outbound {
         val fixed = fix(outbound)
 
-        // 获取 TCP Keepalive 配置
+        // 注释已清理。
         val (tcpKeepAliveEnabled, tcpKeepAliveInterval, connectTimeout) = getTcpKeepAliveConfig(context)
 
         return when (fixed.type) {
@@ -316,7 +305,7 @@ object OutboundFixer {
                 tls = fixed.tls,
                 transport = fixed.transport,
                 multiplex = fixed.multiplex,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -333,7 +322,7 @@ object OutboundFixer {
                 tls = fixed.tls,
                 transport = fixed.transport,
                 multiplex = fixed.multiplex,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -348,7 +337,7 @@ object OutboundFixer {
                 tls = fixed.tls,
                 transport = fixed.transport,
                 multiplex = fixed.multiplex,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -367,7 +356,7 @@ object OutboundFixer {
                 multiplex = fixed.multiplex,
                 detour = fixed.detour,
                 network = fixed.network,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -390,7 +379,7 @@ object OutboundFixer {
                 serverPorts = fixed.serverPorts,
                 tls = fixed.tls,
                 multiplex = fixed.multiplex,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -411,7 +400,7 @@ object OutboundFixer {
                 mtu = fixed.mtu,
                 tls = fixed.tls,
                 multiplex = fixed.multiplex,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -428,7 +417,7 @@ object OutboundFixer {
                 minIdleSession = fixed.minIdleSession,
                 tls = fixed.tls,
                 multiplex = fixed.multiplex,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -443,7 +432,7 @@ object OutboundFixer {
                 preSharedKey = fixed.preSharedKey,
                 reserved = fixed.reserved,
                 peers = fixed.peers,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -461,7 +450,7 @@ object OutboundFixer {
                 hostKey = fixed.hostKey,
                 hostKeyAlgorithms = fixed.hostKeyAlgorithms,
                 clientVersion = fixed.clientVersion,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -475,7 +464,7 @@ object OutboundFixer {
                 version = fixed.version,
                 password = fixed.password,
                 tls = fixed.tls,
-                // TCP Keepalive 参数 (完美方案 - 防止连接假死)
+
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
@@ -528,14 +517,13 @@ object OutboundFixer {
     private fun normalizeXhttpPath(path: String): String {
         val trimmed = path.trim().ifEmpty { "/" }
         val withLeadingSlash = if (trimmed.startsWith("/")) trimmed else "/$trimmed"
-        // 不添加尾部斜杠：Xray-core 服务端按原始路径匹配，
-        // 多余的 "/" 会导致 Download GET 返回 400 Bad Request
+
         return withLeadingSlash
     }
 
     /**
-     * 将端口范围从短横线格式 (40000-50000) 转换为 sing-box 格式 (40000:50000)
-     * 支持逗号分隔的多个范围，如 "40000-50000,60000-70000"
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun convertPortRangeFormat(portSpec: String): String {
         return portSpec.split(",").joinToString(",") { part ->

@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -21,11 +21,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
-/**
- * 应用版本更新检查器
- *
- * 检查 GitHub Release 获取最新版本，如果有新版本则发送通知
- */
 object AppUpdateChecker {
     private const val TAG = "AppUpdateChecker"
 
@@ -33,7 +28,6 @@ object AppUpdateChecker {
     private const val CHANNEL_ID = "app_update"
     private const val NOTIFICATION_ID = 1001
 
-    // 用于记录已通知过的版本，避免重复通知
     private const val PREFS_NAME = "app_update_prefs"
     private const val KEY_LAST_NOTIFIED_VERSION = "last_notified_version"
 
@@ -55,11 +49,11 @@ object AppUpdateChecker {
     )
 
     /**
-     * 检查更新并在有新版本时发送通知
+     * 注释已清理。
      *
      * @param context Context
-     * @param forceNotify 是否强制通知（即使之前已通知过该版本）
-     * @return 检查结果，包含是否有新版本及版本信息
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun checkAndNotify(
         context: Context,
@@ -81,7 +75,6 @@ object AppUpdateChecker {
             if (isNewerVersion(latestVersion, currentVersion)) {
                 Log.i(TAG, "New version available: $latestVersion")
 
-                // 检查是否已经通知过这个版本
                 val lastNotifiedVersion = getLastNotifiedVersion(context)
                 if (forceNotify || lastNotifiedVersion != latestVersion) {
                     showUpdateNotification(context, release)
@@ -107,7 +100,7 @@ object AppUpdateChecker {
     }
 
     /**
-     * 获取当前应用版本
+     * 注释已清理。
      */
     private fun getCurrentVersion(context: Context): String {
         return try {
@@ -120,8 +113,8 @@ object AppUpdateChecker {
     }
 
     /**
-     * 从 GitHub API 获取最新 Release
-     * 2026-01-27: 代理优先+直连回退，解决被墙和代理崩溃问题
+     * 注释已清理。
+     * 注释已清理。
      */
     private suspend fun fetchLatestReleaseWithFallback(context: Context): GitHubRelease? {
         val request = Request.Builder()
@@ -191,16 +184,15 @@ object AppUpdateChecker {
     }
 
     /**
-     * 比较版本号，判断 newVersion 是否比 currentVersion 新
+     * 注释已清理。
      *
-     * 支持格式: x.y.z, x.y.z-beta, x.y.z-rc1 等
+     * 注释已清理。
      */
     private fun isNewerVersion(newVersion: String, currentVersion: String): Boolean {
         try {
             val newParts = parseVersion(newVersion)
             val currentParts = parseVersion(currentVersion)
 
-            // 比较主版本号
             for (i in 0 until maxOf(newParts.size, currentParts.size)) {
                 val newPart = newParts.getOrElse(i) { 0 }
                 val currentPart = currentParts.getOrElse(i) { 0 }
@@ -209,7 +201,7 @@ object AppUpdateChecker {
                 if (newPart < currentPart) return false
             }
 
-            return false // 版本相同
+            return false // ·绘鐗婂﹢浼存儎缁嬫寧鍊?
         } catch (e: Exception) {
             Log.e(TAG, "Failed to compare versions: $newVersion vs $currentVersion", e)
             return false
@@ -217,10 +209,10 @@ object AppUpdateChecker {
     }
 
     /**
-     * 解析版本号字符串为数字列表
+     * 注释已清理。
      */
     private fun parseVersion(version: String): List<Int> {
-        // 移除 v 前缀和后缀（如 -beta, -rc1）
+
         val cleanVersion = version
             .removePrefix("v")
             .split("-")[0]
@@ -229,14 +221,13 @@ object AppUpdateChecker {
     }
 
     /**
-     * 显示更新通知
+     * 注释已清理。
      */
     private fun showUpdateNotification(context: Context, release: GitHubRelease) {
         createNotificationChannel(context)
 
         val version = release.tagName.removePrefix("v")
 
-        // 点击通知打开 Release 页面
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(release.htmlUrl))
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -257,7 +248,7 @@ object AppUpdateChecker {
                     append(content)
                     release.body?.let { notes ->
                         append("\n\n")
-                        // 只显示前200个字符的更新日志
+
                         val truncatedNotes = if (notes.length > 200) {
                             notes.take(200) + "..."
                         } else {
@@ -279,7 +270,7 @@ object AppUpdateChecker {
     }
 
     /**
-     * 创建通知渠道
+     * 注释已清理。
      */
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -297,7 +288,7 @@ object AppUpdateChecker {
     }
 
     /**
-     * 获取上次通知的版本
+     * 注释已清理。
      */
     private fun getLastNotifiedVersion(context: Context): String? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -305,7 +296,7 @@ object AppUpdateChecker {
     }
 
     /**
-     * 设置上次通知的版本
+     * 注释已清理。
      */
     private fun setLastNotifiedVersion(context: Context, version: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -313,7 +304,7 @@ object AppUpdateChecker {
     }
 
     /**
-     * 清除上次通知的版本记录（用于测试或用户手动检查更新）
+     * 注释已清理。
      */
     fun clearLastNotifiedVersion(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -321,9 +312,6 @@ object AppUpdateChecker {
     }
 }
 
-/**
- * 更新检查结果
- */
 sealed class UpdateCheckResult {
     data class UpdateAvailable(
         val currentVersion: String,

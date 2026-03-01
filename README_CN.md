@@ -257,8 +257,8 @@ cd Kkunbox\singbox-core
 # 1. 拉取上游最新 tags
 git fetch upstream --tags
 
-# 2. Rebase 到新版本 tag（例如 v1.12.22）
-git rebase v1.12.22
+# 2. Rebase 到新版本 tag（例如 v1.13.0）
+git rebase v1.13.0
 
 # 3. 回到项目根目录，重新编译内核
 cd ..\..

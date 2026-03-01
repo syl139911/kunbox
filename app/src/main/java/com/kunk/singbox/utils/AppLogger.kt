@@ -3,17 +3,17 @@ package com.kunk.singbox.utils
 import android.util.Log
 
 /**
- * 应用日志工具类
+ * 搴旂敤鏃ュ織宸ュ叿绫?
  *
- * 优化说明:
- * - Release 构建默认关闭 DEBUG/VERBOSE 级别日志
- * - 减少字符串拼接和日志输出开销
- * - 支持动态调整日志级别
+ * [乱码注释已清理]
+ * - Release 鏋勫缓榛樿鍏抽棴 DEBUG/VERBOSE 绾у埆鏃ュ織
+ * [乱码注释已清理]
+ * - 鏀寔鍔ㄦ€佽皟鏁存棩蹇楃骇鍒?
  */
 object AppLogger {
 
     /**
-     * 日志级别
+     * 鏃ュ織绾у埆
      */
     enum class Level(val priority: Int) {
         VERBOSE(Log.VERBOSE),
@@ -25,29 +25,25 @@ object AppLogger {
     }
 
     /**
-     * 当前最低日志级别
-     * 可通过 Application 初始化时根据 BuildConfig.DEBUG 设置
+     * [乱码注释已清理]
+     * [乱码注释已清理]
      */
     @Volatile
     var minLevel: Level = Level.INFO
 
     /**
-     * 是否启用日志（总开关）
+     * [乱码注释已清理]
      */
     @Volatile
     var enabled: Boolean = true
 
-    /**
-     * 检查指定级别是否可以输出
-     * 使用 @PublishedApi 允许 inline 函数访问
-     */
     @PublishedApi
     internal fun isLoggable(level: Level): Boolean {
         return enabled && level.priority >= minLevel.priority
     }
 
     /**
-     * VERBOSE 级别日志
+     * VERBOSE 绾у埆鏃ュ織
      */
     inline fun v(tag: String, message: () -> String) {
         if (isLoggable(Level.VERBOSE)) {
@@ -56,7 +52,7 @@ object AppLogger {
     }
 
     /**
-     * DEBUG 级别日志
+     * DEBUG 绾у埆鏃ュ織
      */
     inline fun d(tag: String, message: () -> String) {
         if (isLoggable(Level.DEBUG)) {
@@ -65,7 +61,7 @@ object AppLogger {
     }
 
     /**
-     * INFO 级别日志
+     * INFO 绾у埆鏃ュ織
      */
     inline fun i(tag: String, message: () -> String) {
         if (isLoggable(Level.INFO)) {
@@ -74,7 +70,7 @@ object AppLogger {
     }
 
     /**
-     * WARN 级别日志
+     * WARN 绾у埆鏃ュ織
      */
     inline fun w(tag: String, message: () -> String) {
         if (isLoggable(Level.WARN)) {
@@ -83,7 +79,7 @@ object AppLogger {
     }
 
     /**
-     * WARN 级别日志（带异常）
+     * [乱码注释已清理]
      */
     inline fun w(tag: String, throwable: Throwable?, message: () -> String) {
         if (isLoggable(Level.WARN)) {
@@ -92,7 +88,7 @@ object AppLogger {
     }
 
     /**
-     * ERROR 级别日志
+     * ERROR 绾у埆鏃ュ織
      */
     inline fun e(tag: String, message: () -> String) {
         if (isLoggable(Level.ERROR)) {
@@ -101,7 +97,7 @@ object AppLogger {
     }
 
     /**
-     * ERROR 级别日志（带异常）
+     * [乱码注释已清理]
      */
     inline fun e(tag: String, throwable: Throwable?, message: () -> String) {
         if (isLoggable(Level.ERROR)) {
@@ -110,7 +106,7 @@ object AppLogger {
     }
 
     /**
-     * 直接输出日志（兼容旧代码，不推荐使用）
+     * [乱码注释已清理]
      */
     fun v(tag: String, message: String) {
         if (isLoggable(Level.VERBOSE)) Log.v(tag, message)

@@ -23,9 +23,9 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * 配置持久化管理器
+ * 閰嶇疆鎸佷箙鍖栫鐞嗗櫒
  *
- * 负责 Profile 数据的加载、保存和迁移
+ * [乱码注释已清理]
  */
 class ProfilePersistence(private val context: Context) {
 
@@ -60,7 +60,7 @@ class ProfilePersistence(private val context: Context) {
         get() = File(context.filesDir, "profiles.json")
 
     /**
-     * 加载结果
+     * [乱码注释已清理]
      */
     data class LoadResult(
         val profiles: List<ProfileUi>,
@@ -70,8 +70,8 @@ class ProfilePersistence(private val context: Context) {
     )
 
     /**
-     * 从 Room 数据库加载配置
-     * 如果 Room 为空，尝试从旧的 JSON 文件迁移
+     * 浠?Room 鏁版嵁搴撳姞杞介厤缃?
+     * [乱码注释已清理]
      */
     fun loadSync(): LoadResult {
         val startTime = System.currentTimeMillis()
@@ -159,7 +159,7 @@ class ProfilePersistence(private val context: Context) {
     }
 
     /**
-     * 保存配置 (带防抖)
+     * 淇濆瓨閰嶇疆 (甯﹂槻鎶?
      */
     fun save(
         profiles: List<ProfileUi>,
@@ -175,7 +175,7 @@ class ProfilePersistence(private val context: Context) {
     }
 
     /**
-     * 立即保存配置 (跳过防抖)
+     * 绔嬪嵆淇濆瓨閰嶇疆 (璺宠繃闃叉姈)
      */
     fun saveImmediate(
         profiles: List<ProfileUi>,
@@ -190,7 +190,7 @@ class ProfilePersistence(private val context: Context) {
     }
 
     /**
-     * 仅保存活跃状态 (同步，用于关键操作)
+     * [乱码注释已清理]
      */
     fun saveActiveStateSync(activeProfileId: String?, activeNodeId: String?) {
         try {
@@ -242,7 +242,7 @@ class ProfilePersistence(private val context: Context) {
     }
 
     /**
-     * 保存单个节点的延迟
+     * [乱码注释已清理]
      */
     fun saveNodeLatency(nodeId: String, latencyMs: Long) {
         scope.launch {
@@ -255,7 +255,7 @@ class ProfilePersistence(private val context: Context) {
     }
 
     /**
-     * 删除配置
+     * 鍒犻櫎閰嶇疆
      */
     suspend fun deleteProfile(profileId: String) {
         try {

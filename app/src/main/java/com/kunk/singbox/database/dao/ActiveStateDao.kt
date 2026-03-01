@@ -8,9 +8,9 @@ import com.kunk.singbox.database.entity.ActiveStateEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 活跃状态数据访问对象
+ * [乱码注释已清理]
  *
- * 管理当前活跃的 Profile 和 Node
+ * [乱码注释已清理]
  */
 @Dao
 interface ActiveStateDao {

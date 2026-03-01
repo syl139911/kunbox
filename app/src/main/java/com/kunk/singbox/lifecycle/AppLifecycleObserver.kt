@@ -1,4 +1,4 @@
-package com.kunk.singbox.lifecycle
+﻿package com.kunk.singbox.lifecycle
 
 import android.os.Handler
 import android.os.Looper
@@ -14,13 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/**
- * 应用生命周期观察者
- * 使用 ProcessLifecycleOwner 精确检测应用前后台状态
- * 通过 IPC 通知 :bg 进程触发省电模式
- *
- * 省电模式下主动杀死主进程，只保留 :bg 进程
- */
 object AppLifecycleObserver : DefaultLifecycleObserver {
     private const val TAG = "AppLifecycleObserver"
 
@@ -47,7 +40,7 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
     }
 
     /**
-     * 设置后台超时时间
+     * 注释已清理。
      */
     fun setBackgroundTimeout(timeoutMs: Long) {
         backgroundTimeoutMs = timeoutMs
@@ -60,10 +53,8 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
         _isAppInForeground.value = true
         backgroundAtMs = 0L
 
-        // 取消待执行的杀进程任务
         cancelKillProcess()
 
-        // 通过 IPC 通知 :bg 进程
         SingBoxRemote.notifyAppLifecycle(isForeground = true)
     }
 
@@ -72,15 +63,13 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
         _isAppInForeground.value = false
         backgroundAtMs = SystemClock.elapsedRealtime()
 
-        // 通过 IPC 通知 :bg 进程
         SingBoxRemote.notifyAppLifecycle(isForeground = false)
 
-        // 调度主进程自杀
         scheduleKillProcess()
     }
 
     /**
-     * 调度主进程自杀
+     * 注释已清理。
      */
     private fun scheduleKillProcess() {
         if (backgroundTimeoutMs == Long.MAX_VALUE) {
@@ -88,8 +77,6 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
             return
         }
 
-        // 只有 VPN 在运行时才需要杀主进程省电
-        // 2026-fix: 使用 VpnStateStore 跨进程安全检查，避免 IPC 回调失效导致误判
         if (!VpnStateStore.getActive()) {
             Log.d(TAG, "VPN not running (VpnStateStore), skip scheduling kill process")
             return
@@ -98,16 +85,13 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
         cancelKillProcess()
 
         killProcessRunnable = Runnable {
-            // 再次检查是否仍在后台且 VPN 在运行
-            // 使用 VpnStateStore 跨进程安全检查
+
+            // 注释已清理。
             if (!_isAppInForeground.value && VpnStateStore.getActive()) {
                 Log.i(TAG, ">>> Background timeout reached, killing main process to save power")
                 Log.i(TAG, ">>> VPN will continue running in :bg process")
 
-                // 断开 IPC 连接（不影响 :bg 进程）
-                // 不调用 disconnect，让 :bg 进程自己处理 binder 死亡
-
-                // 杀死主进程
+                // 注释已清理。
                 android.os.Process.killProcess(android.os.Process.myPid())
             }
         }
@@ -117,7 +101,7 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
     }
 
     /**
-     * 取消主进程自杀
+     * 注释已清理。
      */
     private fun cancelKillProcess() {
         killProcessRunnable?.let {

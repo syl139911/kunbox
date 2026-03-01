@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.scanner
+﻿package com.kunk.singbox.ui.scanner
 
 import android.app.Activity
 import android.content.Intent
@@ -25,8 +25,8 @@ import kotlinx.coroutines.withContext
 import java.io.InputStream
 
 /**
- * 自定义二维码扫描 Activity
- * 使用正方形扫描框，更符合二维码的形状
+ * 注释已清理。
+ * 注释已清理。
  */
 class QrScannerActivity : AppCompatActivity() {
 
@@ -34,7 +34,6 @@ class QrScannerActivity : AppCompatActivity() {
     private lateinit var barcodeScannerView: DecoratedBarcodeView
     private var isFlashOn = false
 
-    // 相册选择器
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             parseQrCodeFromUri(uri)
@@ -43,34 +42,33 @@ class QrScannerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 使用淡入淡出动画，避免相机加载时的黑屏造成的视觉卡顿
+
         overridePendingTransition(R.anim.fade_in, R.anim.hold)
         setContentView(R.layout.activity_qr_scanner)
 
         barcodeScannerView = findViewById(R.id.barcode_scanner)
 
-        // 初始化扫描管理器
+        // 注释已清理。
         capture = CaptureManager(this, barcodeScannerView)
         capture.initializeFromIntent(intent, savedInstanceState)
         capture.decode()
 
-        // 设置返回按钮
+        // 注释已清理。
         findViewById<ImageButton>(R.id.btn_back).setOnClickListener {
             setResult(Activity.RESULT_CANCELED)
             finish()
         }
 
-        // 设置相册按钮
+        // 注释已清理。
         findViewById<ImageButton>(R.id.btn_gallery).setOnClickListener {
             galleryLauncher.launch(arrayOf("image/*"))
         }
 
-        // 设置闪光灯按钮
         findViewById<ImageButton>(R.id.btn_flash).setOnClickListener {
             toggleFlash()
         }
 
-        // 设置提示文字
+        // 注释已清理。
         barcodeScannerView.setStatusText("")
     }
 
@@ -85,7 +83,7 @@ class QrScannerActivity : AppCompatActivity() {
                     withContext(Dispatchers.Main) {
                         if (result != null) {
                             val intent = Intent()
-                            // ZXing 的 ScanIntentResult 使用 "SCAN_RESULT" 作为 key
+
                             intent.putExtra("SCAN_RESULT", result)
                             setResult(Activity.RESULT_OK, intent)
                             finish()

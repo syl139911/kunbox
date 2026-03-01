@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils.dns
+﻿package com.kunk.singbox.utils.dns
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +19,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 /**
- * DNS 解析结果
+ * 注释已清理。
  */
 data class DnsResolveResult(
     val ip: String?,
@@ -30,9 +30,9 @@ data class DnsResolveResult(
 }
 
 /**
- * DoH (DNS over HTTPS) 解析器
+ * 注释已清理。
  *
- * 支持通过 HTTPS 安全地解析域名，绕过本地 DNS 污染
+ * 注释已清理。
  */
 class DnsResolver(
     private val client: OkHttpClient = createDefaultClient()
@@ -40,7 +40,6 @@ class DnsResolver(
     companion object {
         private const val TAG = "DnsResolver"
 
-        // 预定义的 DoH 服务器
         const val DOH_CLOUDFLARE = "https://1.1.1.1/dns-query"
         const val DOH_GOOGLE = "https://8.8.8.8/dns-query"
         const val DOH_ALIDNS = "https://223.5.5.5/dns-query"
@@ -57,7 +56,7 @@ class DnsResolver(
         }
 
         /**
-         * 判断是否为 IP 地址
+         * 注释已清理。
          */
         fun isIpAddress(host: String): Boolean {
             return IPV4_REGEX.matches(host) || (host.contains(":") && IPV6_REGEX.matches(host))
@@ -65,11 +64,11 @@ class DnsResolver(
     }
 
     /**
-     * 使用 DoH 解析域名
+     * 注释已清理。
      *
-     * @param domain 要解析的域名
-     * @param dohServer DoH 服务器地址
-     * @return 解析结果
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun resolveViaDoH(
         domain: String,
@@ -116,7 +115,7 @@ class DnsResolver(
     }
 
     /**
-     * 使用系统 DNS 解析
+     * 注释已清理。
      */
     suspend fun resolveViaSystem(domain: String): DnsResolveResult = withContext(Dispatchers.IO) {
         if (isIpAddress(domain)) {
@@ -139,7 +138,7 @@ class DnsResolver(
     }
 
     /**
-     * 使用 DoH 异步解析（可取消）
+     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     private suspend fun resolveViaDoHAsync(
@@ -200,7 +199,7 @@ class DnsResolver(
     }
 
     /**
-     * 竞速解析：同时启动 DoH 和系统 DNS，谁先成功用谁
+     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     suspend fun resolve(
@@ -211,14 +210,12 @@ class DnsResolver(
             return@withContext DnsResolveResult(domain, "direct")
         }
 
-        // 同时启动两个解析任务
         val dohDeferred = if (dohServer != null) {
             async { resolveViaDoHAsync(domain, dohServer) }
         } else null
 
         val systemDeferred = async { resolveViaSystem(domain) }
 
-        // select: 谁先完成且成功就用谁
         val winner = select {
             dohDeferred?.onAwait { if (it.isSuccess) it else null }
             systemDeferred.onAwait { if (it.isSuccess) it else null }
@@ -230,7 +227,6 @@ class DnsResolver(
             return@withContext winner
         }
 
-        // 第一个失败了，等另一个
         val fallback = select {
             if (dohDeferred != null && dohDeferred.isActive) {
                 dohDeferred.onAwait { it }
@@ -246,12 +242,12 @@ class DnsResolver(
     }
 
     /**
-     * 批量解析多个域名
+     * 注释已清理。
      *
-     * @param domains 域名列表
-     * @param dohServer DoH 服务器
-     * @param concurrency 并发数
-     * @return 域名到解析结果的映射
+     * 注释已清理。
+     * 注释已清理。
+     * @param concurrency 妤犵偠娉涜ぐ鍌炲极?
+     * 注释已清理。
      */
     suspend fun resolveBatch(
         domains: List<String>,
@@ -282,7 +278,7 @@ class DnsResolver(
     }
 
     /**
-     * 构建 DNS 查询报文 (A 记录)
+     * 注释已清理。
      */
     private fun buildDnsQuery(domain: String): ByteArray {
         val buffer = ByteBuffer.allocate(512)
@@ -319,7 +315,7 @@ class DnsResolver(
     }
 
     /**
-     * 解析 DNS 响应报文
+     * 注释已清理。
      */
     private fun parseDnsResponse(data: ByteArray): String? {
         if (data.size < 12) return null
@@ -363,7 +359,7 @@ class DnsResolver(
     }
 
     /**
-     * 跳过 DNS 名称字段
+     * 注释已清理。
      */
     @Suppress("LoopWithTooManyJumpStatements")
     private fun skipName(buffer: ByteBuffer) {

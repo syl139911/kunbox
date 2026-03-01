@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.net.ConnectivityManager
 import android.net.Network
@@ -17,10 +17,10 @@ import kotlinx.coroutines.channels.Channel
 import java.lang.ref.WeakReference
 
 /**
- * 网络监听器 - 在 Application 启动时开始监听物理网络变化
+ * 注释已清理。
  *
- * 核心优化: 预缓存物理网络, VPN 启动时直接使用已缓存的网络
- * 避免 VPN establish 后应用需要重新探测网络导致的二次加载
+ * 注释已清理。
+ * 注释已清理。
  */
 object DefaultNetworkListener {
     private const val TAG = "DefaultNetworkListener"
@@ -84,7 +84,6 @@ object DefaultNetworkListener {
         }
     }
 
-    // 缓存的物理网络 - VPN 服务可直接使用
     @Volatile
     var underlyingNetwork: Network? = null
         private set
@@ -130,12 +129,11 @@ object DefaultNetworkListener {
                 return
             }
 
-            // 先立即检查是否有替代网络
+            // 注释已清理。
             if (tryFindReplacementNetwork(cm, network)) {
                 return
             }
 
-            // 延迟后再次检查（WiFi -> 移动数据场景）
             mainHandler.postDelayed({
                 if (underlyingNetwork != null && underlyingNetwork != network) {
                     return@postDelayed
@@ -168,8 +166,8 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 启动网络监听
-     * 应在 Application.onCreate() 中调用
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun start(connectivityManager: ConnectivityManager, key: Any, listener: (Network?) -> Unit) {
         connectivityManagerRef = WeakReference(connectivityManager)
@@ -177,7 +175,7 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 获取当前缓存的网络
+     * 注释已清理。
      */
     suspend fun get(): Network? {
         return if (fallback) {
@@ -195,7 +193,7 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 停止网络监听
+     * 注释已清理。
      */
     suspend fun stop(key: Any) {
         networkActor.send(NetworkMessage.Stop(key))
@@ -236,8 +234,8 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 清理资源 - 用于测试或特殊场景
-     * 正常使用中无需调用，Application 进程结束时资源自动回收
+     * 注释已清理。
+     * 注释已清理。
      */
     fun cleanup() {
         networkActor.close()

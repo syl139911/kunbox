@@ -1,4 +1,4 @@
-package com.kunk.singbox.core
+﻿package com.kunk.singbox.core
 
 import android.util.Log
 import io.nekohasekai.libbox.CommandClient
@@ -7,47 +7,44 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Selector 热切换管理器
+ * 注释已清理。
  *
- * 负责跟踪当前配置的 selector 结构，判断是否支持热切换。
+ * 注释已清理。
  *
- * 热切换条件:
- * 1. VPN 正在运行
- * 2. 当前配置有 selector 类型的出站
- * 3. 新节点在同一 selector group 内 (签名匹配)
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  *
- * 使用流程:
- * 1. VPN 启动后，调用 recordSelectorSignature() 记录当前 selector 的 outbound 列表签名
- * 2. 切换节点前，调用 canHotSwitch() 检查新节点是否在同一 selector group
- * 3. 如果可以热切换，调用 selectOutbound() 执行切换
- * 4. VPN 停止时，调用 clear() 清除状态
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 object SelectorManager {
     private const val TAG = "SelectorManager"
 
-    // 当前配置的 selector group 签名 (outbounds 列表的 hash)
     @Volatile
     private var currentSelectorSignature: String? = null
 
-    // 当前 selector 的 outbound tags 列表
     @Volatile
     private var currentOutboundTags: List<String> = emptyList()
 
-    // 当前选中的节点 tag
     private val _selectedOutbound = MutableStateFlow<String?>(null)
     val selectedOutbound: StateFlow<String?> = _selectedOutbound.asStateFlow()
 
-    // 是否支持热切换
+    // 注释已清理。
     private val _canHotSwitch = MutableStateFlow(false)
     val canHotSwitchFlow: StateFlow<Boolean> = _canHotSwitch.asStateFlow()
 
     /**
-     * 记录当前配置的 selector 签名
+     * 注释已清理。
      *
-     * 在 VPN 启动成功后调用，传入 PROXY selector 的 outbounds 列表
+     * 注释已清理。
      *
-     * @param outboundTags PROXY selector 包含的所有 outbound tags
-     * @param selectedTag 当前选中的 outbound tag
+     * 注释已清理。
+     * 注释已清理。
      */
     fun recordSelectorSignature(outboundTags: List<String>, selectedTag: String? = null) {
         currentOutboundTags = outboundTags.toList()
@@ -60,14 +57,14 @@ object SelectorManager {
     }
 
     /**
-     * 检查新配置是否与当前配置兼容（可热切换）
+     * 注释已清理。
      *
-     * 判断条件：
-     * 1. 当前有有效的 selector 签名
-     * 2. 新配置的 outbound 列表签名与当前相同
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      *
-     * @param newOutboundTags 新配置的 outbound tags
-     * @return true 如果可以热切换
+     * 注释已清理。
+     * 注释已清理。
      */
     fun canHotSwitch(newOutboundTags: List<String>): Boolean {
         val currentSig = currentSelectorSignature ?: return false
@@ -77,22 +74,16 @@ object SelectorManager {
         return canSwitch
     }
 
-    /**
-     * 检查指定节点是否在当前 selector group 内
-     *
-     * @param nodeTag 节点 tag
-     * @return true 如果节点在当前 selector 的 outbounds 列表中
-     */
     fun isNodeInCurrentSelector(nodeTag: String): Boolean {
         return currentOutboundTags.contains(nodeTag)
     }
 
     /**
-     * 通过 CommandClient 执行热切换
+     * 注释已清理。
      *
-     * @param client CommandClient 实例
-     * @param selectorTag selector 的 tag (通常是 "PROXY")
-     * @param outboundTag 目标 outbound 的 tag
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      * @return true if successful
      */
     fun selectOutbound(client: CommandClient, selectorTag: String, outboundTag: String): Boolean {
@@ -108,9 +99,9 @@ object SelectorManager {
     }
 
     /**
-     * 通过 BoxWrapperManager 执行热切换 (备用方案)
+     * 注释已清理。
      *
-     * @param outboundTag 目标 outbound 的 tag
+     * 注释已清理。
      * @return true if successful
      */
     fun selectOutboundViaWrapper(outboundTag: String): Boolean {
@@ -123,22 +114,22 @@ object SelectorManager {
     }
 
     /**
-     * 获取当前选中的 outbound tag
+     * 注释已清理。
      */
     fun getSelectedOutbound(): String? = _selectedOutbound.value
 
     /**
-     * 获取当前 selector 的所有 outbound tags
+     * 注释已清理。
      */
     fun getCurrentOutboundTags(): List<String> = currentOutboundTags
 
     /**
-     * 检查是否有有效的 selector 记录
+     * 注释已清理。
      */
     fun hasSelector(): Boolean = currentSelectorSignature != null && currentOutboundTags.isNotEmpty()
 
     /**
-     * 清除状态（VPN 停止时调用）
+     * 注释已清理。
      */
     fun clear() {
         currentSelectorSignature = null
@@ -149,8 +140,8 @@ object SelectorManager {
     }
 
     /**
-     * 计算 outbound tags 列表的签名
-     * 使用排序后的 hashCode 确保顺序无关
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun computeSignature(tags: List<String>): String {
         return tags.sorted().hashCode().toString()

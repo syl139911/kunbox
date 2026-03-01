@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.util.Log
 import okhttp3.ConnectionPool
@@ -11,47 +11,31 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-/**
- * 全局共享的 OkHttpClient 单例 - 优化版
- *
- * 特性：
- * 1. 更大的连接池容量（10 连接）
- * 2. 智能 VPN 状态感知，自动清理失效连接
- * 3. HTTP/2 多路复用支持
- * 4. 连接健康检查
- * 5. 统计和诊断支持
- */
 object NetworkClient {
     private const val TAG = "NetworkClient"
 
-    // 超时配置（秒）
     private const val CONNECT_TIMEOUT = 15L
     private const val READ_TIMEOUT = 20L
     private const val WRITE_TIMEOUT = 20L
-    private const val CALL_TIMEOUT = 60L // 整体调用超时
+    private const val CALL_TIMEOUT = 60L // ·轰胶绻濈紞瀣嫬閸愵亝鏆忛悺鎺戞噺濡?
 
-    // 连接池配置优化：
-    // - 10 个空闲连接（原 5 个）：适应更多并发场景
-    // - 5 分钟存活时间：平衡复用效率和资源占用
     private val connectionPool = ConnectionPool(10, 5, TimeUnit.MINUTES)
 
-    // 调度器配置：限制并发请求数
     private val dispatcher = Dispatcher().apply {
-        maxRequests = 64 // 最大并发请求数
-        maxRequestsPerHost = 10 // 每个 Host 最大并发
+        maxRequests = 64
+        maxRequestsPerHost = 10
     }
 
-    // VPN 状态追踪
+    // 注释已清理。
     private val isVpnActive = AtomicBoolean(false)
     private val lastVpnStateChangeAt = AtomicLong(0)
 
-    // 统计信息
     private val totalRequests = AtomicLong(0)
     private val failedRequests = AtomicLong(0)
     private val connectionPoolHits = AtomicLong(0)
 
     /**
-     * 统计拦截器 - 记录请求统计信息
+     * 注释已清理。
      */
     private val statsInterceptor = Interceptor { chain ->
         totalRequests.incrementAndGet()
@@ -64,7 +48,7 @@ object NetworkClient {
     }
 
     /**
-     * 主 Client - 支持 HTTP/2 多路复用
+     * 注释已清理。
      */
     val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -74,7 +58,7 @@ object NetworkClient {
             .callTimeout(CALL_TIMEOUT, TimeUnit.SECONDS)
             .connectionPool(connectionPool)
             .dispatcher(dispatcher)
-            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1)) // 优先 HTTP/2
+            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1)) // ·村吋锚閸?HTTP/2
             .addInterceptor(statsInterceptor)
             // Rely on OkHttp built-in retry logic to avoid retry amplification.
             .retryOnConnectionFailure(true)
@@ -84,14 +68,14 @@ object NetworkClient {
     }
 
     /**
-     * 获取一个新的 Builder，共享连接池
+     * 注释已清理。
      */
     fun newBuilder(): OkHttpClient.Builder {
         return client.newBuilder()
     }
 
     /**
-     * 创建自定义超时的 Client
+     * 注释已清理。
      */
     fun createClientWithTimeout(
         connectTimeoutSeconds: Long,
@@ -106,7 +90,7 @@ object NetworkClient {
     }
 
     /**
-     * 创建不带重试的 Client（用于需要精确控制的场景）
+     * 注释已清理。
      */
     fun createClientWithoutRetry(
         connectTimeoutSeconds: Long,
@@ -126,7 +110,7 @@ object NetworkClient {
     }
 
     /**
-     * 创建使用本地代理的 Client
+     * 注释已清理。
      */
     fun createClientWithProxy(
         proxyPort: Int,
@@ -138,14 +122,14 @@ object NetworkClient {
             java.net.Proxy.Type.HTTP,
             java.net.InetSocketAddress("127.0.0.1", proxyPort)
         )
-        // 代理连接使用独立的连接池，避免与直连混用
+
         return OkHttpClient.Builder()
             .proxy(proxy)
             .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
             .writeTimeout(writeTimeoutSeconds, TimeUnit.SECONDS)
-            .connectionPool(ConnectionPool(5, 2, TimeUnit.MINUTES)) // 代理专用池
-            .protocols(listOf(Protocol.HTTP_1_1)) // 代理模式使用 HTTP/1.1
+            .connectionPool(ConnectionPool(5, 2, TimeUnit.MINUTES))
+            .protocols(listOf(Protocol.HTTP_1_1)) // ·寸媴绲块幃濠偽熼垾宕囩·达綀娉曢弫?HTTP/1.1
             .retryOnConnectionFailure(false)
             .followRedirects(true)
             .followSslRedirects(true)
@@ -153,8 +137,8 @@ object NetworkClient {
     }
 
     /**
-     * 通知 VPN 状态变化
-     * 当 VPN 启动/停止时调用，自动清理失效连接
+     * 注释已清理。
+     * 注释已清理。
      */
     fun onVpnStateChanged(active: Boolean) {
         val previousState = isVpnActive.getAndSet(active)
@@ -166,8 +150,8 @@ object NetworkClient {
     }
 
     /**
-     * 通知网络变化
-     * 当网络切换（WiFi <-> 移动数据）时调用
+     * 注释已清理。
+     * 注释已清理。
      */
     fun onNetworkChanged() {
         Log.i(TAG, "Network changed, clearing connection pool")
@@ -175,14 +159,14 @@ object NetworkClient {
     }
 
     /**
-     * 清理连接池
+     * 注释已清理。
      */
     fun clearConnectionPool() {
         connectionPool.evictAll()
     }
 
     /**
-     * 获取连接池状态
+     * 注释已清理。
      */
     fun getPoolStatus(): PoolStatus {
         return PoolStatus(
@@ -195,7 +179,7 @@ object NetworkClient {
     }
 
     /**
-     * 重置统计信息
+     * 注释已清理。
      */
     fun resetStats() {
         totalRequests.set(0)
@@ -204,7 +188,7 @@ object NetworkClient {
     }
 
     /**
-     * 连接池状态数据类
+     * 閺夆晝鍋炵敮鏉懶ч悩闈浶﹂柟顑跨劍閺嗙喖骞戦鎹愵潶
      */
     data class PoolStatus(
         val idleConnections: Int,
@@ -226,13 +210,13 @@ object NetworkClient {
     }
 
     /**
-     * 执行请求，代理优先 + 直连回退
-     * 用于规则集下载、应用更新检查等可能被墙的场景
+     * 注释已清理。
+     * 注释已清理。
      *
-     * @param request 要执行的请求
-     * @param proxyPort 代理端口，当 VPN 运行时使用
-     * @param isVpnActive VPN 是否运行中
-     * @return Response 或 null
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     fun executeWithFallback(
         request: okhttp3.Request,

@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.tun
+﻿package com.kunk.singbox.service.tun
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * VPN TUN 接口管理器
- * 负责 TUN 接口的配置、创建和生命周期管理
+ * 注释已清理。
+ * 注释已清理。
  */
 class VpnTunManager(
     private val context: Context,
@@ -45,8 +45,8 @@ class VpnTunManager(
     private val mtuLogDebounceMs: Long = 10_000L
 
     /**
-     * 预分配 TUN Builder
-     * 在收到 ACTION_START 时调用，减少 openTun 时的延迟
+     * 濡澘瀚崹搴ㄦ煀?TUN Builder
+     * 注释已清理。
      */
     fun preallocateBuilder() {
         if (preallocatedBuilder != null) return
@@ -62,7 +62,7 @@ class VpnTunManager(
     }
 
     /**
-     * 获取预分配的 Builder（如果有）
+     * 注释已清理。
      */
     fun consumePreallocatedBuilder(): VpnService.Builder? {
         return preallocatedBuilder?.also {
@@ -72,10 +72,10 @@ class VpnTunManager(
     }
 
     /**
-     * 配置 TUN Builder
+     * 注释已清理。
      * @param builder VpnService.Builder
      * @param options TunOptions from libbox
-     * @param settings 应用设置
+     * 注释已清理。
      */
     fun configureBuilder(
         builder: VpnService.Builder,
@@ -88,20 +88,15 @@ class VpnTunManager(
         builder.setSession("KunBox VPN")
             .setMtu(effectiveMtu)
 
-        // 添加地址
         builder.addAddress("172.19.0.1", 30)
         builder.addAddress("fd00::1", 126)
 
-        // 添加路由
         configureRoutes(builder, settings)
 
-        // 添加 DNS
         configureDns(builder, settings)
 
-        // 分应用配置
         configurePerAppVpn(builder, settings)
 
-        // 保存分流设置用于热重载检测
         val appModeName = (settings?.vpnAppMode ?: VpnAppMode.ALL).name
         val allowlist = settings?.vpnAllowlist
         val blocklist = settings?.vpnBlocklist
@@ -116,8 +111,6 @@ class VpnTunManager(
             blocklist = blocklist
         )
 
-        // 保存用户设置的 MTU 而不是 effectiveMtu，因为 effectiveMtu 是运行时根据网络类型计算的
-        // 如果保存 effectiveMtu，会导致 hasTunSettingsChanged 误判（用户没改设置但 hash 不匹配）
         VpnStateStore.saveTunSettings(
             tunStack = (settings?.tunStack ?: TunStack.MIXED).name,
             tunMtu = settings?.tunMtu ?: 1500,
@@ -126,10 +119,10 @@ class VpnTunManager(
             proxyPort = settings?.proxyPort ?: 2080
         )
 
-        // 安全设置
+        // 注释已清理。
         configureSecuritySettings(builder)
 
-        // Android Q+ 设置
+        // 注释已清理。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setMetered(false)
             configureHttpProxy(builder, settings)
@@ -331,10 +324,6 @@ class VpnTunManager(
         }
     }
 
-    /**
-     * 检查 Always-On VPN 状态
-     * @return Pair<packageName, isLockdown>
-     */
     fun checkAlwaysOnVpn(): Pair<String?, Boolean> {
         val alwaysOnPkg = runCatching {
             Settings.Secure.getString(context.contentResolver, "always_on_vpn_app")
@@ -357,9 +346,6 @@ class VpnTunManager(
         return Pair(alwaysOnPkg, lockdown)
     }
 
-    /**
-     * 检查是否有其他 VPN 活跃
-     */
     fun isOtherVpnActive(connectivityManager: ConnectivityManager?): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && connectivityManager != null) {
             return runCatching {
@@ -374,8 +360,8 @@ class VpnTunManager(
     }
 
     /**
-     * 使用重试建立 TUN 接口
-     * @return ParcelFileDescriptor 或 null
+     * 注释已清理。
+     * 注释已清理。
      */
     fun establishWithRetry(
         builder: VpnService.Builder,
@@ -404,7 +390,7 @@ class VpnTunManager(
     }
 
     /**
-     * 清理预分配的 Builder
+     * 注释已清理。
      */
     fun cleanup() {
         preallocatedBuilder = null
@@ -422,7 +408,6 @@ class VpnTunManager(
     private fun isNumericAddress(address: String): Boolean {
         if (address.isBlank()) return false
 
-        // 跳过 URL 格式 (DoH/DoT)，避免 DNS 解析超时
         val hasUrlFormat = address.contains("://") || address.contains("/")
         val hasNonIpv6Colon = address.contains(":") && !isIpv6Literal(address)
         if (hasUrlFormat || hasNonIpv6Colon) {
@@ -438,13 +423,11 @@ class VpnTunManager(
     }
 
     private fun isIpv6Literal(address: String): Boolean {
-        // IPv6 地址格式: xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
-        // 或简写格式如 ::1, fe80::1 等
-        // 不包含 http/https 协议前缀
+
         if (address.startsWith("[") || address.startsWith("::")) return true
         val colonCount = address.count { it == ':' }
         val dotCount = address.count { it == '.' }
-        // IPv6 至少有 2 个冒号，且没有点（除非是 IPv4-mapped IPv6）
+
         return colonCount >= 2 && dotCount == 0
     }
 }

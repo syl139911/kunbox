@@ -11,8 +11,8 @@ import kotlinx.coroutines.sync.Semaphore
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 路由组自动选择管理器
- * 负责定期为路由规则使用的 Selector 选择最低延迟节点
+ * [乱码注释已清理]
+ * [乱码注释已清理]
  */
 class RouteGroupSelector(
     private val context: Context,
@@ -20,7 +20,7 @@ class RouteGroupSelector(
 ) {
     companion object {
         private const val TAG = "RouteGroupSelector"
-        private const val AUTO_SELECT_INTERVAL_MS = 30L * 60L * 1000L // 30 分钟
+        private const val AUTO_SELECT_INTERVAL_MS = 30L * 60L * 1000L // 30 鍒嗛挓
         private const val INITIAL_DELAY_MS = 1200L
         private const val LATENCY_TEST_TIMEOUT_MS = 4500L
         private const val MAX_CONCURRENT_TESTS = 4
@@ -43,7 +43,7 @@ class RouteGroupSelector(
     }
 
     /**
-     * 启动路由组自动选择
+     * [乱码注释已清理]
      */
     fun start(configContent: String) {
         stop()
@@ -60,7 +60,7 @@ class RouteGroupSelector(
     }
 
     /**
-     * 停止路由组自动选择
+     * [乱码注释已清理]
      */
     fun stop() {
         autoSelectJob?.cancel()
@@ -68,7 +68,7 @@ class RouteGroupSelector(
     }
 
     /**
-     * 为路由规则引用的 Selector 选择最低延迟节点
+     * [乱码注释已清理]
      */
     private suspend fun selectBestForRouteGroups(configContent: String) {
         val cfg = runCatching { gson.fromJson(configContent, SingBoxConfig::class.java) }.getOrNull() ?: return

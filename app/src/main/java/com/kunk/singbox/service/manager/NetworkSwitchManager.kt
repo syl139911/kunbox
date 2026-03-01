@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.net.ConnectivityManager
 import android.net.Network
@@ -13,14 +13,14 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * 网络切换状态管理器
- * 解决 WiFi <-> Cellular 切换时的连接问题
+ * 注释已清理。
+ * 注释已清理。
  *
- * 主要修复:
- * 1. 启动窗口期优化 - 缩短窗口期并延迟处理而非忽略
- * 2. 网络类型变化检测 - 检测 WiFi/Cellular 类型变化
- * 3. 事件聚合 - 防止快速切换产生多个事件
- * 4. 健康检查 - 验证新网络是否真正可用
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 class NetworkSwitchManager(
     private val scope: CoroutineScope,
@@ -29,13 +29,12 @@ class NetworkSwitchManager(
     companion object {
         private const val TAG = "NetworkSwitchManager"
 
-        // 配置参数
-        private const val STARTUP_WINDOW_MS = 1000L // 启动窗口期 (从 3000ms 缩短)
-        private const val EVENT_AGGREGATION_MS = 300L // 事件聚合时间
-        private const val MIN_SWITCH_INTERVAL_MS = 500L // 最小切换间隔
+        private const val STARTUP_WINDOW_MS = 1000L
+        private const val EVENT_AGGREGATION_MS = 300L
+        private const val MIN_SWITCH_INTERVAL_MS = 500L
     }
 
-    // 回调接口
+    // 注释已清理。
     interface Callbacks {
         fun getConnectivityManager(): ConnectivityManager?
         fun setUnderlyingNetworks(networks: Array<Network>?)
@@ -48,7 +47,7 @@ class NetworkSwitchManager(
 
     private var callbacks: Callbacks? = null
 
-    // 状态
+    // 注释已清理。
     private val vpnStartedAtMs = AtomicLong(0L)
     private val lastSwitchAtMs = AtomicLong(0L)
     private val lastNetworkType = AtomicReference(NetworkType.OTHER)
@@ -56,12 +55,10 @@ class NetworkSwitchManager(
     private var aggregationJob: Job? = null
     private var healthCheckJob: Job? = null
 
-    // 统计
     private val switchCount = AtomicLong(0)
     private val failedSwitchCount = AtomicLong(0)
     private val typeChangeCount = AtomicLong(0)
 
-    // 网络类型
     enum class NetworkType {
         WIFI, CELLULAR, ETHERNET, OTHER
     }
@@ -75,13 +72,12 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 处理网络更新
-     * 这是主入口点，替代原有的 updateDefaultInterface
+     * 濠㈣泛瀚幃濠勭磾閹寸姷鎹曢柡鍥х摠閺?
+     * 注释已清理。
      */
     fun handleNetworkUpdate(network: Network) {
         val now = SystemClock.elapsedRealtime()
 
-        // 检查启动窗口期
         val vpnStarted = vpnStartedAtMs.get()
         val timeSinceStart = now - vpnStarted
         val inStartupWindow = vpnStarted > 0 && timeSinceStart < STARTUP_WINDOW_MS
@@ -91,8 +87,6 @@ class NetworkSwitchManager(
             deferNetworkUpdate(network, STARTUP_WINDOW_MS - timeSinceStart + 100)
             return
         }
-
-        // 检查最小切换间隔
         val lastSwitch = lastSwitchAtMs.get()
         val timeSinceLastSwitch = now - lastSwitch
         if (timeSinceLastSwitch < MIN_SWITCH_INTERVAL_MS) {
@@ -101,12 +95,12 @@ class NetworkSwitchManager(
             return
         }
 
-        // 直接处理
+        // 注释已清理。
         processNetworkUpdate(network)
     }
 
     /**
-     * 延迟处理网络更新
+     * 注释已清理。
      */
     private fun deferNetworkUpdate(network: Network, delayMs: Long) {
         pendingNetworkUpdate.set(network)
@@ -119,7 +113,7 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 聚合网络更新事件
+     * 注释已清理。
      */
     private fun aggregateNetworkUpdate(network: Network) {
         pendingNetworkUpdate.set(network)
@@ -136,7 +130,7 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 实际处理网络更新
+     * 注释已清理。
      */
     @Suppress("CyclomaticComplexMethod")
     private fun processNetworkUpdate(network: Network) {
@@ -156,7 +150,6 @@ class NetworkSwitchManager(
         lastSwitchAtMs.set(now)
         switchCount.incrementAndGet()
 
-        // 检测网络类型变化
         val currentType = detectNetworkType(caps)
         val previousType = lastNetworkType.getAndSet(currentType)
         val typeChanged = currentType != previousType && previousType != NetworkType.OTHER
@@ -166,12 +159,12 @@ class NetworkSwitchManager(
             Log.i(TAG, "Network type changed: $previousType -> $currentType")
         }
 
-        // 获取接口信息
+        // 注释已清理。
         val linkProps = cm.getLinkProperties(network)
         val interfaceName = linkProps?.interfaceName ?: ""
         val isExpensive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == false
 
-        // 更新 underlying networks
+        // 注释已清理。
         val lastKnown = cb.getLastKnownNetwork()
         val networkChanged = network != lastKnown
 
@@ -206,7 +199,7 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 检测网络类型
+     * 注释已清理。
      */
     private fun detectNetworkType(caps: NetworkCapabilities?): NetworkType {
         if (caps == null) return NetworkType.OTHER
@@ -218,9 +211,6 @@ class NetworkSwitchManager(
         }
     }
 
-    /**
-     * 执行健康检查
-     */
     @Suppress("CognitiveComplexMethod")
     private fun performHealthCheck(network: Network) {
         healthCheckJob?.cancel()
@@ -273,7 +263,7 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 取消待处理的更新
+     * 注释已清理。
      */
     fun cancelPendingUpdates() {
         pendingNetworkUpdate.set(null)
@@ -282,7 +272,7 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 获取统计信息
+     * 注释已清理。
      */
     fun getMetrics(): Map<String, Long> {
         return mapOf(
@@ -294,7 +284,7 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 清理
+     * 注释已清理。
      */
     fun cleanup() {
         cancelPendingUpdates()

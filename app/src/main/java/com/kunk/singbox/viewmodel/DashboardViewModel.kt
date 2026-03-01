@@ -109,7 +109,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         // 鍚﹀垯VPN浠嶇劧浣跨敤鏃ч厤缃紝瀵艰嚧鐢ㄦ埛鐪嬪埌"閫変腑"浜嗘柊閰嶇疆鐨勮妭鐐逛絾瀹為檯娌＄綉
         if (SingBoxRemote.isRunning.value || SingBoxRemote.isStarting.value) {
             viewModelScope.launch {
-                // 绛夊緟閰嶇疆鍒囨崲瀹屾垚锛坰etActiveProfile 鍐呴儴鍙兘鏈夊紓姝ュ姞杞斤級
+                // 注释已清理。
                 delay(100)
                 // 鑾峰彇鏂伴厤缃殑褰撳墠閫変腑鑺傜偣
                 val currentNodeId = configRepository.activeNodeId.value
@@ -264,7 +264,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val vpnPermissionNeeded: StateFlow<Boolean> = _vpnPermissionNeeded.asStateFlow()
 
     // 2025-fix-v12: 鐢ㄤ簬纭繚鐘舵€佺洃鍚櫒鍙惎鍔ㄤ竴娆?
-    // 浣跨敤 @Volatile 淇濊瘉澶氱嚎绋嬪彲瑙佹€?
+    // 注释已清理。
     @Volatile private var stateCollectorStarted = false
 
     // 2025-fix: 鏍囪鏄惁鍦ㄥ惎鍔ㄦ椂妫€娴嬪埌浜嗙郴缁?VPN
@@ -402,7 +402,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
-        // 鏀堕泦鍣?: 鐩戝惉鏈嶅姟绔妭鐐瑰垏鎹紝鍚屾鏇存柊涓昏繘绋嬬殑 activeNodeId
+        // 注释已清理。
         // 瑙ｅ喅閫氱煡鏍忓垏鎹㈣妭鐐瑰悗棣栭〉鏄剧ず鏃ц妭鐐圭殑闂
         viewModelScope.launch {
             SingBoxRemote.activeLabel
@@ -418,7 +418,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * 缁熶竴绠＄悊杩炴帴鐘舵€佹洿鏂帮紝鍐呯疆闃叉姈閫昏緫闃叉 UI 闂儊
+     * 注释已清理。
      */
     private fun setConnectionState(newState: ConnectionState) {
         if (newState == ConnectionState.Disconnecting && _connectionState.value == ConnectionState.Connecting) {
@@ -600,26 +600,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             // 鏃犺 IPC 缁戝畾鏄惁鎴愬姛锛岄兘瑕佺‘淇?startStateCollector 琚皟鐢?
             // 杩欐牱鍗充娇鎵€鏈夌瓑寰呴兘瓒呮椂锛孧MKV 鐘舵€佹洿鏂颁篃鑳芥纭紶閫掑埌 UI
             startStateCollector()
-        }
-    }
-
-    /**
-     * 妫€鏌ョ郴缁熸槸鍚︽湁娲昏穬鐨?VPN 杩炴帴
-     */
-    private fun checkSystemVpn(context: Context): Boolean {
-        return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val cm = context.getSystemService(ConnectivityManager::class.java)
-                cm?.allNetworks?.any { network ->
-                    val caps = cm.getNetworkCapabilities(network) ?: return@any false
-                    caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-                } == true
-            } else {
-                false
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to check system VPN", e)
-            false
         }
     }
 
@@ -873,7 +853,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         Log.w(TAG, "Timeout waiting for opposite service to stop")
                     }
                 }
-                // 澧炲姞缂撳啿鏃堕棿锛氱‘淇濈鍙ｅ畬鍏ㄩ噴鏀?
+                // 注释已清理。
                 // 鍘熷洜: BoxService.close() 鍚庣鍙ｉ噴鏀惧彲鑳芥湁寤惰繜
                 delay(500)
             }
@@ -917,7 +897,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     context.startService(intent)
                 }
 
-                // 1) 1000ms 鍐呯粰鍑哄弽棣堬細浠嶆湭 running 鍒欐彁绀衡€滃惎鍔ㄤ腑鈥濓紝浣嗕笉鍒ゅけ璐?
+                // 注释已清理。
                 // 2) 鍚庣画鍙湪鏈嶅姟绔槑纭け璐ワ紙lastErrorFlow锛夋垨鏈嶅姟寮傚父閫€鍑烘椂鎵嶇疆 Error
                 startMonitorJob?.cancel()
                 startMonitorJob = viewModelScope.launch {
@@ -1061,7 +1041,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private fun startTrafficMonitor() {
         stopTrafficMonitor()
 
-        // 閲嶇疆骞虫粦缂撳瓨
+        // 注释已清理。
         lastUploadSpeed = 0
         lastDownloadSpeed = 0
 
@@ -1075,8 +1055,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         lastTrafficSampleAtElapsedMs = SystemClock.elapsedRealtime()
 
         // 璁板綍 BoxWrapper 鍒濆娴侀噺鍊?(鐢ㄤ簬璁＄畻鏈浼氳瘽娴侀噺)
-        wrapperBaseUpload = BoxWrapperManager.getUploadTotal().let { if (it >= 0) it else 0L }
-        wrapperBaseDownload = BoxWrapperManager.getDownloadTotal().let { if (it >= 0) it else 0L }
+        wrapperBaseUpload = if (BoxWrapperManager.isAvailable()) BoxWrapperManager.getUploadTotal().let { if (it >= 0) it else 0L } else 0L
+        wrapperBaseDownload = if (BoxWrapperManager.isAvailable()) BoxWrapperManager.getDownloadTotal().let { if (it >= 0) it else 0L } else 0L
 
         trafficSmoothingJob = viewModelScope.launch(Dispatchers.Default) {
             while (true) {
@@ -1084,9 +1064,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
                 val nowElapsed = SystemClock.elapsedRealtime()
 
-                // 鍙屾簮娴侀噺缁熻: 浼樺厛浣跨敤 BoxWrapper (鍐呮牳绾?, 鍥為€€鍒?TrafficStats (绯荤粺绾?
+                // 注释已清理。
                 val sample = if (BoxWrapperManager.isAvailable()) {
-                    // 浣跨敤 BoxWrapper 鍐呮牳绾ф祦閲忕粺璁?(鏇村噯纭?
+                    // 注释已清理。
                     val wrapperUp = BoxWrapperManager.getUploadTotal()
                     val wrapperDown = BoxWrapperManager.getDownloadTotal()
                     if (wrapperUp >= 0 && wrapperDown >= 0) {
@@ -1115,7 +1095,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 val down = (dRx * 1000L) / dtMs
 
                 // 浼樺寲: 浣跨敤鑷€傚簲骞虫粦鍥犲瓙锛屾牴鎹€熷害鍙樺寲骞呭害鍔ㄦ€佽皟鏁?
-                // 浼樺娍: 澶у箙鍙樺寲鏃跺揩閫熷搷搴?灏忓箙鍙樺寲鏃跺钩婊戞樉绀猴紝鍏奸【鍝嶅簲鎬у拰绋冲畾鎬?
+                // 注释已清理。
                 val uploadSmoothFactor = calculateAdaptiveSmoothFactor(up, lastUploadSpeed)
                 val downloadSmoothFactor = calculateAdaptiveSmoothFactor(down, lastDownloadSpeed)
 
@@ -1171,7 +1151,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
      * @return 骞虫粦鍥犲瓙 (0.0-1.0),鍊艰秺澶у搷搴旇秺蹇?
      */
     private fun calculateAdaptiveSmoothFactor(current: Long, previous: Long): Double {
-        // 澶勭悊闆跺€兼儏鍐?
+        // 注释已清理。
         if (previous <= 0) return 1.0
 
         // 璁＄畻鍙樺寲骞呭害姣斾緥

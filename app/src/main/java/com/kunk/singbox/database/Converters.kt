@@ -5,9 +5,9 @@ import com.kunk.singbox.model.ProfileType
 import com.kunk.singbox.model.UpdateStatus
 
 /**
- * Room 类型转换器
+ * Room 绫诲瀷杞崲鍣?
  *
- * 用于将枚举类型转换为数据库可存储的格式
+ * [乱码注释已清理]
  */
 class Converters {
 

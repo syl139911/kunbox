@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.util.Log
 import com.kunk.singbox.core.SelectorManager as CoreSelectorManager
@@ -6,14 +6,14 @@ import io.nekohasekai.libbox.CommandClient
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * 节点选择管理器 (协调者)
- * 封装 core.SelectorManager，提供统一的节点切换接口
- * 使用 Result<T> 返回值模式
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  *
- * 热切换策略 (渐进式降级):
- * 1. 原生 CommandClient API (最可靠)
- * 2. BoxWrapperManager (备用)
- * 3. 完整重启 (fallback)
+ * 注释已清理。
+ * 注释已清理。
+ * 2. BoxWrapperManager (濠㈣泛娲ㄩ弫?
+ * 注释已清理。
  */
 class SelectorManager {
     companion object {
@@ -24,7 +24,7 @@ class SelectorManager {
     private var commandClient: CommandClient? = null
 
     /**
-     * 切换结果
+     * 注释已清理。
      */
     sealed class SwitchResult {
         data class Success(val nodeTag: String, val method: String) : SwitchResult()
@@ -33,7 +33,7 @@ class SelectorManager {
     }
 
     /**
-     * 初始化管理器
+     * 注释已清理。
      */
     fun init(commandClient: CommandClient?): Result<Unit> {
         return runCatching {
@@ -43,7 +43,7 @@ class SelectorManager {
     }
 
     /**
-     * 记录当前 selector 签名
+     * 注释已清理。
      */
     fun recordSelector(outboundTags: List<String>, selectedTag: String?): Result<Unit> {
         return runCatching {
@@ -52,24 +52,20 @@ class SelectorManager {
         }
     }
 
-    /**
-     * 检查是否支持热切换
-     */
     fun canHotSwitch(nodeTag: String): Boolean {
         return CoreSelectorManager.hasSelector() &&
             CoreSelectorManager.isNodeInCurrentSelector(nodeTag)
     }
 
     /**
-     * 执行节点切换 (渐进式降级)
+     * 注释已清理。
      */
     fun switchNode(nodeTag: String): SwitchResult {
-        // 检查是否可以热切换
         if (!canHotSwitch(nodeTag)) {
             return SwitchResult.NeedRestart(nodeTag, "Node not in current selector")
         }
 
-        // 策略 1: 使用 CommandClient
+        // 注释已清理。
         commandClient?.let { client ->
             try {
                 val success = CoreSelectorManager.selectOutbound(client, PROXY_SELECTOR_TAG, nodeTag)
@@ -83,7 +79,7 @@ class SelectorManager {
             Unit
         }
 
-        // 策略 2: 使用 BoxWrapperManager
+        // 注释已清理。
         try {
             val success = CoreSelectorManager.selectOutboundViaWrapper(nodeTag)
             if (success) {
@@ -94,37 +90,36 @@ class SelectorManager {
             Log.w(TAG, "BoxWrapper switch failed: ${e.message}")
         }
 
-        // 策略 3: 需要完整重启
         return SwitchResult.NeedRestart(nodeTag, "All hot switch methods failed")
     }
 
     /**
-     * 获取当前选中的节点
+     * 注释已清理。
      */
     fun getSelectedOutbound(): String? = CoreSelectorManager.getSelectedOutbound()
 
     /**
-     * 获取选中节点的 Flow
+     * 注释已清理。
      */
     fun getSelectedOutboundFlow(): StateFlow<String?> = CoreSelectorManager.selectedOutbound
 
     /**
-     * 获取当前 selector 的所有节点
+     * 注释已清理。
      */
     fun getCurrentOutbounds(): List<String> = CoreSelectorManager.getCurrentOutboundTags()
 
     /**
-     * 检查是否有有效的 selector
+     * 注释已清理。
      */
     fun hasSelector(): Boolean = CoreSelectorManager.hasSelector()
 
     /**
-     * 获取热切换能力 Flow
+     * 注释已清理。
      */
     fun getCanHotSwitchFlow(): StateFlow<Boolean> = CoreSelectorManager.canHotSwitchFlow
 
     /**
-     * 清理状态
+     * 注释已清理。
      */
     fun clear(): Result<Unit> {
         return runCatching {
@@ -135,7 +130,7 @@ class SelectorManager {
     }
 
     /**
-     * 更新 CommandClient
+     * 注释已清理。
      */
     fun updateCommandClient(client: CommandClient?) {
         this.commandClient = client

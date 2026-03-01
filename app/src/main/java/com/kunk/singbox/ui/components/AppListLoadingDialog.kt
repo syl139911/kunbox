@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.components
+﻿package com.kunk.singbox.ui.components
 
 import com.kunk.singbox.R
 import androidx.compose.foundation.background
@@ -28,18 +28,18 @@ import com.kunk.singbox.ui.theme.TextPrimary
 import com.kunk.singbox.ui.theme.TextSecondary
 
 /**
- * 应用列表加载对话框
- * 显示加载进度和状态
+ * 注释已清理。
+ * 注释已清理。
  */
 @Composable
 fun AppListLoadingDialog(
     loadingState: InstalledAppsRepository.LoadingState
 ) {
-    // 只在加载中状态显示对话框
+
     if (loadingState !is InstalledAppsRepository.LoadingState.Loading) return
 
     Dialog(
-        onDismissRequest = { /* 不可取消 */ },
+        onDismissRequest = { /* 加载中，禁止关闭 */ },
         properties = DialogProperties(
             dismissOnBackPress = false,
             dismissOnClickOutside = false
@@ -52,7 +52,7 @@ fun AppListLoadingDialog(
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 圆形进度指示器（带进度）
+
             CircularProgressIndicator(
                 progress = { loadingState.progress },
                 modifier = Modifier.size(72.dp),
@@ -79,7 +79,7 @@ fun AppListLoadingDialog(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 线性进度条
+            // 注释已清理。
             LinearProgressIndicator(
                 progress = { loadingState.progress },
                 modifier = Modifier
@@ -93,7 +93,7 @@ fun AppListLoadingDialog(
 }
 
 /**
- * 简化版加载对话框（无具体进度，只显示加载中）
+ * 注释已清理。
  */
 @Composable
 fun SimpleLoadingDialog(
@@ -103,7 +103,7 @@ fun SimpleLoadingDialog(
     if (!show) return
 
     Dialog(
-        onDismissRequest = { /* 不可取消 */ },
+        onDismissRequest = { /* 加载中，禁止关闭 */ },
         properties = DialogProperties(
             dismissOnBackPress = false,
             dismissOnClickOutside = false

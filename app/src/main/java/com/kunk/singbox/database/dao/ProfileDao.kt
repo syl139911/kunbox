@@ -12,14 +12,14 @@ import com.kunk.singbox.model.UpdateStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Profile 数据访问对象
+ * Profile 鏁版嵁璁块棶瀵硅薄
  *
- * 提供 Profile 的 CRUD 操作和 Flow 查询
+ * [乱码注释已清理]
  */
 @Dao
 interface ProfileDao {
 
-    // ==================== 查询 ====================
+    // ==================== 鏌ヨ ====================
 
     @Query("SELECT * FROM profiles ORDER BY sortOrder ASC")
     fun getAllFlow(): Flow<List<ProfileEntity>>
@@ -51,7 +51,7 @@ interface ProfileDao {
     @Query("SELECT MAX(sortOrder) FROM profiles")
     suspend fun getMaxSortOrder(): Int?
 
-    // ==================== 插入/更新 ====================
+    // ==================== 鎻掑叆/鏇存柊 ====================
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(profile: ProfileEntity)
@@ -86,7 +86,7 @@ interface ProfileDao {
     @Query("UPDATE profiles SET expireDate = :expireDate, totalTraffic = :totalTraffic, usedTraffic = :usedTraffic WHERE id = :id")
     suspend fun updateTrafficInfo(id: String, expireDate: Long, totalTraffic: Long, usedTraffic: Long)
 
-    // ==================== 删除 ====================
+    // ==================== 鍒犻櫎 ====================
 
     @Delete
     suspend fun delete(profile: ProfileEntity)
@@ -97,7 +97,7 @@ interface ProfileDao {
     @Query("DELETE FROM profiles")
     suspend fun deleteAll()
 
-    // ==================== 排序 ====================
+    // ==================== 鎺掑簭 ====================
 
     @Query("UPDATE profiles SET sortOrder = :order WHERE id = :id")
     suspend fun setSortOrder(id: String, order: Int)

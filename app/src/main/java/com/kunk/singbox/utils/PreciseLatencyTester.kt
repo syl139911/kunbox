@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -16,37 +16,37 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 精确延迟测试器
+ * 注释已清理。
  *
- * 使用 OkHttp EventListener 精确测量各阶段耗时：
- * - RTT: 从 TLS 握手完成到收到首字节的时间（排除连接建立开销）
- * - Handshake: TLS 握手时间
- * - Total: 完整请求时间
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  *
- * 相比简单的 System.nanoTime() 测量，此方案：
- * 1. 更精确：排除了本地代理连接开销
- * 2. 更稳定：预热请求消除首次连接抖动
- * 3. 更灵活：支持多种测量标准
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 object PreciseLatencyTester {
     private const val TAG = "PreciseLatencyTester"
 
     /**
-     * 测量标准
+     * 注释已清理。
      */
     enum class Standard {
-        /** RTT: 从握手完成到收到首字节（推荐，最接近真实延迟） */
+        /* 注释已清理。 */
         RTT,
-        /** Handshake: TLS 握手时间 */
+        /* 注释已清理。 */
         HANDSHAKE,
-        /** FirstByte: 从请求开始到收到首字节 */
+        /* 注释已清理。 */
         FIRST_BYTE,
-        /** Total: 完整请求时间（包含连接建立） */
+        /* 注释已清理。 */
         TOTAL
     }
 
     /**
-     * 延迟测试结果
+     * 注释已清理。
      */
     data class LatencyResult(
         val latencyMs: Long,
@@ -60,13 +60,13 @@ object PreciseLatencyTester {
     }
 
     /**
-     * 精确延迟测试
+     * 注释已清理。
      *
-     * @param proxyPort 本地代理端口
-     * @param url 测试 URL
-     * @param timeoutMs 超时时间（毫秒）
-     * @param standard 测量标准
-     * @param warmup 是否预热（首次请求不计入结果）
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun test(
         proxyPort: Int,
@@ -84,14 +84,13 @@ object PreciseLatencyTester {
             .writeTimeout(timeoutMs.toLong(), TimeUnit.MILLISECONDS)
             .callTimeout(timeoutMs.toLong(), TimeUnit.MILLISECONDS)
             .eventListener(timingListener)
-            // 关键：根据测量标准决定是否禁用 Keep-Alive
             .apply {
                 if (standard == Standard.HANDSHAKE) {
-                    // 测量握手时间时禁用连接复用，确保每次都执行握手
+
                     connectionPool(okhttp3.ConnectionPool(0, 1, TimeUnit.MILLISECONDS))
                 }
             }
-            .followRedirects(false) // 不跟随重定向
+            .followRedirects(false)
             .build()
 
         try {
@@ -100,7 +99,6 @@ object PreciseLatencyTester {
                 .get()
                 .build()
 
-            // 预热请求（可选）
             if (warmup) {
                 try {
                     timingListener.reset()
@@ -108,12 +106,12 @@ object PreciseLatencyTester {
                         resp.body?.close()
                     }
                 } catch (e: Exception) {
-                    // 预热失败不影响正式测试
+
                     Log.d(TAG, "Warmup request failed: ${e.message}")
                 }
             }
 
-            // 正式测试
+            // 注释已清理。
             timingListener.reset()
             val response = client.newCall(request).execute()
             response.use { resp ->
@@ -123,42 +121,41 @@ object PreciseLatencyTester {
                 resp.body?.close()
             }
 
-            // 根据测量标准计算延迟
+            // 注释已清理。
             val latency = when (standard) {
                 Standard.RTT -> {
-                    // RTT: 从握手完成到收到首字节
+
                     val handshakeEnd = timingListener.secureConnectEnd.get()
                         .takeIf { it > 0 } ?: timingListener.connectEnd.get()
                     val firstByte = timingListener.responseHeadersStart.get()
                     if (handshakeEnd > 0 && firstByte > handshakeEnd) {
                         firstByte - handshakeEnd
                     } else {
-                        // 回退到 Total 测量
+
                         timingListener.callEnd.get() - timingListener.callStart.get()
                     }
                 }
                 Standard.HANDSHAKE -> {
-                    // TLS 握手时间
+                    // 注释已清理。
                     val start = timingListener.secureConnectStart.get()
                     val end = timingListener.secureConnectEnd.get()
                     if (start > 0 && end > start) {
                         end - start
                     } else {
-                        // HTTP 连接（无 TLS），返回 TCP 连接时间
+
                         timingListener.connectEnd.get() - timingListener.connectStart.get()
                     }
                 }
                 Standard.FIRST_BYTE -> {
-                    // 从请求开始到收到首字节
+
                     timingListener.responseHeadersStart.get() - timingListener.callStart.get()
                 }
                 Standard.TOTAL -> {
-                    // 完整请求时间
+
                     timingListener.callEnd.get() - timingListener.callStart.get()
                 }
             }
 
-            // 构建详细结果
             LatencyResult(
                 latencyMs = latency.coerceAtLeast(0),
                 dnsTimeMs = (timingListener.dnsEnd.get() - timingListener.dnsStart.get()).coerceAtLeast(0),
@@ -177,7 +174,7 @@ object PreciseLatencyTester {
     }
 
     /**
-     * 简化版延迟测试（兼容现有接口）
+     * 注释已清理。
      */
     suspend fun testSimple(
         proxyPort: Int,
@@ -189,7 +186,7 @@ object PreciseLatencyTester {
     }
 
     /**
-     * 事件监听器 - 记录各阶段时间戳
+     * 注释已清理。
      */
     private class TimingEventListener : EventListener() {
         val callStart = AtomicLong(0)

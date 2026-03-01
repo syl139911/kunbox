@@ -1,4 +1,4 @@
-package com.kunk.singbox.database.entity
+﻿package com.kunk.singbox.database.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -7,9 +7,9 @@ import androidx.room.PrimaryKey
 import com.kunk.singbox.model.NodeUi
 
 /**
- * Node 数据库实体
+ * Node 閺佺増宓佹惔鎾崇杽娴?
  *
- * 对应 NodeUi，使用 Room 存储以支持高效的节点查询和过滤
+ * [涔辩爜娉ㄩ噴宸叉竻鐞哴
  */
 @Entity(
     tableName = "nodes",
@@ -38,12 +38,12 @@ data class NodeEntity(
     val latencyMs: Long?,
     val isFavorite: Boolean = false,
     val sourceProfileId: String,
-    val tags: String = "", // JSON 序列化的 List<String>
+    val tags: String = "", // JSON 鎼村繐鍨崠鏍畱 List<String>
     val trafficUsed: Long = 0,
     val sortOrder: Int = 0
 ) {
     /**
-     * 转换为 UI 模型
+     * [涔辩爜娉ㄩ噴宸叉竻鐞哴
      */
     fun toUiModel(): NodeUi = NodeUi(
         id = id,
@@ -60,7 +60,7 @@ data class NodeEntity(
 
     companion object {
         /**
-         * 从 UI 模型创建实体
+         * 注释已清理。
          */
         fun fromUiModel(ui: NodeUi, sortOrder: Int = 0): NodeEntity = NodeEntity(
             id = ui.id,

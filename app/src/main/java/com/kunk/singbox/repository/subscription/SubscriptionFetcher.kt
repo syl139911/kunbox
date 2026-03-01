@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository.subscription
+﻿package com.kunk.singbox.repository.subscription
 
 import android.util.Log
 import com.kunk.singbox.model.SingBoxConfig
@@ -7,7 +7,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
- * 订阅用户信息
+ * 注释已清理。
  */
 data class SubscriptionUserInfo(
     val upload: Long = 0,
@@ -17,12 +17,12 @@ data class SubscriptionUserInfo(
 )
 
 /**
- * 订阅服务 - 负责订阅的获取和解析
+ * 注释已清理。
  *
- * 功能:
- * - 从 URL 获取订阅内容
- * - 解析订阅配置（支持多种格式）
- * - 提取用户信息（流量、到期时间等）
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 class SubscriptionFetcher(
     private val client: OkHttpClient,
@@ -31,7 +31,7 @@ class SubscriptionFetcher(
     companion object {
         private const val TAG = "SubscriptionFetcher"
 
-        // 多 User-Agent 轮询策略
+        // 注释已清理。
         private val USER_AGENTS = listOf(
             "clash-verge/v1.3.8",
             "ClashforWindows/0.20.39",
@@ -40,18 +40,17 @@ class SubscriptionFetcher(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         )
 
-        // 预编译的正则表达式
         private val REGEX_SANITIZE_UUID = Regex("(?i)uuid\\s*[:=]\\s*[^\\\\n]+")
         private val REGEX_SANITIZE_PASSWORD = Regex("(?i)password\\s*[:=]\\s*[^\\\\n]+")
         private val REGEX_SANITIZE_TOKEN = Regex("(?i)token\\s*[:=]\\s*[^\\\\n]+")
     }
 
     /**
-     * 获取并解析订阅
+     * 注释已清理。
      *
-     * @param url 订阅 URL
-     * @param onProgress 进度回调
-     * @return 解析结果，包含配置和用户信息
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     fun fetch(
         url: String,
@@ -61,7 +60,7 @@ class SubscriptionFetcher(
 
         for ((index, userAgent) in USER_AGENTS.withIndex()) {
             try {
-                onProgress("尝试获取订阅 (${index + 1}/${USER_AGENTS.size})...")
+                onProgress("Trying subscription request with User-Agent (${index + 1}/${USER_AGENTS.size})...")
 
                 val request = Request.Builder()
                     .url(url)
@@ -85,17 +84,17 @@ class SubscriptionFetcher(
                     if (responseBody.isNullOrBlank()) {
                         Log.w(TAG, "Empty response with UA '$userAgent'")
                         if (index == USER_AGENTS.lastIndex) {
-                            throw Exception("服务器返回空内容")
+                            throw Exception("Subscription response body is empty")
                         }
                         return@use
                     }
 
-                    // 解析用户信息
+                    // 注释已清理。
                     userInfo = parseUserInfo(response.header("Subscription-Userinfo"), responseBody)
 
-                    onProgress("正在解析配置...")
+                    onProgress("Parsing subscription response...")
 
-                    // 使用 SubscriptionManager 解析配置
+                    // 注释已清理。
                     val config = subscriptionManager.parse(responseBody)
                     if (config != null && !config.outbounds.isNullOrEmpty()) {
                         parsedConfig = config
@@ -122,22 +121,22 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 解析用户信息
+     * 注释已清理。
      */
     private fun parseUserInfo(header: String?, body: String): SubscriptionUserInfo? {
-        // 从 Header 解析
+        // 注释已清理。
         if (!header.isNullOrBlank()) {
             val info = parseUserInfoHeader(header)
             if (info != null) return info
         }
 
-        // 从 Body 解析
+        // 注释已清理。
         return parseUserInfoFromBody(body)
     }
 
     /**
-     * 从 Header 解析用户信息
-     * 格式: upload=xxx; download=xxx; total=xxx; expire=xxx
+     * 注释已清理。
+     * 注释已清理。
      */
     private fun parseUserInfoHeader(header: String): SubscriptionUserInfo? {
         try {
@@ -170,15 +169,15 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 从 Body 解析用户信息
+     * 注释已清理。
      */
     private fun parseUserInfoFromBody(body: String): SubscriptionUserInfo? {
-        // 简化实现，实际逻辑在 ConfigRepository 中更复杂
+
         return null
     }
 
     /**
-     * 脱敏订阅内容片段（用于日志）
+     * 注释已清理。
      */
     fun sanitizeSnippet(body: String, maxLen: Int = 220): String {
         var s = body
@@ -194,7 +193,7 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 获取结果
+     * 注释已清理。
      */
     data class FetchResult(
         val config: SingBoxConfig,

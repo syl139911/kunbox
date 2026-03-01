@@ -1,4 +1,4 @@
-package com.kunk.singbox.service
+﻿package com.kunk.singbox.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -25,9 +25,10 @@ import com.kunk.singbox.utils.KernelHttpClient
 import com.kunk.singbox.repository.RuleSetRepository
 import io.nekohasekai.libbox.CommandServer
 import io.nekohasekai.libbox.CommandServerHandler
-import io.nekohasekai.libbox.BoxService
+import io.nekohasekai.libbox.ConnectionOwner
 import io.nekohasekai.libbox.InterfaceUpdateListener
 import io.nekohasekai.libbox.NetworkInterfaceIterator
+import io.nekohasekai.libbox.OverrideOptions
 import io.nekohasekai.libbox.PlatformInterface
 import io.nekohasekai.libbox.StringIterator
 import io.nekohasekai.libbox.TunOptions
@@ -58,7 +59,7 @@ class ProxyOnlyService : Service() {
         private const val NOTIFICATION_ID = 11
         private const val CHANNEL_ID = "singbox_proxy_silent"
         private const val LEGACY_CHANNEL_ID = "singbox_proxy"
-        // 启动时的端口等待作为兜底，主要等待在关闭流程中完成
+
         private const val PORT_WAIT_TIMEOUT_MS = 5000L
         private const val PORT_CHECK_INTERVAL_MS = 100L
 
@@ -90,18 +91,15 @@ class ProxyOnlyService : Service() {
     }
 
     private var commandServer: CommandServer? = null
-    private var boxService: BoxService? = null
 
     private val notificationUpdateDebounceMs: Long = 900L
     private val lastNotificationUpdateAtMs = java.util.concurrent.atomic.AtomicLong(0L)
     @Volatile private var notificationUpdateJob: Job? = null
     @Volatile private var suppressNotificationUpdates = false
 
-    // ACTION_PREPARE_RESTART 防抖：避免短时间内重复 resetAllConnections()
     private val lastPrepareRestartAtMs = java.util.concurrent.atomic.AtomicLong(0L)
     private val prepareRestartDebounceMs: Long = 1500L
 
-    // 华为设备修复: 追踪是否已经调用过 startForeground(),避免重复调用触发提示音
     private val hasForegroundStarted = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private val serviceSupervisorJob = SupervisorJob()
@@ -155,15 +153,15 @@ class ProxyOnlyService : Service() {
             return procPaths.all { path -> hasUidHeader(path) }
         }
 
-        // 当前版本: findConnectionOwner 返回 Int (UID) 而不是 ConnectionOwner
+        // 注释已清理。
         override fun findConnectionOwner(
             ipProtocol: Int,
             sourceAddress: String?,
             sourcePort: Int,
             destinationAddress: String?,
             destinationPort: Int
-        ): Int {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return -1
+        ): ConnectionOwner {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ConnectionOwner()
 
             fun parseAddress(value: String?): InetAddress? {
                 if (value.isNullOrBlank()) return null
@@ -178,44 +176,28 @@ class ProxyOnlyService : Service() {
             val sourceIp = parseAddress(sourceAddress)
             val destinationIp = parseAddress(destinationAddress)
             if (sourceIp == null || sourcePort <= 0 || destinationIp == null || destinationPort <= 0) {
-                return -1
+                return ConnectionOwner()
             }
 
             return try {
                 val cm = connectivityManager
                     ?: getSystemService(ConnectivityManager::class.java)
-                    ?: return -1
-                val protocol = ipProtocol
-                cm.getConnectionOwnerUid(
-                    protocol,
+                    ?: return ConnectionOwner()
+                val uid = cm.getConnectionOwnerUid(
+                    ipProtocol,
                     InetSocketAddress(sourceIp, sourcePort),
                     InetSocketAddress(destinationIp, destinationPort)
                 )
+                if (uid > 0) {
+                    ConnectionOwner().apply {
+                        userId = uid
+                        androidPackageName = packageManager.getPackagesForUid(uid)?.firstOrNull().orEmpty()
+                    }
+                } else {
+                    ConnectionOwner()
+                }
             } catch (_: Exception) {
-                -1
-            }
-        }
-
-        // 当前版本: 新增 packageNameByUid 方法
-        override fun packageNameByUid(uid: Int): String {
-            return try {
-                val pm = packageManager
-                pm.getPackagesForUid(uid)?.firstOrNull() ?: ""
-            } catch (e: Exception) {
-                Log.w(TAG, "packageNameByUid failed for uid=$uid: ${e.message}")
-                ""
-            }
-        }
-
-        // 当前版本: 新增 uidByPackageName 方法
-        override fun uidByPackageName(packageName: String): Int {
-            return try {
-                val pm = packageManager
-                val appInfo = pm.getApplicationInfo(packageName, 0)
-                appInfo.uid
-            } catch (e: Exception) {
-                Log.w(TAG, "uidByPackageName failed for $packageName: ${e.message}")
-                -1
+                ConnectionOwner()
             }
         }
 
@@ -316,14 +298,6 @@ class ProxyOnlyService : Service() {
         }
 
         override fun systemCertificates(): StringIterator? = null
-
-        // 当前版本: 新增 writeLog 方法
-        override fun writeLog(message: String?) {
-            if (message.isNullOrBlank()) return
-            runCatching {
-                LogRepository.getInstance().addLog(message)
-            }
-        }
     }
 
     private class StringIteratorImpl(private val list: List<String>) : StringIterator {
@@ -424,9 +398,7 @@ class ProxyOnlyService : Service() {
                 }
             }
             ACTION_PREPARE_RESTART -> {
-                // 跨配置切换预清理机制
-                // ProxyOnlyService 模式下：唤醒核心 + 重置网络 + 关闭连接
-                // 2025-fix: 简化流程，减少过度的重置次数
+
                 val reason = intent.getStringExtra(SingBoxService.EXTRA_PREPARE_RESTART_REASON).orEmpty()
                 Log.i(TAG, "Received ACTION_PREPARE_RESTART (reason='$reason') -> preparing for restart")
 
@@ -441,13 +413,12 @@ class ProxyOnlyService : Service() {
 
                 serviceScope.launch {
                     try {
-                        // Step 1: 唤醒核心 (如果已暂停)
+
                         if (Libbox.isPaused()) {
                             Libbox.resumeService()
                         }
                         Log.i(TAG, "[PrepareRestart] Step 1/2: Ensured core is awake")
 
-                        // Step 2: 关闭所有连接
                         Log.i(TAG, "[PrepareRestart] Step 2/2: Close connections")
                         delay(50)
                         try {
@@ -511,7 +482,6 @@ class ProxyOnlyService : Service() {
                     SingBoxCore.ensureLibboxSetup(this@ProxyOnlyService)
                 }
 
-                // 等待代理端口可用（解决跨服务切换时端口未释放的问题）
                 val proxyPort = runCatching {
                     com.kunk.singbox.repository.SettingsRepository
                         .getInstance(this@ProxyOnlyService)
@@ -525,9 +495,9 @@ class ProxyOnlyService : Service() {
                     if (portAvailable) {
                         Log.i(TAG, "Port $proxyPort available after ${waitTime}ms")
                     } else {
-                        // 端口超时未释放，强制杀死进程让系统回收端口
+
                         Log.e(TAG, "Port $proxyPort NOT released after ${waitTime}ms, killing process to force release")
-                        // 在杀死进程前先清除通知，防止通知残留
+
                         runCatching {
                             val nm = getSystemService(android.app.NotificationManager::class.java)
                             nm?.cancel(NOTIFICATION_ID)
@@ -537,33 +507,34 @@ class ProxyOnlyService : Service() {
                     }
                 }
 
-                // 当前版本: 使用 postServiceClose 替代 serviceStop，移除 writeDebugMessage
                 val serverHandler = object : CommandServerHandler {
-                    override fun postServiceClose() {
-                        Log.i(TAG, "postServiceClose requested")
+                    override fun serviceStop() {
+                        Log.i(TAG, "serviceStop requested")
                     }
                     override fun serviceReload() {
                         Log.i(TAG, "serviceReload requested")
                     }
                     override fun getSystemProxyStatus(): io.nekohasekai.libbox.SystemProxyStatus? = null
                     override fun setSystemProxyEnabled(isEnabled: Boolean) {}
+                    override fun writeDebugMessage(message: String?) {
+                        if (!message.isNullOrBlank()) {
+                            Log.d(TAG, message)
+                        }
+                    }
                 }
 
-                // 当前版本: newCommandServer(handler, maxLines) 签名
-                val server = Libbox.newCommandServer(serverHandler, 100)
+                val server = Libbox.newCommandServer(serverHandler, platformInterface)
                 commandServer = server
                 server.start()
 
-                // 当前版本: 使用 BoxService 模式
-                val service = Libbox.newService(configContent, platformInterface)
-                service.start()
-                boxService = service
-                server.setService(service)
+                val overrideOptions = OverrideOptions().apply {
+                    autoRedirect = false
+                }
+                server.startOrReloadService(configContent, overrideOptions)
 
                 isRunning = true
                 NetworkClient.onVpnStateChanged(true)
 
-                // 初始化 KernelHttpClient 的代理端口
                 KernelHttpClient.updateProxyPortFromSettings(this@ProxyOnlyService)
 
                 VpnTileService.persistVpnState(applicationContext, true)
@@ -592,9 +563,9 @@ class ProxyOnlyService : Service() {
     }
 
     /**
-     * 停止核心服务，返回 Job 以便调用方等待关闭完成
-     * @param stopService 是否同时停止 Service 本身
-     * @return 清理任务的 Job，调用方可通过 job.join() 等待关闭完成
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod", "LongMethod")
     private fun stopCore(stopService: Boolean): Job? {
@@ -614,15 +585,13 @@ class ProxyOnlyService : Service() {
         jobToJoin?.cancel()
 
         val serverToClose = commandServer
-        val serviceToClose = boxService
         commandServer = null
-        boxService = null
 
         notificationUpdateJob?.cancel()
         notificationUpdateJob = null
         hasForegroundStarted.set(false)
 
-        // 获取代理端口用于等待释放
+        // 注释已清理。
         val proxyPort = runCatching {
             com.kunk.singbox.repository.SettingsRepository
                 .getInstance(this@ProxyOnlyService)
@@ -636,26 +605,23 @@ class ProxyOnlyService : Service() {
                 Log.w(TAG, "Failed to join start job", e)
             }
 
-            // 关闭 BoxService 和 CommandServer，释放端口
-            if (serviceToClose != null || serverToClose != null) {
-                Log.i(TAG, "Closing BoxService and CommandServer...")
+            if (serverToClose != null) {
+                Log.i(TAG, "Closing CommandServer...")
                 val closeStart = SystemClock.elapsedRealtime()
                 try {
-                    // 当前版本: 先关闭 BoxService，再关闭 CommandServer
-                    serviceToClose?.close()
+                    serverToClose.closeService()
                     serverToClose?.close()
 
-                    // 关键修复：主动等待端口释放
                     if (proxyPort > 0) {
                         val portReleased = waitForPortAvailable(proxyPort, PORT_WAIT_TIMEOUT_MS)
                         val elapsed = SystemClock.elapsedRealtime() - closeStart
                         if (portReleased) {
-                            Log.i(TAG, "BoxService/CommandServer closed, port $proxyPort released in ${elapsed}ms")
+                            Log.i(TAG, "CommandServer closed, port $proxyPort released in ${elapsed}ms")
                         } else {
-                            // 端口释放失败，强制杀死进程让系统回收端口
+
                             Log.e(TAG, "Port $proxyPort NOT released after ${elapsed}ms, " +
                                 "killing process to force release")
-                            // 在杀死进程前先清除通知，防止通知残留
+
                             runCatching {
                                 val nm = getSystemService(android.app.NotificationManager::class.java)
                                 nm?.cancel(NOTIFICATION_ID)
@@ -664,10 +630,10 @@ class ProxyOnlyService : Service() {
                             android.os.Process.killProcess(android.os.Process.myPid())
                         }
                     } else {
-                        Log.i(TAG, "BoxService/CommandServer closed in ${SystemClock.elapsedRealtime() - closeStart}ms")
+                        Log.i(TAG, "CommandServer closed in ${SystemClock.elapsedRealtime() - closeStart}ms")
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to close BoxService/CommandServer: ${e.message}", e)
+                    Log.w(TAG, "Failed to close CommandServer: ${e.message}", e)
                 }
             }
 
@@ -694,7 +660,7 @@ class ProxyOnlyService : Service() {
     }
 
     /**
-     * 等待上一次清理任务完成
+     * 注释已清理。
      */
     private suspend fun waitForCleanupJob() {
         val job = cleanupJob
@@ -707,7 +673,7 @@ class ProxyOnlyService : Service() {
     }
 
     /**
-     * 检测端口是否可用
+     * 注释已清理。
      */
     private fun isPortAvailable(port: Int): Boolean {
         if (port <= 0) return true
@@ -718,13 +684,13 @@ class ProxyOnlyService : Service() {
                 true
             }
         } catch (@Suppress("SwallowedException") e: Exception) {
-            // 端口被占用时会抛出异常，这是预期行为
+            // 注释已清理。
             false
         }
     }
 
     /**
-     * 等待端口可用，带超时
+     * 注释已清理。
      */
     private suspend fun waitForPortAvailable(port: Int, timeoutMs: Long = PORT_WAIT_TIMEOUT_MS): Boolean {
         if (port <= 0) return true
@@ -760,7 +726,7 @@ class ProxyOnlyService : Service() {
         val st = state ?: if (isRunning) ServiceState.RUNNING else ServiceState.STOPPED
         val repo = runCatching { ConfigRepository.getInstance(applicationContext) }.getOrNull()
         val activeId = repo?.activeNodeId?.value
-        // 2025-fix: 优先使用 VpnStateStore.getActiveLabel()，然后回退到 configRepository
+
         val activeLabel = runCatching {
             VpnStateStore.getActiveLabel().takeIf { it.isNotBlank() }
                 ?: if (repo != null && activeId != null) repo.nodes.value.find { it.id == activeId }?.name else ""
@@ -895,7 +861,7 @@ class ProxyOnlyService : Service() {
         notificationUpdateJob?.cancel()
         notificationUpdateJob = null
         hasForegroundStarted.set(false)
-        // 确保通知被清除，防止进程异常终止时通知残留
+
         runCatching {
             val nm = getSystemService(android.app.NotificationManager::class.java)
             nm.cancel(NOTIFICATION_ID)

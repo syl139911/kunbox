@@ -128,7 +128,7 @@ private fun DomainRuleItem(rule: CustomRule, outboundText: String, onClick: () -
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.Rounded.Edit,
-                contentDescription = "编辑",
+                contentDescription = "Edit",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -250,7 +250,7 @@ fun DomainRulesScreen(
                         OutboundTag.PROXY -> RuleSetOutboundMode.PROXY
                     }
                     val outboundText = resolveOutboundText(mode, rule.outboundValue, allNodes, profiles)
-                    DomainRuleItem(rule = rule, outboundText = "${stringResource(mode.displayNameRes)} → $outboundText", onClick = { editingRule = rule })
+                    DomainRuleItem(rule = rule, outboundText = "${stringResource(mode.displayNameRes)} - $outboundText", onClick = { editingRule = rule })
                 }
             }
         }
@@ -271,7 +271,7 @@ private fun DomainRuleEditorDialog(
 
     fun generateRuleNameFromValue(raw: String): String {
         val first = raw
-            .split("\n", "\r", ",", "，")
+            .split("\n", "\r", ",", ";")
             .map { it.trim() }
             .firstOrNull { it.isNotEmpty() }
         return (first ?: raw.trim()).trim().take(120)
@@ -305,9 +305,9 @@ private fun DomainRuleEditorDialog(
     fun getSmartTypeHint(input: String): String {
         val trimmed = input.trim()
         return when {
-            trimmed.startsWith("=") -> "精确匹配"
-            trimmed.contains("*") -> "关键字匹配"
-            trimmed.isNotEmpty() -> "后缀匹配 (含子域名)"
+            trimmed.startsWith("=") -> "Exact match"
+            trimmed.contains("*") -> "Keyword match"
+            trimmed.isNotEmpty() -> "Suffix match (includes subdomains)"
             else -> ""
         }
     }
@@ -436,7 +436,7 @@ private fun DomainRuleEditorDialog(
                 val smartHint = getSmartTypeHint(value)
                 if (smartHint.isNotEmpty()) {
                     Text(
-                        text = "识别为: $smartHint",
+                        text = "Detected type: $smartHint",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -468,7 +468,7 @@ private fun DomainRuleEditorDialog(
                         }
                         RuleSetOutboundMode.PROFILE -> profiles.find { it.id == outboundValue }?.name
                         else -> null
-                    } ?: "点击选择..."
+                    } ?: "Tap to select..."
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -496,7 +496,7 @@ private fun DomainRuleEditorDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(stringResource(R.string.app_rules_select_target), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(targetName, color = if (targetName == "点击选择...") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary, fontWeight = if (targetName == "点击选择...") FontWeight.Normal else FontWeight.SemiBold)
+                        Text(targetName, color = if (targetName == "Tap to select...") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary, fontWeight = if (targetName == "Tap to select...") FontWeight.Normal else FontWeight.SemiBold)
                     }
                 }
 

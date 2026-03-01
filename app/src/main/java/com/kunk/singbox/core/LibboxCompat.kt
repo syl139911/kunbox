@@ -5,9 +5,9 @@ import io.nekohasekai.libbox.Libbox
 import java.lang.reflect.Method
 
 /**
- * Libbox 兼容层 - 提供对不同版本 libbox 的兼容性支持
+ * [乱码注释已清理]
  *
- * 注意: 新代码应优先使用 BoxWrapperManager，本类作为回退方案
+ * [乱码注释已清理]
  */
 object LibboxCompat {
     private const val TAG = "LibboxCompat"
@@ -28,7 +28,6 @@ object LibboxCompat {
     }
 
     private fun detectAvailableApis() {
-        // 检测 resetAllConnections
         resetAllConnectionsMethod = try {
             Libbox::class.java.getMethod("resetAllConnections", Boolean::class.javaPrimitiveType).also {
                 hasResetAllConnections = true
@@ -49,8 +48,6 @@ object LibboxCompat {
             null
         }
         resetAllConnectionsChecked = true
-
-        // 检测扩展 API (自定义方法)
         hasExtensionApi = try {
             Libbox::class.java.getMethod("getKunBoxVersion")
             Log.i(TAG, "Detected extension API")
@@ -62,12 +59,12 @@ object LibboxCompat {
     }
 
     /**
-     * 重置所有连接，直接调用 sing-box 内核的 conntrack.Close()
-     * @param system true=关闭系统级连接表(推荐), false=仅用户级连接
-     * @return true 如果成功调用原生方法
+     * [乱码注释已清理]
+     * [乱码注释已清理]
+     * [乱码注释已清理]
      */
     fun resetAllConnections(system: Boolean = true): Boolean {
-        // 优先使用 BoxWrapperManager
+        // 浼樺厛浣跨敤 BoxWrapperManager
         if (BoxWrapperManager.isAvailable()) {
             return BoxWrapperManager.resetAllConnections(system)
         }
@@ -93,7 +90,7 @@ object LibboxCompat {
     }
 
     /**
-     * 获取扩展版本
+     * 鑾峰彇鎵╁睍鐗堟湰
      */
     fun getExtensionVersion(): String {
         return try {
@@ -105,9 +102,6 @@ object LibboxCompat {
 
     fun hasExtendedLibbox(): Boolean = hasResetAllConnections
 
-    /**
-     * 检查是否支持扩展 API
-     */
     fun hasKunBoxExtension(): Boolean = hasExtensionApi
 
     fun printDiagnostics() {

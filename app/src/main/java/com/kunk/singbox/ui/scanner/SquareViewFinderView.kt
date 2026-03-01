@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.scanner
+﻿package com.kunk.singbox.ui.scanner
 
 import android.content.Context
 import android.graphics.Canvas
@@ -11,8 +11,8 @@ import com.kunk.singbox.R
 import kotlin.math.min
 
 /**
- * 自定义正方形扫描框 ViewFinder
- * 确保扫描框始终为正方形，适合二维码扫描
+ * 注释已清理。
+ * 注释已清理。
  */
 class SquareViewFinderView @JvmOverloads constructor(
     context: Context,
@@ -44,7 +44,7 @@ class SquareViewFinderView @JvmOverloads constructor(
     private val cornerLength = 50f
 
     private var laserY = 0f
-    private var laserDirection = 1 // 1: 向下, -1: 向上
+    private var laserDirection = 1 // 1: ·告碍鍨崇粭? -1: ·告碍鍨崇粭?
     private var squareFrameRect: Rect? = null
 
     override fun onDraw(canvas: Canvas) {
@@ -56,13 +56,11 @@ class SquareViewFinderView @JvmOverloads constructor(
         val width = canvas.width
         val height = canvas.height
 
-        // 绘制遮罩层（扫描框外的半透明区域）
         canvas.drawRect(0f, 0f, width.toFloat(), frame.top.toFloat(), maskPaint)
         canvas.drawRect(0f, frame.top.toFloat(), frame.left.toFloat(), (frame.bottom + 1).toFloat(), maskPaint)
         canvas.drawRect((frame.right + 1).toFloat(), frame.top.toFloat(), width.toFloat(), (frame.bottom + 1).toFloat(), maskPaint)
         canvas.drawRect(0f, (frame.bottom + 1).toFloat(), width.toFloat(), height.toFloat(), maskPaint)
 
-        // 绘制边框
         canvas.drawRect(
             frame.left.toFloat(),
             frame.top.toFloat(),
@@ -71,13 +69,10 @@ class SquareViewFinderView @JvmOverloads constructor(
             borderPaint
         )
 
-        // 绘制四个角
         drawCorners(canvas, frame)
 
-        // 绘制激光线（扫描动画）
         drawLaser(canvas, frame)
 
-        // 请求重绘以实现动画效果
         postInvalidateDelayed(
             ANIMATION_DELAY,
             frame.left,
@@ -92,19 +87,15 @@ class SquareViewFinderView @JvmOverloads constructor(
             return null
         }
 
-        // 如果已经计算过，直接返回
         squareFrameRect?.let { return it }
 
-        // 计算正方形扫描框的大小
-        // 取屏幕宽度和高度中较小的一个，再乘以一个比例
         val minDimension = min(width, height)
         val frameSize = (minDimension * 0.7f).toInt()
 
-        // 确保扫描框在屏幕中央
         val leftOffset = (width - frameSize) / 2
         val topOffset = (height - frameSize) / 2
 
-        // 设置正方形的扫描框
+        // 注释已清理。
         val rect = Rect(
             leftOffset,
             topOffset,
@@ -121,19 +112,17 @@ class SquareViewFinderView @JvmOverloads constructor(
         val right = frame.right.toFloat()
         val bottom = frame.bottom.toFloat()
 
-        // 左上角
+        // 注释已清理。
         canvas.drawLine(left, top + cornerLength, left, top, cornerPaint)
         canvas.drawLine(left, top, left + cornerLength, top, cornerPaint)
 
-        // 右上角
         canvas.drawLine(right, top + cornerLength, right, top, cornerPaint)
         canvas.drawLine(right, top, right - cornerLength, top, cornerPaint)
 
-        // 左下角
+        // 注释已清理。
         canvas.drawLine(left, bottom - cornerLength, left, bottom, cornerPaint)
         canvas.drawLine(left, bottom, left + cornerLength, bottom, cornerPaint)
 
-        // 右下角
         canvas.drawLine(right, bottom - cornerLength, right, bottom, cornerPaint)
         canvas.drawLine(right, bottom, right - cornerLength, bottom, cornerPaint)
     }
@@ -141,8 +130,6 @@ class SquareViewFinderView @JvmOverloads constructor(
     private fun drawLaser(canvas: Canvas, frame: Rect) {
         val laserHeight = 4f
         val frameHeight = frame.height().toFloat()
-
-        // 更新激光线位置
         laserY += laserDirection * 6f
         if (laserY > frameHeight - laserHeight) {
             laserY = frameHeight - laserHeight
@@ -152,7 +139,6 @@ class SquareViewFinderView @JvmOverloads constructor(
             laserDirection = 1
         }
 
-        // 绘制渐变激光线效果
         laserPaint.alpha = 200
         canvas.drawRect(
             (frame.left + 16).toFloat(),
@@ -165,7 +151,7 @@ class SquareViewFinderView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        // 尺寸变化时重新计算扫描框
+
         squareFrameRect = null
     }
 

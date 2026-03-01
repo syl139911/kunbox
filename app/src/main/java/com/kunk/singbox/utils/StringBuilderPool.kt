@@ -3,7 +3,7 @@ package com.kunk.singbox.utils
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
- * StringBuilder 对象池，减少高频字符串操作的 GC 压力
+ * [乱码注释已清理]
  */
 object StringBuilderPool {
     private const val MAX_POOL_SIZE = 16

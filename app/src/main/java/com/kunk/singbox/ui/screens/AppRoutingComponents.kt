@@ -82,7 +82,12 @@ fun AppRuleItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = rule.appName, style = MaterialTheme.typography.titleMedium, color = if (rule.enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(text = "${stringResource(mode.displayNameRes)} → $outboundText", style = MaterialTheme.typography.bodySmall, color = color, maxLines = 1)
+                Text(
+                    text = "${stringResource(mode.displayNameRes)} ·$outboundText",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = color,
+                    maxLines = 1
+                )
             }
             IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.common_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
@@ -135,7 +140,7 @@ fun AppRuleEditorDialog(
     }
 
     if (showOutboundModeDialog) {
-        // 应用分流不显示直连选项
+
         val appRoutingModes = RuleSetOutboundMode.entries.filter { it != RuleSetOutboundMode.DIRECT }
         val options = appRoutingModes.map { stringResource(it.displayNameRes) }
         val currentIndex = appRoutingModes.indexOf(outboundMode).coerceAtLeast(0)
@@ -149,7 +154,7 @@ fun AppRuleEditorDialog(
                     RuleSetOutboundMode.NODE -> {
                         showNodeSelectionDialog = true
                     }
-                    RuleSetOutboundMode.PROFILE -> { targetSelectionTitle = "选择配置"; targetOptions = profiles.map { it.name to it.id } }
+                    RuleSetOutboundMode.PROFILE -> { targetSelectionTitle = "Select Profile"; targetOptions = profiles.map { it.name to it.id } }
                     else -> {}
                 }
                 if (selectedMode != RuleSetOutboundMode.NODE) {
@@ -194,8 +199,8 @@ fun AppRuleEditorDialog(
                         }
                         RuleSetOutboundMode.PROFILE -> profiles.find { it.id == outboundValue }?.name
                         else -> null
-                    } ?: "点击选择..."
-                    ClickableDropdownField(label = "选择目标", value = targetName, onClick = {
+                    } ?: "Tap to select..."
+                    ClickableDropdownField(label = "Select Target", value = targetName, onClick = {
                         when (outboundMode) {
                             RuleSetOutboundMode.NODE -> {
                                 showNodeSelectionDialog = true
@@ -402,7 +407,10 @@ fun AppGroupCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${stringResource(mode.displayNameRes)} → $outboundText • " + stringResource(R.string.import_count_items, group.apps.size),
+                        text = buildString {
+                            append("${stringResource(mode.displayNameRes)} ·$outboundText ·")
+                            append(stringResource(R.string.import_count_items, group.apps.size))
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = color
                     )
@@ -708,7 +716,7 @@ fun AppGroupEditorDialog(
     }
 
     if (showOutboundModeDialog) {
-        // 应用分流不显示直连选项
+
         val appRoutingModes = RuleSetOutboundMode.entries.filter { it != RuleSetOutboundMode.DIRECT }
         val options = appRoutingModes.map { stringResource(it.displayNameRes) }
         val currentIndex = appRoutingModes.indexOf(outboundMode).coerceAtLeast(0)

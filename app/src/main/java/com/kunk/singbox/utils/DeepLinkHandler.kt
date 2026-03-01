@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * 深度链接处理器 - 用于在 MainActivity 和 ProfilesScreen 之间传递 URL Scheme 数据
+ * [乱码注释已清理]
  */
 object DeepLinkHandler {
 
@@ -19,14 +19,14 @@ object DeepLinkHandler {
     val pendingSubscriptionImport: StateFlow<SubscriptionImportData?> = _pendingSubscriptionImport.asStateFlow()
 
     /**
-     * 设置待处理的订阅导入数据
+     * 璁剧疆寰呭鐞嗙殑璁㈤槄瀵煎叆鏁版嵁
      */
     fun setPendingSubscriptionImport(name: String, url: String, interval: Int) {
         _pendingSubscriptionImport.value = SubscriptionImportData(name, url, interval)
     }
 
     /**
-     * 清除待处理的订阅导入数据
+     * 娓呴櫎寰呭鐞嗙殑璁㈤槄瀵煎叆鏁版嵁
      */
     fun clearPendingSubscriptionImport() {
         _pendingSubscriptionImport.value = null

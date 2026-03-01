@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository
+﻿package com.kunk.singbox.repository
 
 import com.kunk.singbox.R
 import android.content.Context
@@ -19,8 +19,8 @@ import kotlinx.coroutines.SupervisorJob
 import java.io.File
 
 /**
- * 数据导入导出仓库
- * 负责应用数据的备份和恢复
+ * 注释已清理。
+ * 注释已清理。
  */
 class DataExportRepository(private val context: Context) {
 
@@ -38,8 +38,6 @@ class DataExportRepository(private val context: Context) {
         }
     }
 
-    // 使用 Application Scope 替代 GlobalScope,避免内存泄漏
-    // Repository 是单例且生命周期与应用相同,使用 SupervisorJob 确保子协程异常不影响父协程
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val gson: Gson = GsonBuilder()
@@ -55,21 +53,20 @@ class DataExportRepository(private val context: Context) {
         get() = File(context.filesDir, "configs").also { it.mkdirs() }
 
     /**
-     * 导出所有数据
-     * @return 导出数据的 JSON 字符串
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun exportAllData(): Result<String> = withContext(Dispatchers.IO) {
         try {
 
-            // 1. 获取当前设置
+            // 注释已清理。
             val settings = settingsRepository.settings.first()
 
-            // 2. 获取配置列表和节点数据
+            // 注释已清理。
             val profiles = configRepository.profiles.value
             val activeProfileId = configRepository.activeProfileId.value
             val activeNodeId = configRepository.activeNodeId.value
 
-            // 3. 加载每个配置的完整节点数据
             val profileExportDataList = profiles.mapNotNull { profile ->
                 try {
                     val configFile = File(configDir, "${profile.id}.json")
@@ -87,7 +84,6 @@ class DataExportRepository(private val context: Context) {
                 }
             }
 
-            // 4. 构建导出数据
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             val appVersionName = packageInfo.versionName ?: "Unknown"
 
@@ -101,7 +97,7 @@ class DataExportRepository(private val context: Context) {
                 activeNodeId = activeNodeId
             )
 
-            // 5. 序列化为 JSON
+            // 5. 閹兼潙绻愰崹顏堝礌閺嶏箒绀?JSON
             val jsonString = gson.toJson(exportData)
 
             Result.success(jsonString)
@@ -112,8 +108,8 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 导出到文件
-     * @param uri 目标文件 URI
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun exportToFile(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
         try {
@@ -137,22 +133,22 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 验证导入数据
-     * @param jsonData 导入的 JSON 字符串
-     * @return 解析后的导出数据
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun validateImportData(jsonData: String): Result<ExportData> = withContext(Dispatchers.IO) {
         try {
             val exportData = gson.fromJson(jsonData, ExportData::class.java)
 
-            // 验证版本
+            // 濡ょ姴鐭侀惁澶愭偋閸喐鎷?
             if (exportData.version > CURRENT_VERSION) {
                 return@withContext Result.failure(
                     Exception("Data version too high (v${exportData.version}), please update app and try again")
                 )
             }
 
-            // 验证必要字段
+            // 注释已清理。
             if (exportData.settings == null) {
                 return@withContext Result.failure(Exception("Data format error: missing settings info"))
             }
@@ -168,9 +164,9 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 获取导入数据摘要
-     * @param exportData 导出数据
-     * @return 数据摘要
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     fun getExportDataSummary(exportData: ExportData): ExportDataSummary {
         val totalNodeCount = exportData.profiles.sumOf { profileData ->
@@ -197,14 +193,14 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 导入数据
-     * @param jsonData 导入的 JSON 字符串
-     * @param options 导入选项
-     * @return 导入结果
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun importData(jsonData: String, options: ImportOptions = ImportOptions()): Result<ImportResult> = withContext(Dispatchers.IO) {
         try {
-            // 1. 验证数据
+            // 注释已清理。
             val validateResult = validateImportData(jsonData)
             if (validateResult.isFailure) {
                 return@withContext Result.failure(validateResult.exceptionOrNull()!!)
@@ -216,17 +212,15 @@ class DataExportRepository(private val context: Context) {
             var settingsImported = false
             val errors = mutableListOf<String>()
 
-            // 2. 导入设置
+            // 注释已清理。
             if (options.importSettings) {
                 try {
                     importSettings(exportData.settings)
                     settingsImported = true
 
-                    // 触发规则集下载
                     if (exportData.settings.ruleSets.isNotEmpty()) {
                         Log.i(TAG, "Triggering rule set download after import...")
-                        // 使用 repositoryScope 替代 GlobalScope,避免内存泄漏
-                        // 在后台启动下载任务，不阻塞导入流程
+
                         repositoryScope.launch {
                             try {
                                 ruleSetRepository.ensureRuleSetsReady(forceUpdate = false, allowNetwork = true) {
@@ -242,7 +236,7 @@ class DataExportRepository(private val context: Context) {
                 }
             }
 
-            // 3. 导入配置和节点
+            // 注释已清理。
             if (options.importProfiles) {
                 for (profileData in exportData.profiles) {
                     try {
@@ -256,10 +250,10 @@ class DataExportRepository(private val context: Context) {
                 }
             }
 
-            // 4. 恢复活跃状态
+            // 注释已清理。
             if (options.importProfiles && exportData.activeProfileId != null) {
                 try {
-                    // 检查活跃配置是否存在
+
                     val profiles = configRepository.profiles.value
                     if (profiles.any { it.id == exportData.activeProfileId }) {
                         configRepository.setActiveProfile(
@@ -272,7 +266,6 @@ class DataExportRepository(private val context: Context) {
                 }
             }
 
-            // 5. 返回结果
             val result = when {
                 errors.isEmpty() -> ImportResult.Success(
                     profilesImported = profilesImported,
@@ -295,9 +288,9 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 从文件导入
-     * @param uri 源文件 URI
-     * @param options 导入选项
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun importFromFile(uri: Uri, options: ImportOptions = ImportOptions()): Result<ImportResult> = withContext(Dispatchers.IO) {
         try {
@@ -313,7 +306,7 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 从文件验证数据（用于预览）
+     * 注释已清理。
      */
     suspend fun validateFromFile(uri: Uri): Result<ExportData> = withContext(Dispatchers.IO) {
         try {
@@ -329,15 +322,15 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 导入设置
+     * 注释已清理。
      */
     private suspend fun importSettings(settings: AppSettings) {
-        // 通用设置
+
         settingsRepository.setAutoConnect(settings.autoConnect)
         settingsRepository.setExcludeFromRecent(settings.excludeFromRecent)
         settingsRepository.setAppTheme(settings.appTheme)
 
-        // TUN/VPN 设置
+        // 注释已清理。
         settingsRepository.setTunEnabled(settings.tunEnabled)
         settingsRepository.setTunStack(settings.tunStack)
         settingsRepository.setTunMtu(settings.tunMtu)
@@ -351,7 +344,7 @@ class DataExportRepository(private val context: Context) {
         settingsRepository.setVpnAllowlist(settings.vpnAllowlist)
         settingsRepository.setVpnBlocklist(settings.vpnBlocklist)
 
-        // DNS 设置
+        // 注释已清理。
         settingsRepository.setLocalDns(settings.localDns)
         settingsRepository.setRemoteDns(settings.remoteDns)
         settingsRepository.setFakeDnsEnabled(settings.fakeDnsEnabled)
@@ -362,52 +355,50 @@ class DataExportRepository(private val context: Context) {
         settingsRepository.setServerAddressStrategy(settings.serverAddressStrategy)
         settingsRepository.setDnsCacheEnabled(settings.dnsCacheEnabled)
 
-        // 路由设置
+        // 注释已清理。
         settingsRepository.setRoutingMode(settings.routingMode, notifyRestartRequired = false)
         settingsRepository.setDefaultRule(settings.defaultRule)
         settingsRepository.setBypassLan(settings.bypassLan)
         settingsRepository.setBlockQuic(settings.blockQuic)
         settingsRepository.setDebugLoggingEnabled(settings.debugLoggingEnabled)
 
-        // 延迟测试设置
+        // 注释已清理。
         settingsRepository.setLatencyTestMethod(settings.latencyTestMethod)
         settingsRepository.setLatencyTestUrl(settings.latencyTestUrl)
 
-        // 镜像设置
         if (settings.ghProxyMirror != null) {
             settingsRepository.setGhProxyMirror(settings.ghProxyMirror)
         }
 
-        // 代理端口设置
+        // 注释已清理。
         settingsRepository.setProxyPort(settings.proxyPort)
         settingsRepository.setAllowLan(settings.allowLan)
         settingsRepository.setAppendHttpProxy(settings.appendHttpProxy)
 
-        // 高级路由规则
+        // 濡ゅ倹顭囨鍥╂崉椤栨粍鏆犻悷娆忓閸?
         settingsRepository.setCustomRules(settings.customRules)
         settingsRepository.setRuleSets(settings.ruleSets, notify = false)
         settingsRepository.setAppRules(settings.appRules)
         settingsRepository.setAppGroups(settings.appGroups)
 
-        // 规则集自动更新
+        // 注释已清理。
         settingsRepository.setRuleSetAutoUpdateEnabled(settings.ruleSetAutoUpdateEnabled)
         settingsRepository.setRuleSetAutoUpdateInterval(settings.ruleSetAutoUpdateInterval)
 
-        // 节点列表设置
+        // 注释已清理。
         settingsRepository.setNodeFilter(settings.nodeFilter)
         settingsRepository.setNodeSortType(settings.nodeSortType)
         settingsRepository.setCustomNodeOrder(settings.customNodeOrder)
     }
 
     /**
-     * 导入单个配置
-     * @return 导入的节点数量
+     * 注释已清理。
+     * 注释已清理。
      */
     private suspend fun importProfile(profileData: ProfileExportData, overwrite: Boolean): Int {
         val profile = profileData.profile
         val config = profileData.config
 
-        // 检查是否已存在同名或同ID的配置
         val existingProfiles = configRepository.profiles.value
         val existingById = existingProfiles.find { it.id == profile.id }
         val existingByName = existingProfiles.find { it.name == profile.name }
@@ -416,28 +407,27 @@ class DataExportRepository(private val context: Context) {
             if (!overwrite) {
                 throw Exception("Profile already exists")
             }
-            // 删除现有配置
+            // 注释已清理。
             val existingId = existingById?.id ?: existingByName?.id
             if (existingId != null) {
                 configRepository.deleteProfile(existingId)
             }
         }
 
-        // 保存配置文件
+        // 注释已清理。
         val configFile = File(configDir, "${profile.id}.json")
         configFile.writeText(gson.toJson(config))
 
-        // 使用 ConfigRepository 直接导入 profile 到 Room 数据库
+        // 注释已清理。
         val newProfile = profile.copy(
             id = profile.id,
             lastUpdated = System.currentTimeMillis(),
             updateStatus = UpdateStatus.Idle
         )
 
-        // 直接调用 ConfigRepository 添加 profile
         configRepository.importProfileDirectly(newProfile, config)
 
-        // 计算节点数量
+        // 注释已清理。
         val nodeCount = config.outbounds?.count { outbound ->
             outbound.type in listOf(
                 "shadowsocks", "vmess", "vless", "trojan",
@@ -450,12 +440,12 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 清理资源，取消协程 scope
+     * 注释已清理。
      *
-     * 注意：由于 DataExportRepository 是单例且生命周期与 Application 相同，
-     * 通常不需要手动调用此方法。此方法主要用于：
-     * 1. 测试场景中清理资源
-     * 2. 极端内存压力下的紧急清理
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     fun cleanup() {
         repositoryScope.cancel()

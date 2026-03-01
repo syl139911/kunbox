@@ -375,6 +375,8 @@ configure<ApplicationExtension> {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        suppressWarnings.set(true)
     }
 }
 

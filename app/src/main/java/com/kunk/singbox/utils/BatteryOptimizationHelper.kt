@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.content.Context
 import android.content.Intent
@@ -9,29 +9,25 @@ import android.provider.Settings
 import android.util.Log
 
 /**
- * 电池优化帮助类
- * 用于检测和引导用户关闭电池优化,防止 VPN 服务在息屏时被系统杀死
+ * 注释已清理。
+ * 注释已清理。
  */
 object BatteryOptimizationHelper {
     private const val TAG = "BatteryOptHelper"
 
-    /**
-     * 检查应用是否在电池优化白名单中
-     * @return true = 已豁免(不受电池优化限制), false = 受限制
-     */
     fun isIgnoringBatteryOptimizations(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
             pm?.isIgnoringBatteryOptimizations(context.packageName) ?: false
         } else {
-            // Android 6.0 以下没有 Doze 模式,默认不受限制
+
             true
         }
     }
 
     /**
-     * 请求电池优化豁免
-     * 会弹出系统对话框让用户选择
+     * 注释已清理。
+     * 注释已清理。
      */
     fun requestIgnoreBatteryOptimizations(context: Context): Boolean {
         return try {
@@ -53,7 +49,7 @@ object BatteryOptimizationHelper {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to request battery optimization exemption", e)
-            // 降级方案: 打开电池优化设置页面让用户手动设置
+
             try {
                 openBatteryOptimizationSettings(context)
                 true
@@ -65,8 +61,8 @@ object BatteryOptimizationHelper {
     }
 
     /**
-     * 打开电池优化设置页面
-     * 用于引导用户手动关闭电池优化
+     * 注释已清理。
+     * 注释已清理。
      */
     fun openBatteryOptimizationSettings(context: Context) {
         try {
@@ -75,7 +71,7 @@ object BatteryOptimizationHelper {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             } else {
-                // 旧版本打开应用详情页
+
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.parse("package:${context.packageName}")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -89,8 +85,8 @@ object BatteryOptimizationHelper {
     }
 
     /**
-     * 获取厂商定制的电池管理页面 Intent
-     * 不同厂商的电池优化设置页面路径不同
+     * 注释已清理。
+     * 注释已清理。
      */
     fun getManufacturerBatteryIntent(context: Context): Intent? {
         val packageName = context.packageName
@@ -98,7 +94,7 @@ object BatteryOptimizationHelper {
 
         return try {
             when {
-                // 小米 MIUI
+                // 注释已清理。
                 manufacturer.contains("xiaomi") || manufacturer.contains("redmi") -> {
                     Intent().apply {
                         component = android.content.ComponentName(
@@ -110,7 +106,7 @@ object BatteryOptimizationHelper {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                 }
-                // 华为 EMUI
+                // 注释已清理。
                 manufacturer.contains("huawei") || manufacturer.contains("honor") -> {
                     Intent().apply {
                         component = android.content.ComponentName(
@@ -140,7 +136,7 @@ object BatteryOptimizationHelper {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                 }
-                // 三星
+
                 manufacturer.contains("samsung") -> {
                     Intent().apply {
                         component = android.content.ComponentName(
@@ -158,10 +154,6 @@ object BatteryOptimizationHelper {
         }
     }
 
-    /**
-     * 检测并引导用户关闭电池优化
-     * @return true = 需要用户操作, false = 已豁免或操作失败
-     */
     fun checkAndRequestBatteryOptimization(context: Context): Boolean {
         if (isIgnoringBatteryOptimizations(context)) {
             Log.i(TAG, "App is already exempt from battery optimizations")

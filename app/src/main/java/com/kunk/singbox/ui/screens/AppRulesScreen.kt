@@ -57,7 +57,6 @@ fun AppRulesScreen(
         }
     }
 
-    // 仅显示在 allowlist 中的应用，直接根据包名获取应用信息
     val installedApps = remember(settings.vpnAllowlist) {
         val pm = context.packageManager
         settings.vpnAllowlist

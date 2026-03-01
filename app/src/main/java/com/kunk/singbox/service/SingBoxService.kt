@@ -473,6 +473,12 @@ class SingBoxService : VpnService() {
             Log.i(TAG, "KunBox VPN started successfully")
             notificationManager.setSuppressUpdates(false)
 
+            // BoxWrapperManager 在 libbox 启动后初始化，避免 hasSelector() 超时
+            commandManager.getCommandServer()?.let { server ->
+                BoxWrapperManager.init(server)
+            }
+            Log.i(TAG, "BoxWrapperManager initialized")
+
             // 初始化 KernelHttpClient 的代理端口
             serviceScope.launch {
                 KernelHttpClient.updateProxyPortFromSettings(this@SingBoxService)

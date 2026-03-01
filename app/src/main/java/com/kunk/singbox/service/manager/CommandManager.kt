@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.app.NotificationManager
 import android.content.Context
@@ -20,19 +20,19 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Command Server/Client 管理器
- * 负责与 libbox 的命令交互，包括：
- * - 日志收集
- * - 状态监控
- * - 连接追踪
- * - 节点组管理
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * - 閺夆晝鍋炵敮瀛樻交閸婄喖鍤?
+ * 注释已清理。
  *
- * libbox 当前版本 API:
- * - BoxService 通过 Libbox.newService(configContent, platformInterface) 创建
- * - BoxService.start() 启动服务
- * - BoxService.close() 关闭服务
- * - CommandServer 通过 Libbox.newCommandServer(handler, maxLines) 创建
- * - CommandServer.setService(boxService) 关联服务
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 @Suppress("TooManyFunctions")
 class CommandManager(
@@ -48,20 +48,20 @@ class CommandManager(
 
     // Command Server/Client
     private var commandServer: CommandServer? = null
-    private var boxService: BoxService? = null
     private var commandClient: CommandClient? = null
     private var commandClientGroup: CommandClient? = null
     private var commandClientLogs: CommandClient? = null
     private var commandClientConnections: CommandClient? = null
 
-    // 2025-fix: 保持 handler 引用，防止被 GC 回收导致 gomobile 引用失效
     @Volatile
     private var clientHandler: CommandClientHandler? = null
 
     @Volatile
     private var isNonEssentialSuspended: Boolean = false
 
-    // 状态
+    private var connectionsSnapshot: Connections? = null
+
+    // 注释已清理。
     private val groupSelectedOutbounds = ConcurrentHashMap<String, String>()
     @Volatile var realTimeNodeName: String? = null
         private set
@@ -72,20 +72,18 @@ class CommandManager(
     var recentConnectionIds: List<String> = emptyList()
         private set
 
-    // URL 测试相关状态
     private val urlTestResults = ConcurrentHashMap<String, Int>() // tag -> delay (ms)
     private val urlTestMutex = Mutex()
     @Volatile private var pendingUrlTestGroupTag: String? = null
     @Volatile private var urlTestCompletionCallback: ((Map<String, Int>) -> Unit)? = null
 
-    // 流量统计
     private var lastUplinkTotal: Long = 0
     private var lastDownlinkTotal: Long = 0
     private var lastSpeedUpdateTime: Long = 0L
     private var lastConnectionsLabelLogged: String? = null
 
     /**
-     * 回调接口
+     * 注释已清理。
      */
     interface Callbacks {
         fun requestNotificationUpdate(force: Boolean)
@@ -101,13 +99,13 @@ class CommandManager(
     }
 
     /**
-     * 创建 CommandServer 并启动服务
+     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER")
     fun createServer(platformInterface: PlatformInterface): Result<CommandServer> = runCatching {
         val serverHandler = object : CommandServerHandler {
-            override fun postServiceClose() {
-                Log.i(TAG, "postServiceClose requested")
+            override fun serviceStop() {
+                Log.i(TAG, "serviceStop requested")
                 callbacks?.onServiceStop()
             }
 
@@ -119,82 +117,77 @@ class CommandManager(
             override fun getSystemProxyStatus(): SystemProxyStatus? = null
 
             override fun setSystemProxyEnabled(isEnabled: Boolean) {}
+
+            override fun writeDebugMessage(message: String?) {
+                if (!message.isNullOrBlank()) {
+                    Log.d(TAG, message)
+                }
+            }
         }
 
-        // 创建 CommandServer (当前版本 API: newCommandServer(handler, maxLines))
-        val server = Libbox.newCommandServer(serverHandler, MAX_LOG_LINES)
+        val server = Libbox.newCommandServer(serverHandler, platformInterface)
         commandServer = server
         Log.i(TAG, "CommandServer created")
         server
     }
 
     /**
-     * 启动 CommandServer
+     * 注释已清理。
      */
     fun startServer(): Result<Unit> = runCatching {
         commandServer?.start() ?: throw IllegalStateException("CommandServer not created")
         Log.i(TAG, "CommandServer started")
 
-        // 初始化 BoxWrapperManager
-        commandServer?.let { server ->
-            BoxWrapperManager.init(server)
-        }
+        // BoxWrapperManager.init 延迟到 libbox 启动后调用
+        // 避免 Libbox.hasSelector() 在 box 未运行时超时阻塞 ~1.5s
     }
 
     /**
-     * 启动服务配置 (当前版本: 使用 BoxService)
+     * 注释已清理。
      */
     fun startService(configContent: String, platformInterface: PlatformInterface): Result<Unit> = runCatching {
-        // 创建并启动 BoxService
-        val service = Libbox.newService(configContent, platformInterface)
-        service.start()
-        boxService = service
-
-        // 关联到 CommandServer
-        commandServer?.setService(service)
-        Log.i(TAG, "BoxService started and linked to CommandServer")
+        val overrideOptions = OverrideOptions().apply {
+            autoRedirect = false
+        }
+        commandServer?.startOrReloadService(configContent, overrideOptions)
+            ?: throw IllegalStateException("CommandServer not created")
+        Log.i(TAG, "CommandServer service started")
     }
 
     /**
-     * 关闭服务
+     * 注释已清理。
      */
     fun closeService(): Result<Unit> = runCatching {
-        boxService?.close()
-        boxService = null
-        Log.i(TAG, "BoxService closed")
+        commandServer?.closeService()
+            ?: throw IllegalStateException("CommandServer not created")
+        Log.i(TAG, "CommandServer service closed")
     }
 
     /**
-     * 获取 BoxService
-     */
-    fun getBoxService(): BoxService? = boxService
-
-    /**
-     * 启动 Command Clients
+     * 注释已清理。
      */
     fun startClients(): Result<Unit> = runCatching {
-        // 2025-fix: 存储 handler 到类字段，防止被 GC 回收
+
         val handler = createClientHandler()
         clientHandler = handler
 
-        // 启动 CommandClient (Status + Group)
-        // 当前版本: 需要订阅 Group 命令才能接收 URL 测试结果
+        // 注释已清理。
+
         val optionsStatus = CommandClientOptions()
-        optionsStatus.command = Libbox.CommandStatus
+        optionsStatus.addCommand(Libbox.CommandStatus)
         optionsStatus.statusInterval = 3000L * 1000L * 1000L // 3s
         commandClient = Libbox.newCommandClient(handler, optionsStatus)
         commandClient?.connect()
         Log.i(TAG, "CommandClient connected (Status, interval=3s)")
 
-        // 启动 CommandClient (Group) - 用于接收 URL 测试结果
         val optionsGroup = CommandClientOptions()
-        optionsGroup.command = Libbox.CommandGroup
+        optionsGroup.addCommand(Libbox.CommandGroup)
         optionsGroup.statusInterval = 3000L * 1000L * 1000L // 3s
         commandClientGroup = Libbox.newCommandClient(handler, optionsGroup)
         commandClientGroup?.connect()
         Log.i(TAG, "CommandClient connected (Group, interval=3s)")
 
-        // 验证回调
+        // 注释已清理。
         serviceScope.launch {
             delay(3500)
             val groupsSize = groupSelectedOutbounds.size
@@ -208,8 +201,8 @@ class CommandManager(
     }
 
     /**
-     * 停止所有 Command Server/Client
-     * @param proxyPort 需要等待释放的代理端口，传 0 或负数则不等待
+     * 注释已清理。
+     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     suspend fun stopAndWaitPortRelease(
@@ -229,31 +222,29 @@ class CommandManager(
         commandClientConnections?.disconnect()
         commandClientConnections = null
 
-        // 2025-fix: 必须在 clients 断开后再清理 handler，确保 Go 侧引用有效
         clientHandler = null
 
         BoxWrapperManager.release()
+        connectionsSnapshot = null
 
-        // 必须先关闭 BoxService (释放端口和连接)，再关闭 server
         val closeStart = SystemClock.elapsedRealtime()
-        val hasBoxService = boxService != null
-        Log.i(TAG, "Closing BoxService (exists=$hasBoxService)...")
-        runCatching { boxService?.close() }
-            .onFailure { Log.w(TAG, "BoxService.close failed: ${it.message}") }
-        boxService = null
-        Log.i(TAG, "BoxService closed in ${SystemClock.elapsedRealtime() - closeStart}ms")
+        runCatching {
+            commandServer?.closeService()
+        }.onFailure { e ->
+            // closeService 在服务已关闭时返回 invalid argument，属于正常情况
+            Log.d(TAG, "CommandServer.closeService: ${e.message} (expected if already closed)")
+        }
+        Log.i(TAG, "CommandServer service closed in ${SystemClock.elapsedRealtime() - closeStart}ms")
 
         commandServer?.close()
         commandServer = null
 
-        // 在端口等待之前先清除通知，防止端口等待超时 killProcess 后通知残留
         runCatching {
             val nm = context.getSystemService(NotificationManager::class.java)
             nm?.cancel(VpnNotificationManager.NOTIFICATION_ID)
             nm?.cancel(11) // ProxyOnlyService NOTIFICATION_ID
         }
 
-        // 关键修复：主动等待端口释放
         if (proxyPort > 0) {
             Log.i(TAG, "Waiting for port $proxyPort to be released (timeout=${waitTimeoutMs}ms)...")
             val portReleased = waitForPortRelease(proxyPort, waitTimeoutMs)
@@ -262,8 +253,7 @@ class CommandManager(
                 Log.i(TAG, "Port $proxyPort released in ${elapsed}ms")
             } else {
                 if (forceKillOnTimeout) {
-                    // 端口释放失败，强制杀死进程让系统回收端口
-                    // 通知已在端口等待之前清除
+
                     Log.e(TAG, "Port $proxyPort NOT released after ${elapsed}ms, killing process to force release")
                     android.os.Process.killProcess(android.os.Process.myPid())
                 } else {
@@ -282,7 +272,7 @@ class CommandManager(
     }
 
     /**
-     * 停止所有 Command Server/Client（兼容旧调用，不等待端口）
+     * 注释已清理。
      */
     fun stop(): Result<Unit> = runCatching {
         commandClient?.disconnect()
@@ -294,15 +284,13 @@ class CommandManager(
         commandClientConnections?.disconnect()
         commandClientConnections = null
 
-        // 2025-fix: 必须在 clients 断开后再清理 handler，确保 Go 侧引用有效
         clientHandler = null
 
         BoxWrapperManager.release()
+        connectionsSnapshot = null
 
-        // 必须先关闭 BoxService (释放端口和连接)，再关闭 server
-        runCatching { boxService?.close() }
-            .onFailure { Log.w(TAG, "BoxService.close failed: ${it.message}") }
-        boxService = null
+        runCatching { commandServer?.closeService() }
+            .onFailure { Log.w(TAG, "CommandServer.closeService failed: ${it.message}") }
 
         commandServer?.close()
         commandServer = null
@@ -310,7 +298,7 @@ class CommandManager(
     }
 
     /**
-     * 等待端口释放
+     * 注释已清理。
      */
     private suspend fun waitForPortRelease(port: Int, timeoutMs: Long): Boolean {
         val startTime = SystemClock.elapsedRealtime()
@@ -324,7 +312,7 @@ class CommandManager(
     }
 
     /**
-     * 检测端口是否可用
+     * 注释已清理。
      */
     private fun isPortAvailable(port: Int): Boolean {
         return try {
@@ -339,28 +327,28 @@ class CommandManager(
     }
 
     /**
-     * 获取 CommandServer
+     * 注释已清理。
      */
     fun getCommandServer(): CommandServer? = commandServer
 
     /**
-     * 获取 CommandClient (用于连接管理)
+     * 注释已清理。
      */
     fun getCommandClient(): CommandClient? = commandClient
     fun getConnectionsClient(): CommandClient? = commandClientConnections
 
     /**
-     * 获取指定 group 的选中 outbound
+     * 注释已清理。
      */
     fun getSelectedOutbound(groupTag: String): String? = groupSelectedOutbounds[groupTag]
 
     /**
-     * 获取所有 group 选中状态的数量
+     * 注释已清理。
      */
     fun getGroupsCount(): Int = groupSelectedOutbounds.size
 
     /**
-     * 关闭所有连接
+     * 注释已清理。
      */
     fun closeConnections(): Boolean {
         val clients = listOfNotNull(commandClientConnections, commandClient)
@@ -377,7 +365,7 @@ class CommandManager(
     }
 
     /**
-     * 关闭指定连接
+     * 注释已清理。
      */
     fun closeConnection(connId: String): Boolean {
         val client = commandClientConnections ?: commandClient ?: return false
@@ -393,18 +381,18 @@ class CommandManager(
     }
 
     /**
-     * 触发 URL 测试并等待结果
-     * 使用 CommandClient.urlTest(groupTag) API 触发测试
-     * 结果通过 writeGroups 回调异步返回
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      *
-     * 当前版本: urlTest 是异步的，需要轮询等待结果
+     * 注释已清理。
      *
-     * @param groupTag 要测试的 group 标签 (如 "PROXY")
-     * @param timeoutMs 等待结果的超时时间
-     * @return 节点延迟映射 (tag -> delay ms)，失败返回空 Map
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun urlTestGroup(groupTag: String, timeoutMs: Long = 10000L): Map<String, Int> {
-        // 优先使用 Group client，回退到主 client
+
         val client = commandClientGroup ?: commandClient ?: return emptyMap()
 
         return urlTestMutex.withLock {
@@ -415,7 +403,6 @@ class CommandManager(
                     latestGroupResults.set(results)
                 }
 
-                // 触发 URL 测试
                 Log.i(TAG, "Triggering URL test for group: $groupTag")
                 client.urlTest(groupTag)
 
@@ -476,7 +463,7 @@ class CommandManager(
         val rawAliasSummary = aliasSources.entries.joinToString(", ") { (source, value) ->
             "$source='${value.orEmpty()}'"
         }
-        Log.w(
+        Log.d(
             TAG,
             "getCachedUrlTestDelay queryTag='$tag', normalized='${UrlTestTagMatcher.normalizeTag(tag)}', " +
                 "aliasSources={$rawAliasSummary}, aliases=${aliasTags.joinToString(prefix = "[", postfix = "]")}, " +
@@ -490,14 +477,14 @@ class CommandManager(
         )
 
         if (matched != null) {
-            Log.w(
+            Log.d(
                 TAG,
                 "getCachedUrlTestDelay ${matched.matchType} hit: tag='$tag', " +
                     "matchedKey='${matched.matchedKey}', delay=${matched.delay}"
             )
             return matched.delay
         }
-        Log.w(TAG, "getCachedUrlTestDelay miss: tag='$tag'")
+        Log.d(TAG, "getCachedUrlTestDelay miss: tag='$tag'")
         return null
     }
 
@@ -566,12 +553,14 @@ class CommandManager(
             runCatching { LogRepository.getInstance().clearLogs() }
         }
 
-        override fun writeLogs(messageList: StringIterator?) {
+        override fun setDefaultLogLevel(level: Int) {}
+
+        override fun writeLogs(messageList: LogIterator?) {
             if (messageList == null) return
             val repo = LogRepository.getInstance()
             runCatching {
                 while (messageList.hasNext()) {
-                    val msg = messageList.next()
+                    val msg = messageList.next()?.message
                     if (!msg.isNullOrBlank()) {
                         repo.addLog(msg)
                     }
@@ -677,12 +666,16 @@ class CommandManager(
         override fun initializeClashMode(modeList: StringIterator?, currentMode: String?) {}
         override fun updateClashMode(newMode: String?) {}
 
-        override fun writeConnections(connections: Connections?) {
-            connections ?: return
+        override fun writeConnectionEvents(events: ConnectionEvents?) {
+            events ?: return
             try {
-                processConnections(connections)
+                val snapshot = connectionsSnapshot ?: Libbox.newConnections().also {
+                    connectionsSnapshot = it
+                }
+                snapshot.applyEvents(events)
+                processConnections(snapshot)
             } catch (e: Exception) {
-                Log.e(TAG, "Error processing connections", e)
+                Log.e(TAG, "Error processing connection events", e)
             }
         }
     }
@@ -784,7 +777,7 @@ class CommandManager(
 
     @Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod", "NestedBlockDepth")
     private fun processConnections(connections: Connections) {
-        // 处理连接
+        // 注释已清理。
         val iterator = connections.iterator()
         var newestConnection: io.nekohasekai.libbox.Connection? = null
         val ids = ArrayList<String>(64)
@@ -793,9 +786,9 @@ class CommandManager(
 
         while (iterator.hasNext()) {
             val connection = iterator.next() ?: continue
-            // 跳过关闭的连接
+
             if (connection.closedAt > 0) continue
-            // 跳过 dns-out
+            // 注释已清理。
             val outbound = connection.outbound
             if (outbound == "dns-out") continue
 
@@ -808,7 +801,7 @@ class CommandManager(
                 ids.add(id)
             }
 
-            // 解析 egress
+            // 注释已清理。
             var candidateTag: String? = outbound
             if (candidateTag.isNullOrBlank() || candidateTag == "dns-out") {
                 candidateTag = null
@@ -826,7 +819,7 @@ class CommandManager(
 
         recentConnectionIds = ids
 
-        // 生成标签
+        // 注释已清理。
         val newLabel = when {
             egressCounts.isEmpty() -> null
             egressCounts.size == 1 -> egressCounts.keys.first()
@@ -848,10 +841,10 @@ class CommandManager(
             }
         }
 
-        // 更新活跃连接节点
+        // 注释已清理。
         var newNode: String? = null
         if (newestConnection != null) {
-            // 使用 chain 获取出站链
+            // 注释已清理。
             val chainIter = newestConnection.chain()
             val chainList = mutableListOf<String>()
             if (chainIter != null) {
@@ -881,6 +874,7 @@ class CommandManager(
         activeConnectionNode = null
         activeConnectionLabel = null
         recentConnectionIds = emptyList()
+        connectionsSnapshot = null
         callbacks = null
         isNonEssentialSuspended = false
     }
@@ -907,13 +901,12 @@ class CommandManager(
             return
         }
 
-        // 2025-fix: 复用已存储的 handler，如果不存在则创建并存储
         val handler = clientHandler ?: createClientHandler().also { clientHandler = it }
 
         try {
             val optionsLog = CommandClientOptions()
-            // 当前版本: 使用 command 属性而不是 addCommand 方法
-            optionsLog.command = Libbox.CommandLog
+            // 注释已清理。
+            optionsLog.addCommand(Libbox.CommandLog)
             optionsLog.statusInterval = 1500L * 1000L * 1000L
             commandClientLogs = Libbox.newCommandClient(handler, optionsLog)
             commandClientLogs?.connect()
@@ -924,8 +917,8 @@ class CommandManager(
 
         try {
             val optionsConn = CommandClientOptions()
-            // 当前版本: 使用 command 属性而不是 addCommand 方法
-            optionsConn.command = Libbox.CommandConnections
+            // 注释已清理。
+            optionsConn.addCommand(Libbox.CommandConnections)
             optionsConn.statusInterval = 5000L * 1000L * 1000L
             commandClientConnections = Libbox.newCommandClient(handler, optionsConn)
             commandClientConnections?.connect()

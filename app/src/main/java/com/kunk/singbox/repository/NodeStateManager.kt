@@ -10,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * 节点状态管理器
+ * 鑺傜偣鐘舵€佺鐞嗗櫒
  *
- * 负责节点列表的内存管理、缓存和状态更新
+ * [乱码注释已清理]
  */
 @Suppress("TooManyFunctions")
 class NodeStateManager {

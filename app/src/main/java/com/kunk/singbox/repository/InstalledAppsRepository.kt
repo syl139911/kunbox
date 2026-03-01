@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository
+﻿package com.kunk.singbox.repository
 
 import com.kunk.singbox.R
 import android.content.Context
@@ -12,29 +12,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * 已安装应用的 Repository，单例模式
- * 负责加载和缓存已安装应用列表，提供进度回调
+ * 注释已清理。
+ * 注释已清理。
  */
 class InstalledAppsRepository private constructor(private val context: Context) {
 
     /**
-     * 加载状态
+     * 注释已清理。
      */
     sealed class LoadingState {
-        /** 空闲状态，尚未加载 */
+        /* 注释已清理。 */
         object Idle : LoadingState()
 
-        /** 加载中 */
+        /* 注释已清理。 */
         data class Loading(
             val progress: Float,
             val current: Int,
             val total: Int
         ) : LoadingState()
 
-        /** 加载完成 */
+        /* 注释已清理。 */
         object Loaded : LoadingState()
 
-        /** 加载出错 */
+        /* 注释已清理。 */
         data class Error(val message: String) : LoadingState()
     }
 
@@ -45,13 +45,13 @@ class InstalledAppsRepository private constructor(private val context: Context) 
     val loadingState: StateFlow<LoadingState> = _loadingState.asStateFlow()
 
     /**
-     * 加载已安装应用列表
-     * 如果已经加载过或正在加载，则直接返回
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun loadApps() {
-        // 如果已加载，直接返回
+
         if (_loadingState.value is LoadingState.Loaded) return
-        // 如果正在加载，直接返回
+
         if (_loadingState.value is LoadingState.Loading) return
 
         try {
@@ -63,17 +63,16 @@ class InstalledAppsRepository private constructor(private val context: Context) 
                 val total = allApps.size
                 val result = mutableListOf<InstalledApp>()
 
-                // 初始化加载状态
+                // 注释已清理。
                 _loadingState.value = LoadingState.Loading(
                     progress = 0f,
                     current = 0,
                     total = total
                 )
 
-                // 性能优化: 批量更新进度，每 20 个应用更新一次，减少 recomposition 次数
                 val batchSize = 20
                 allApps.forEachIndexed { index, app ->
-                    // 加载应用信息
+                    // 注释已清理。
                     val appName = try {
                         app.loadLabel(pm).toString()
                     } catch (e: Exception) {
@@ -88,7 +87,6 @@ class InstalledAppsRepository private constructor(private val context: Context) 
                         )
                     )
 
-                    // 批量更新进度：每 batchSize 个应用或最后一个应用时更新
                     if ((index + 1) % batchSize == 0 || index == total - 1) {
                         _loadingState.value = LoadingState.Loading(
                             progress = (index + 1).toFloat() / total,
@@ -98,7 +96,7 @@ class InstalledAppsRepository private constructor(private val context: Context) 
                     }
                 }
 
-                // 排序并保存结果
+                // 注释已清理。
                 _installedApps.value = result.sortedBy { it.appName.lowercase() }
                 _loadingState.value = LoadingState.Loaded
             }
@@ -108,7 +106,7 @@ class InstalledAppsRepository private constructor(private val context: Context) 
     }
 
     /**
-     * 强制重新加载应用列表
+     * 注释已清理。
      */
     suspend fun reloadApps() {
         _loadingState.value = LoadingState.Idle
@@ -116,16 +114,10 @@ class InstalledAppsRepository private constructor(private val context: Context) 
         loadApps()
     }
 
-    /**
-     * 检查是否需要加载
-     */
     fun needsLoading(): Boolean {
         return _loadingState.value is LoadingState.Idle
     }
 
-    /**
-     * 检查是否已加载完成
-     */
     fun isLoaded(): Boolean {
         return _loadingState.value is LoadingState.Loaded
     }

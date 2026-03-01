@@ -30,9 +30,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
 /**
- * VPN 连接管理器
+ * VPN 杩炴帴绠＄悊鍣?
  *
- * 负责 VPN 的启动、停止和状态管理
+ * [乱码注释已清理]
  */
 class VpnConnectionManager(
     private val context: Context,
@@ -45,7 +45,7 @@ class VpnConnectionManager(
     }
 
     /**
-     * VPN 权限请求回调
+     * [乱码注释已清理]
      */
     interface PermissionCallback {
         fun onVpnPermissionNeeded()
@@ -65,9 +65,9 @@ class VpnConnectionManager(
     }
 
     /**
-     * 切换连接状态
+     * 鍒囨崲杩炴帴鐘舵€?
      *
-     * @return 是否需要 VPN 权限
+     * @return 鏄惁闇€瑕?VPN 鏉冮檺
      */
     suspend fun toggleConnection(): Boolean {
         return when {
@@ -90,7 +90,7 @@ class VpnConnectionManager(
     }
 
     /**
-     * 重启 VPN
+     * 閲嶅惎 VPN
      */
     suspend fun restartVpn() {
         if (!SingBoxRemote.isRunning.value && !SingBoxRemote.isStarting.value) {
@@ -114,7 +114,7 @@ class VpnConnectionManager(
     }
 
     /**
-     * 停止 VPN
+     * 鍋滄 VPN
      */
     fun stopVpn() {
         startMonitorJob?.cancel()
@@ -137,7 +137,7 @@ class VpnConnectionManager(
     }
 
     /**
-     * 启动 VPN 核心
+     * 鍚姩 VPN 鏍稿績
      */
     private suspend fun startCore() {
         val settings = runCatching {
@@ -288,7 +288,7 @@ class VpnConnectionManager(
     }
 
     /**
-     * 处理 VPN 权限结果
+     * [乱码注释已清理]
      */
     fun onVpnPermissionResult(granted: Boolean) {
         _vpnPermissionNeeded.value = false

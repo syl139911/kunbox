@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.content.Context
 import android.content.res.Configuration
@@ -10,7 +10,7 @@ import java.util.Locale
 object LocaleHelper {
 
     /**
-     * 根据 AppLanguage 设置应用语言
+     * 注释已清理。
      */
     fun setLocale(context: Context, language: AppLanguage): Context {
         val locale = when (language) {
@@ -23,7 +23,7 @@ object LocaleHelper {
     }
 
     /**
-     * 获取系统默认语言
+     * 注释已清理。
      */
     private fun getSystemLocale(): Locale {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -35,7 +35,7 @@ object LocaleHelper {
     }
 
     /**
-     * 更新 Context 的资源配置
+     * 注释已清理。
      */
     private fun updateResources(context: Context, locale: Locale): Context {
         Locale.setDefault(locale)
@@ -51,19 +51,19 @@ object LocaleHelper {
     }
 
     /**
-     * 获取当前 AppLanguage 对应的显示名称（本地化）
+     * 注释已清理。
      */
     fun getLanguageDisplayName(language: AppLanguage): String {
         return when (language) {
-            AppLanguage.SYSTEM -> "跟随系统"
+            AppLanguage.SYSTEM -> "System Default"
             AppLanguage.CHINESE -> "简体中文"
             AppLanguage.ENGLISH -> "English"
         }
     }
 
     /**
-     * 包装 Activity 的 Context
-     * 在 Activity 的 attachBaseContext 中调用
+     * 注释已清理。
+     * 注释已清理。
      */
     fun wrap(context: Context, language: AppLanguage): Context {
         return setLocale(context, language)

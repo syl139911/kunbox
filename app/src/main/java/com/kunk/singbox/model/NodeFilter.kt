@@ -2,14 +2,14 @@ package com.kunk.singbox.model
 
 import com.google.gson.annotations.SerializedName
 
-// 过滤模式枚举
+// 鏉╁洦鎶ゅΟ鈥崇础閺嬫矮濡?
 enum class FilterMode {
-    @SerializedName("NONE") NONE, // 不过滤
-    @SerializedName("INCLUDE") INCLUDE, // 只显示包含关键字的节点
-    @SerializedName("EXCLUDE") EXCLUDE // 排除包含关键字的节点
+    @SerializedName("NONE") NONE,
+    @SerializedName("INCLUDE") INCLUDE,
+    @SerializedName("EXCLUDE") EXCLUDE // 閹烘帡娅庨崠鍛儓閸忔娊鏁€涙娈戦懞鍌滃仯
 }
 
-// 节点过滤配置数据类
+// 注释已清理。
 data class NodeFilter(
     @SerializedName("filterMode") val filterMode: FilterMode = FilterMode.NONE,
     @SerializedName("includeKeywords") val includeKeywords: List<String> = emptyList(),
@@ -17,7 +17,7 @@ data class NodeFilter(
     @Deprecated("Use includeKeywords/excludeKeywords instead")
     @SerializedName("keywords") val keywords: List<String> = emptyList()
 ) {
-    // 兼容性：如果旧数据只有 keywords，迁移到对应的字段
+
     val effectiveIncludeKeywords: List<String>
         get() = includeKeywords.ifEmpty {
             if (filterMode == FilterMode.INCLUDE) keywords else emptyList()

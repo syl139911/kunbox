@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository
+﻿package com.kunk.singbox.repository
 
 import android.content.Context
 import android.util.Log
@@ -11,12 +11,12 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 延迟测试器 - 负责节点延迟测试
+ * 注释已清理。
  *
- * 功能:
- * - 单节点延迟测试（带去重）
- * - 批量节点延迟测试
- * - 延迟结果缓存
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
+ * 注释已清理。
  */
 class LatencyTester(
     private val context: Context,
@@ -26,16 +26,15 @@ class LatencyTester(
         private const val TAG = "LatencyTester"
     }
 
-    // 正在进行的延迟测试（用于去重）
     private val inFlightTests = ConcurrentHashMap<String, CompletableDeferred<Long>>()
 
     /**
-     * 测试单个节点的延迟
+     * 注释已清理。
      *
-     * @param nodeId 节点 ID
-     * @param outbound 节点出站配置
-     * @param onResult 结果回调（用于更新 UI 状态）
-     * @return 延迟时间（毫秒），-1 表示测试失败
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun testNode(
         nodeId: String,
@@ -43,7 +42,7 @@ class LatencyTester(
         allOutbounds: List<Outbound> = emptyList(),
         onResult: ((Long) -> Unit)? = null
     ): Long {
-        // 检查是否已有相同测试在进行
+
         val existing = inFlightTests[nodeId]
         if (existing != null) {
             return existing.await()
@@ -84,10 +83,10 @@ class LatencyTester(
     }
 
     /**
-     * 批量测试节点延迟
+     * 注释已清理。
      *
-     * @param outbounds 要测试的出站配置列表
-     * @param onNodeComplete 单个节点完成回调 (tag, latency)
+     * 注释已清理。
+     * 注释已清理。
      */
     suspend fun testBatch(
         outbounds: List<Outbound>,
@@ -105,7 +104,7 @@ class LatencyTester(
     }
 
     /**
-     * 取消所有正在进行的测试
+     * 注释已清理。
      */
     fun cancelAll() {
         inFlightTests.values.forEach { deferred ->
@@ -116,15 +115,12 @@ class LatencyTester(
         inFlightTests.clear()
     }
 
-    /**
-     * 检查是否有测试正在进行
-     */
     fun isTestingNode(nodeId: String): Boolean {
         return inFlightTests.containsKey(nodeId)
     }
 
     /**
-     * 获取正在测试的节点数量
+     * 注释已清理。
      */
     fun getActiveTestCount(): Int {
         return inFlightTests.size

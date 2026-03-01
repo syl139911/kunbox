@@ -1,7 +1,6 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -12,6 +11,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.system.OsConstants
 import android.util.Log
+import io.nekohasekai.libbox.ConnectionOwner
 import io.nekohasekai.libbox.InterfaceUpdateListener
 import io.nekohasekai.libbox.NetworkInterfaceIterator
 import io.nekohasekai.libbox.PlatformInterface
@@ -29,8 +29,8 @@ import java.net.NetworkInterface
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * PlatformInterface 实现，从 SingBoxService 中提取
- * 处理 libbox 平台回调：TUN 设备、网络接口、连接所有者查询等
+ * 注释已清理。
+ * 注释已清理。
  */
 class PlatformInterfaceImpl(
     private val context: Context,
@@ -44,14 +44,13 @@ class PlatformInterfaceImpl(
         private const val NETWORK_SWITCH_DELAY_MS = 2000L
     }
 
-    // 网络切换管理器
     private val networkSwitchManager: NetworkSwitchManager by lazy {
         NetworkSwitchManager(serviceScope, mainHandler).apply {
             init(networkSwitchCallbacks)
         }
     }
 
-    // NetworkSwitchManager 回调
+    // 注释已清理。
     private val networkSwitchCallbacks = object : NetworkSwitchManager.Callbacks {
         override fun getConnectivityManager(): ConnectivityManager? = callbacks.getConnectivityManager()
 
@@ -77,33 +76,29 @@ class PlatformInterfaceImpl(
     }
 
     /**
-     * 回调接口，由 SingBoxService 实现
+     * 注释已清理。
      */
     interface Callbacks {
-        // VPN 操作
+        // 注释已清理。
         fun protect(fd: Int): Boolean
         fun openTun(options: TunOptions): Result<Int>
 
-        // 网络状态
         fun getConnectivityManager(): ConnectivityManager?
         fun getCurrentNetwork(): Network?
         fun getLastKnownNetwork(): Network?
         fun setLastKnownNetwork(network: Network?)
         fun markVpnStarted()
 
-        // 网络重置
         fun requestCoreNetworkReset(reason: String, force: Boolean)
         fun resetConnectionsOptimal(reason: String, skipDebounce: Boolean)
         fun setUnderlyingNetworks(networks: Array<Network>?)
 
-        // 状态查询
         fun isRunning(): Boolean
         fun isStarting(): Boolean
         fun isManuallyStopped(): Boolean
         fun getLastConfigPath(): String?
         fun getCurrentSettings(): com.kunk.singbox.model.AppSettings?
 
-        // 统计
         fun incrementConnectionOwnerCalls()
         fun incrementConnectionOwnerInvalidArgs()
         fun incrementConnectionOwnerUidResolved()
@@ -113,33 +108,26 @@ class PlatformInterfaceImpl(
         fun setConnectionOwnerLastUid(uid: Int)
         fun isConnectionOwnerPermissionDeniedLogged(): Boolean
         fun setConnectionOwnerPermissionDeniedLogged(logged: Boolean)
-
-        // 缓存
         fun cacheUidToPackage(uid: Int, packageName: String)
         fun getUidFromCache(uid: Int): String?
 
-        // 接口监听
+        // 注释已清理。
         fun findBestPhysicalNetwork(): Network?
     }
 
-    // 网络监听状态
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var vpnNetworkCallback: ConnectivityManager.NetworkCallback? = null
     private var currentInterfaceListener: InterfaceUpdateListener? = null
     private var networkCallbackReady = false
     private var defaultInterfaceName = ""
-
-    // VPN 健康检查
     private var vpnHealthJob: Job? = null
     private var postTunRebindJob: Job? = null
     private var vpnLinkValidated = false
 
-    // 避免在弱网/门户网/ROM异常场景下频繁触发"健康恢复"导致网络抖动
     private val lastVpnHealthRecoveryAtMs = AtomicLong(0L)
     private val vpnHealthRecoveryMinIntervalMs: Long = 30_000L
 
-    // 时间戳
     private val vpnStartedAtMs = AtomicLong(0L)
     private val lastSetUnderlyingNetworksAtMs = AtomicLong(0L)
 
@@ -167,7 +155,6 @@ class PlatformInterfaceImpl(
         if (options == null) return -1
 
         try {
-            // 检查 VPN lockdown
             val alwaysOnPkg = runCatching {
                 Settings.Secure.getString(context.contentResolver, "always_on_vpn_app")
             }.getOrNull() ?: runCatching {
@@ -186,7 +173,6 @@ class PlatformInterfaceImpl(
                 throw IllegalStateException("VPN lockdown enabled by $alwaysOnPkg")
             }
 
-            // 委托给 Callbacks
             val result = callbacks.openTun(options)
 
             return result.getOrElse { e ->
@@ -253,11 +239,27 @@ class PlatformInterfaceImpl(
         sourcePort: Int,
         destinationAddress: String?,
         destinationPort: Int
-    ): Int {
+    ): ConnectionOwner {
         callbacks.incrementConnectionOwnerCalls()
 
         // Avoid expensive /proc scanning when it's known to be unreadable.
         val procFsUsable = runCatching { useProcFS() }.getOrDefault(false)
+
+        fun toConnectionOwner(uid: Int): ConnectionOwner {
+            if (uid <= 0) return ConnectionOwner()
+            val packageName = runCatching {
+                val pkgs = context.packageManager.getPackagesForUid(uid)
+                if (!pkgs.isNullOrEmpty()) pkgs[0] else context.packageManager.getNameForUid(uid).orEmpty()
+            }.getOrDefault("")
+            if (packageName.isNotBlank()) {
+                callbacks.cacheUidToPackage(uid, packageName)
+            }
+            return ConnectionOwner().apply {
+                userId = uid
+                androidPackageName = packageName
+                userName = packageName
+            }
+        }
 
         fun findUidFromProcFsBySourcePort(protocol: Int, srcPort: Int): Int {
             if (srcPort <= 0) return 0
@@ -308,7 +310,7 @@ class PlatformInterfaceImpl(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             callbacks.incrementConnectionOwnerInvalidArgs()
             callbacks.setConnectionOwnerLastEvent("api<29")
-            return 0
+            return ConnectionOwner()
         }
 
         fun parseAddress(value: String?): InetAddress? {
@@ -338,18 +340,18 @@ class PlatformInterfaceImpl(
                 callbacks.setConnectionOwnerLastEvent(
                     "procfs_fallback uid=$uid proto=$protocol src=$sourceAddress:$sourcePort dst=$destinationAddress:$destinationPort"
                 )
-                return uid
+                return toConnectionOwner(uid)
             }
 
             callbacks.incrementConnectionOwnerInvalidArgs()
             callbacks.setConnectionOwnerLastEvent(
                 "invalid_args src=$sourceAddress:$sourcePort dst=$destinationAddress:$destinationPort proto=$ipProtocol"
             )
-            return 0
+            return ConnectionOwner()
         }
 
         return try {
-            val cm = callbacks.getConnectivityManager() ?: return 0
+            val cm = callbacks.getConnectivityManager() ?: return ConnectionOwner()
             val uid = cm.getConnectionOwnerUid(
                 protocol,
                 InetSocketAddress(sourceIp, sourcePort),
@@ -361,12 +363,12 @@ class PlatformInterfaceImpl(
                 callbacks.setConnectionOwnerLastEvent(
                     "resolved uid=$uid proto=$protocol $sourceIp:$sourcePort->$destinationIp:$destinationPort"
                 )
-                uid
+                toConnectionOwner(uid)
             } else {
                 callbacks.setConnectionOwnerLastEvent(
                     "unresolved uid=$uid proto=$protocol $sourceIp:$sourcePort->$destinationIp:$destinationPort"
                 )
-                0
+                ConnectionOwner()
             }
         } catch (e: SecurityException) {
             callbacks.incrementConnectionOwnerSecurityDenied()
@@ -384,9 +386,9 @@ class PlatformInterfaceImpl(
                 callbacks.incrementConnectionOwnerUidResolved()
                 callbacks.setConnectionOwnerLastUid(uid)
                 callbacks.setConnectionOwnerLastEvent("procfs_fallback_after_security uid=$uid")
-                uid
+                toConnectionOwner(uid)
             } else {
-                0
+                ConnectionOwner()
             }
         } catch (e: Exception) {
             callbacks.incrementConnectionOwnerOtherException()
@@ -396,64 +398,24 @@ class PlatformInterfaceImpl(
                 callbacks.incrementConnectionOwnerUidResolved()
                 callbacks.setConnectionOwnerLastUid(uid)
                 callbacks.setConnectionOwnerLastEvent("procfs_fallback_after_exception uid=$uid")
-                uid
+                toConnectionOwner(uid)
             } else {
-                0
+                ConnectionOwner()
             }
-        }
-    }
-
-    override fun packageNameByUid(uid: Int): String {
-        if (uid <= 0) return ""
-        return try {
-            val pkgs = context.packageManager.getPackagesForUid(uid)
-            if (!pkgs.isNullOrEmpty()) {
-                pkgs[0].also { callbacks.cacheUidToPackage(uid, it) }
-            } else {
-                val name = runCatching { context.packageManager.getNameForUid(uid) }.getOrNull().orEmpty()
-                if (name.isNotBlank()) {
-                    callbacks.cacheUidToPackage(uid, name)
-                    name
-                } else {
-                    callbacks.getUidFromCache(uid) ?: ""
-                }
-            }
-        } catch (_: Exception) {
-            val name = runCatching { context.packageManager.getNameForUid(uid) }.getOrNull().orEmpty()
-            if (name.isNotBlank()) {
-                callbacks.cacheUidToPackage(uid, name)
-                name
-            } else {
-                callbacks.getUidFromCache(uid) ?: ""
-            }
-        }
-    }
-
-    override fun uidByPackageName(packageName: String?): Int {
-        if (packageName.isNullOrBlank()) return 0
-        return try {
-            val appInfo = context.packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
-            val uid = appInfo.uid
-            if (uid > 0) uid else 0
-        } catch (_: Exception) {
-            0
         }
     }
 
     override fun startDefaultInterfaceMonitor(listener: InterfaceUpdateListener?) {
         currentInterfaceListener = listener
 
-        // 提前设置启动窗口期时间戳
         vpnStartedAtMs.set(SystemClock.elapsedRealtime())
         lastSetUnderlyingNetworksAtMs.set(SystemClock.elapsedRealtime())
         networkSwitchManager.markVpnStarted()
 
         connectivityManager = callbacks.getConnectivityManager()
 
-        // 使用 Application 层预缓存的网络
         var initialNetwork: Network? = com.kunk.singbox.utils.DefaultNetworkListener.underlyingNetwork
 
-        // 如果预缓存不可用，尝试使用之前保存的 lastKnownNetwork
         if (initialNetwork == null) {
             val lastKnown = callbacks.getLastKnownNetwork()
             if (lastKnown != null) {
@@ -467,7 +429,6 @@ class PlatformInterfaceImpl(
             }
         }
 
-        // 最后尝试 activeNetwork
         if (initialNetwork == null) {
             val activeNet = connectivityManager?.activeNetwork
             if (activeNet != null) {
@@ -500,7 +461,6 @@ class PlatformInterfaceImpl(
             Log.w(TAG, "startDefaultInterfaceMonitor: no usable physical network found at startup")
         }
 
-        // 将 NetworkCallback 注册延迟到 cgo callback 返回之后
         mainHandler.post {
             registerNetworkCallbacksDeferred()
         }
@@ -729,15 +689,10 @@ class PlatformInterfaceImpl(
 
     override fun systemCertificates(): StringIterator? = null
 
-    override fun writeLog(message: String?) {
-        if (message.isNullOrBlank()) return
-        com.kunk.singbox.repository.LogRepository.getInstance().addLog(message)
-    }
-
-    // ========== 内部方法 ==========
+    // 注释已清理。
 
     private fun updateDefaultInterface(network: Network) {
-        // 委托给 NetworkSwitchManager 处理
+
         networkSwitchManager.handleNetworkUpdate(network)
     }
 

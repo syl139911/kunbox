@@ -1,28 +1,28 @@
-package com.kunk.singbox.model
+﻿package com.kunk.singbox.model
 
 import androidx.annotation.StringRes
 import com.google.gson.annotations.SerializedName
 import com.kunk.singbox.R
 
 /**
- * 所有应用设置的数据模型
+ * 注释已清理。
  */
 data class AppSettings(
-    // 通用设置
+
     @SerializedName("autoConnect") val autoConnect: Boolean = false,
     @SerializedName("excludeFromRecent") val excludeFromRecent: Boolean = false,
     @SerializedName("appTheme") val appTheme: AppThemeMode = AppThemeMode.SYSTEM,
     @SerializedName("appLanguage") val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     @SerializedName("showNotificationSpeed") val showNotificationSpeed: Boolean = true,
 
-    // TUN/VPN 设置
+    // 注释已清理。
     @SerializedName("tunEnabled") val tunEnabled: Boolean = true,
     @SerializedName("tunStack") val tunStack: TunStack = TunStack.MIXED,
     // Throughput defaults:
     // - 1280 is IPv6 minimum MTU, safe but often reduces throughput.
-    // - 1500 is the common Ethernet/Wi‑Fi MTU and typically improves throughput.
+    // 注释已清理。
     @SerializedName("tunMtu") val tunMtu: Int = 1500,
-    // When enabled, MTU is auto-selected by network type (Wi‑Fi/Ethernet=1480, Cellular=1400).
+    // 注释已清理。
     // Higher MTU for QUIC-based proxies (Hysteria2/TUIC) to avoid fragmentation blackholes.
     // Note: For existing installs, Gson may deserialize missing boolean fields as false.
     @SerializedName("tunMtuAuto") val tunMtuAuto: Boolean = true,
@@ -36,33 +36,29 @@ data class AppSettings(
     @SerializedName("vpnAllowlist") val vpnAllowlist: String = "",
     @SerializedName("vpnBlocklist") val vpnBlocklist: String = "",
 
-    // 代理端口设置
+    // 注释已清理。
     @SerializedName("proxyPort") val proxyPort: Int = 2080,
     @SerializedName("allowLan") val allowLan: Boolean = false,
     @SerializedName("appendHttpProxy") val appendHttpProxy: Boolean = false,
 
-    // DNS 设置
-    // 完美方案配置 (去大厂版)：
-    // Local: 使用 "local" (系统/运营商 DNS)。
-    // 原因:
-    // 1. 避开阿里/腾讯等互联网巨头的数据收集。
-    // 2. 运营商物理网络本就知晓国内流量去向，使用其 DNS 不增加隐私风险。
-    // 3. 拥有最快的解析速度和最准确的国内 CDN 调度。
+    // 注释已清理。
+
+    // 注释已清理。
+    // 注释已清理。
+
     @SerializedName("localDns") val localDns: String = "local",
-    // Remote: Cloudflare DoH (IP直连版)，强制走代理。
-    // 1. 隐私性极强，不记录日志。
-    // 2. 走代理隐藏用户真实 IP。
+
     @SerializedName("remoteDns") val remoteDns: String = "https://1.1.1.1/dns-query",
     @SerializedName("fakeDnsEnabled") val fakeDnsEnabled: Boolean = false,
     @SerializedName("fakeIpRange") val fakeIpRange: String = "198.18.0.0/15",
-    @SerializedName("fakeIpExcludeDomains") val fakeIpExcludeDomains: String = "", // 用户自定义 Fake IP 排除域名，逗号分隔
+    @SerializedName("fakeIpExcludeDomains") val fakeIpExcludeDomains: String = "",
     @SerializedName("dnsStrategy") val dnsStrategy: DnsStrategy = DnsStrategy.PREFER_IPV4,
     @SerializedName("remoteDnsStrategy") val remoteDnsStrategy: DnsStrategy = DnsStrategy.AUTO,
     @SerializedName("directDnsStrategy") val directDnsStrategy: DnsStrategy = DnsStrategy.AUTO,
     @SerializedName("serverAddressStrategy") val serverAddressStrategy: DnsStrategy = DnsStrategy.AUTO,
     @SerializedName("dnsCacheEnabled") val dnsCacheEnabled: Boolean = true,
 
-    // 路由设置
+    // 注释已清理。
     @SerializedName("routingMode") val routingMode: RoutingMode = RoutingMode.RULE,
     @SerializedName("defaultRule") val defaultRule: DefaultRule = DefaultRule.PROXY,
     @SerializedName("bypassLan") val bypassLan: Boolean = true,
@@ -70,48 +66,45 @@ data class AppSettings(
     @SerializedName("blockQuic") val blockQuic: Boolean = false,
     @SerializedName("debugLoggingEnabled") val debugLoggingEnabled: Boolean = false,
 
-    // 连接重置设置
+    // 注释已清理。
     @SerializedName("wakeResetConnections") val wakeResetConnections: Boolean = true,
 
-    // TCP Keepalive 设置 (完美方案 - 防止连接假死)
-    // 启用 TCP Keepalive，定期发送心跳包保持连接活跃
     @SerializedName("tcpKeepAliveEnabled") val tcpKeepAliveEnabled: Boolean = true,
-    // TCP Keepalive 间隔时间 (秒)，默认 15 秒
+
     @SerializedName("tcpKeepAliveInterval") val tcpKeepAliveInterval: Int = 15,
-    // 连接超时时间 (秒)，默认 10 秒
+
     @SerializedName("connectTimeout") val connectTimeout: Int = 10,
 
-    // 延迟测试设置
+    // 注释已清理。
     @SerializedName("latencyTestMethod") val latencyTestMethod: LatencyTestMethod = LatencyTestMethod.REAL_RTT,
     @SerializedName("latencyTestUrl") val latencyTestUrl: String = "https://www.google.com/generate_204",
-    @SerializedName("latencyTestTimeout") val latencyTestTimeout: Int = 5000, // 默认 5000ms (参考 v2rayNG/sing-box 的超时设置)
-    @SerializedName("latencyTestConcurrency") val latencyTestConcurrency: Int = 5, // 批量测试并发数，降低默认值保护主连接
+    @SerializedName("latencyTestTimeout") val latencyTestTimeout: Int = 5000,
+    @SerializedName("latencyTestConcurrency") val latencyTestConcurrency: Int = 5,
 
-    // 镜像设置
     @SerializedName("ghProxyMirror") val ghProxyMirror: GhProxyMirror = GhProxyMirror.SAGERNET_ORIGIN,
 
-    // 高级路由
+    // 濡ゅ倹顭囨鍥╂崉椤栨粍鏆?
     @SerializedName("customRules") val customRules: List<CustomRule> = emptyList(),
     @SerializedName("ruleSets") val ruleSets: List<RuleSet> = emptyList(),
     @SerializedName("appRules") val appRules: List<AppRule> = emptyList(),
     @SerializedName("appGroups") val appGroups: List<AppGroup> = emptyList(),
 
-    // 规则集自动更新
+    // 注释已清理。
     @SerializedName("ruleSetAutoUpdateEnabled") val ruleSetAutoUpdateEnabled: Boolean = false,
-    @SerializedName("ruleSetAutoUpdateInterval") val ruleSetAutoUpdateInterval: Int = 60, // 分钟
+    @SerializedName("ruleSetAutoUpdateInterval") val ruleSetAutoUpdateInterval: Int = 60, // ·告帒妫濋幐?
 
-    // 订阅更新超时设置
-    @SerializedName("subscriptionUpdateTimeout") val subscriptionUpdateTimeout: Int = 30, // 秒，默认30秒
+    // 注释已清理。
+    @SerializedName("subscriptionUpdateTimeout") val subscriptionUpdateTimeout: Int = 30, // ·佸甯槐·囶渶濡鍚?0·?
 
-    // 节点列表设置
+    // 注释已清理。
     @SerializedName("nodeFilter") val nodeFilter: NodeFilter = NodeFilter(),
     @SerializedName("nodeSortType") val nodeSortType: NodeSortType = NodeSortType.DEFAULT,
     @SerializedName("customNodeOrder") val customNodeOrder: List<String> = emptyList(),
 
-    // 版本更新设置
+    // 注释已清理。
     @SerializedName("autoCheckUpdate") val autoCheckUpdate: Boolean = true,
 
-    // 后台省电设置
+    // 注释已清理。
     @SerializedName("backgroundPowerSavingDelay") val backgroundPowerSavingDelay: BackgroundPowerSavingDelay = BackgroundPowerSavingDelay.MINUTES_30
 )
 
