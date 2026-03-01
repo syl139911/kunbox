@@ -1,4 +1,4 @@
-package com.kunk.singbox.database
+﻿package com.kunk.singbox.database
 
 import androidx.room.TypeConverter
 import com.kunk.singbox.model.ProfileType
@@ -7,7 +7,6 @@ import com.kunk.singbox.model.UpdateStatus
 /**
  * Room 绫诲瀷杞崲鍣?
  *
- * [乱码注释已清理]
  */
 class Converters {
 

@@ -49,11 +49,8 @@ object AppUpdateChecker {
     )
 
     /**
-     * 注释已清理。
      *
      * @param context Context
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun checkAndNotify(
         context: Context,
@@ -100,7 +97,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      */
     private fun getCurrentVersion(context: Context): String {
         return try {
@@ -113,8 +109,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private suspend fun fetchLatestReleaseWithFallback(context: Context): GitHubRelease? {
         val request = Request.Builder()
@@ -184,9 +178,7 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     private fun isNewerVersion(newVersion: String, currentVersion: String): Boolean {
         try {
@@ -209,7 +201,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      */
     private fun parseVersion(version: String): List<Int> {
 
@@ -221,7 +212,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      */
     private fun showUpdateNotification(context: Context, release: GitHubRelease) {
         createNotificationChannel(context)
@@ -270,7 +260,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      */
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -288,7 +277,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      */
     private fun getLastNotifiedVersion(context: Context): String? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -296,7 +284,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      */
     private fun setLastNotifiedVersion(context: Context, version: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -304,7 +291,6 @@ object AppUpdateChecker {
     }
 
     /**
-     * 注释已清理。
      */
     fun clearLastNotifiedVersion(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

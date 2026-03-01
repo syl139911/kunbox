@@ -28,8 +28,6 @@ import com.kunk.singbox.ui.theme.TextPrimary
 import com.kunk.singbox.ui.theme.TextSecondary
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 @Composable
 fun AppListLoadingDialog(
@@ -79,7 +77,6 @@ fun AppListLoadingDialog(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 注释已清理。
             LinearProgressIndicator(
                 progress = { loadingState.progress },
                 modifier = Modifier
@@ -93,7 +90,6 @@ fun AppListLoadingDialog(
 }
 
 /**
- * 注释已清理。
  */
 @Composable
 fun SimpleLoadingDialog(

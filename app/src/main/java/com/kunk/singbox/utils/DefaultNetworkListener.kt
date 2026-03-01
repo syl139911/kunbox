@@ -17,10 +17,7 @@ import kotlinx.coroutines.channels.Channel
 import java.lang.ref.WeakReference
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
  */
 object DefaultNetworkListener {
     private const val TAG = "DefaultNetworkListener"
@@ -129,7 +126,6 @@ object DefaultNetworkListener {
                 return
             }
 
-            // 注释已清理。
             if (tryFindReplacementNetwork(cm, network)) {
                 return
             }
@@ -166,8 +162,6 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun start(connectivityManager: ConnectivityManager, key: Any, listener: (Network?) -> Unit) {
         connectivityManagerRef = WeakReference(connectivityManager)
@@ -175,7 +169,6 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun get(): Network? {
         return if (fallback) {
@@ -193,7 +186,6 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun stop(key: Any) {
         networkActor.send(NetworkMessage.Stop(key))
@@ -234,8 +226,6 @@ object DefaultNetworkListener {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun cleanup() {
         networkActor.close()

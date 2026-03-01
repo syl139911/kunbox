@@ -19,15 +19,8 @@ import com.kunk.singbox.database.entity.ProfileEntity
 import com.kunk.singbox.database.entity.SettingsEntity
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 @Database(
     entities = [
@@ -73,7 +66,6 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * 注释已清理。
          */
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -89,8 +81,6 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * 注释已清理。
-         * 注释已清理。
          */
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -112,7 +102,6 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * 注释已清理。
          */
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -122,7 +111,6 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * 注释已清理。
          */
         fun getInMemoryDatabase(context: Context): AppDatabase {
             return Room.inMemoryDatabaseBuilder(

@@ -19,7 +19,6 @@ import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 /**
- * 注释已清理。
  */
 data class DnsResolveResult(
     val ip: String?,
@@ -30,9 +29,7 @@ data class DnsResolveResult(
 }
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
  */
 class DnsResolver(
     private val client: OkHttpClient = createDefaultClient()
@@ -56,7 +53,6 @@ class DnsResolver(
         }
 
         /**
-         * 注释已清理。
          */
         fun isIpAddress(host: String): Boolean {
             return IPV4_REGEX.matches(host) || (host.contains(":") && IPV6_REGEX.matches(host))
@@ -64,11 +60,7 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun resolveViaDoH(
         domain: String,
@@ -115,7 +107,6 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun resolveViaSystem(domain: String): DnsResolveResult = withContext(Dispatchers.IO) {
         if (isIpAddress(domain)) {
@@ -138,7 +129,6 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     private suspend fun resolveViaDoHAsync(
@@ -199,7 +189,6 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     suspend fun resolve(
@@ -242,12 +231,8 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      * @param concurrency 妤犵偠娉涜ぐ鍌炲极?
-     * 注释已清理。
      */
     suspend fun resolveBatch(
         domains: List<String>,
@@ -278,7 +263,6 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      */
     private fun buildDnsQuery(domain: String): ByteArray {
         val buffer = ByteBuffer.allocate(512)
@@ -315,7 +299,6 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      */
     private fun parseDnsResponse(data: ByteArray): String? {
         if (data.size < 12) return null
@@ -359,7 +342,6 @@ class DnsResolver(
     }
 
     /**
-     * 注释已清理。
      */
     @Suppress("LoopWithTooManyJumpStatements")
     private fun skipName(buffer: ByteBuffer) {

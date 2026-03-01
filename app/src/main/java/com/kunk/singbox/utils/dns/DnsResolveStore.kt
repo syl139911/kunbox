@@ -1,13 +1,11 @@
-package com.kunk.singbox.utils.dns
+﻿package com.kunk.singbox.utils.dns
 
 import android.util.Log
 import com.google.gson.Gson
 import com.tencent.mmkv.MMKV
 
 /**
- * [乱码注释已清理]
  *
- * [乱码注释已清理]
  */
 class DnsResolveStore private constructor() {
 
@@ -35,7 +33,6 @@ class DnsResolveStore private constructor() {
     private val gson = Gson()
 
     /**
-     * [乱码注释已清理]
      */
     data class ResolvedEntry(
         val ip: String,
@@ -50,7 +47,6 @@ class DnsResolveStore private constructor() {
         }
 
         /**
-         * [乱码注释已清理]
          */
         fun remainingSeconds(): Long {
             val elapsed = (System.currentTimeMillis() - resolvedAt) / 1000
@@ -66,7 +62,6 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun save(
         profileId: String,
@@ -88,12 +83,9 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      *
      * @param profileId 閰嶇疆 ID
      * @param domain 鍩熷悕
-     * [乱码注释已清理]
-     * [乱码注释已清理]
      */
     fun get(
         profileId: String,
@@ -121,16 +113,13 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      *
-     * [乱码注释已清理]
      */
     fun getIp(profileId: String, domain: String): String? {
         return get(profileId, domain)?.ip
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun remove(profileId: String, domain: String) {
         val key = makeKey(profileId, domain)
@@ -138,7 +127,6 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun removeAllForProfile(profileId: String) {
         val prefix = "${profileId}_"
@@ -148,7 +136,6 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun saveBatch(
         profileId: String,
@@ -167,7 +154,6 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun getAllForProfile(profileId: String): Map<String, ResolvedEntry> {
         val prefix = "${profileId}_"
@@ -185,7 +171,6 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun cleanupExpired(): Int {
         var cleanedCount = 0
@@ -210,7 +195,6 @@ class DnsResolveStore private constructor() {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun getStats(): Stats {
         var total = 0
@@ -245,7 +229,6 @@ class DnsResolveStore private constructor() {
     )
 
     /**
-     * [乱码注释已清理]
      */
     fun clear() {
         mmkv.clearAll()

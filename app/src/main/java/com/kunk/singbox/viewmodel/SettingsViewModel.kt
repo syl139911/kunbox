@@ -64,7 +64,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var defaultRuleSetDownloadJob: Job? = null
     private val defaultRuleSetDownloadTags = mutableSetOf<String>()
 
-    // 注释已清理。
     private val _exportState = MutableStateFlow<ExportState>(ExportState.Idle)
     val exportState: StateFlow<ExportState> = _exportState.asStateFlow()
 
@@ -210,7 +209,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 注释已清理。
     fun setTunEnabled(value: Boolean) {
         viewModelScope.launch { repository.setTunEnabled(value) }
     }
@@ -263,7 +261,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setVpnBlocklist(value) }
     }
 
-    // 注释已清理。
     fun setLocalDns(value: String) {
         viewModelScope.launch { repository.setLocalDns(value) }
     }
@@ -300,7 +297,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setDnsCacheEnabled(value) }
     }
 
-    // 注释已清理。
     fun setRoutingMode(value: RoutingMode, notifyRestartRequired: Boolean = true) {
         viewModelScope.launch { repository.setRoutingMode(value, notifyRestartRequired) }
     }
@@ -353,7 +349,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setSubscriptionUpdateTimeout(value) }
     }
 
-    // 注释已清理。
     fun updateProxyPort(value: Int) {
         viewModelScope.launch { repository.setProxyPort(value) }
     }
@@ -400,7 +395,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val rawPrefix = "https://raw.githubusercontent.com/"
                 val cdnPrefix = "https://cdn.jsdelivr.net/gh/"
 
-                // 注释已清理。
                 var rawUrl = url
 
                 if (rawUrl.startsWith(cdnPrefix)) {
@@ -502,7 +496,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val rawPrefix = "https://raw.githubusercontent.com/"
                 val cdnPrefix = "https://cdn.jsdelivr.net/gh/"
 
-                // 注释已清理。
                 var rawUrl = url
 
                 if (rawUrl.startsWith(cdnPrefix)) {
@@ -671,7 +664,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 注释已清理。
     fun addAppRule(rule: AppRule) {
         viewModelScope.launch {
             val currentRules = settings.value.appRules.toMutableList()
@@ -713,7 +705,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 注释已清理。
     fun addAppGroup(group: AppGroup) {
         viewModelScope.launch {
             val currentGroups = settings.value.appGroups.toMutableList()
@@ -753,10 +744,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 注释已清理。
 
     /**
-     * 注释已清理。
      */
     fun exportData(uri: Uri) {
         viewModelScope.launch {
@@ -773,7 +762,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 注释已清理。
      */
     fun validateImportFile(uri: Uri) {
         viewModelScope.launch {
@@ -792,7 +780,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 注释已清理。
      */
     fun confirmImport(uri: Uri, options: ImportOptions = ImportOptions()) {
         viewModelScope.launch {
@@ -821,14 +808,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 注释已清理。
      */
     fun resetExportState() {
         _exportState.value = ExportState.Idle
     }
 
     /**
-     * 注释已清理。
      */
     fun resetImportState() {
         _importState.value = ImportState.Idle
@@ -836,7 +821,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 }
 
 /**
- * 注释已清理。
  */
 sealed class ExportState {
     object Idle : ExportState()
@@ -846,7 +830,6 @@ sealed class ExportState {
 }
 
 /**
- * 注释已清理。
  */
 sealed class ImportState {
     object Idle : ImportState()

@@ -36,10 +36,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
  */
 class SingBoxCore private constructor(private val context: Context) {
 
@@ -99,7 +96,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     init {
-        // 注释已清理。
         workDir.mkdirs()
         tempDir.mkdirs()
 
@@ -127,13 +123,10 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     fun isLibboxAvailable(): Boolean = libboxAvailable
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     private suspend fun testOutboundLatencyWithLibbox(
@@ -147,7 +140,6 @@ class SingBoxCore private constructor(private val context: Context) {
         val url = adjustUrlForMode(finalSettings.latencyTestUrl, finalSettings.latencyTestMethod)
         val timeoutMs = finalSettings.latencyTestTimeout
 
-        // 注释已清理。
         // Remove mutex to allow concurrent testing
         val nativeRtt = testWithLibboxStaticUrlTest(outbound, url, timeoutMs, finalSettings.latencyTestMethod)
 
@@ -155,9 +147,7 @@ class SingBoxCore private constructor(private val context: Context) {
             return@withContext nativeRtt
         }
 
-        // 注释已清理。
 
-        // 注释已清理。
         if (VpnStateStore.getActive()) {
             Log.d(TAG, "VPN is running, skipping local HTTP proxy fallback to avoid command.sock conflict")
             return@withContext -1L
@@ -182,11 +172,6 @@ class SingBoxCore private constructor(private val context: Context) {
     // private var discoveredMethodType: Int = 0 // 0: long, 1: URLTest object
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun resolveDependencyOutbounds(
         outbound: Outbound,
@@ -348,7 +333,6 @@ class SingBoxCore private constructor(private val context: Context) {
                 ensureLibboxSetup(context)
                 val platformInterface = TestPlatformInterface(context)
                 val serverHandler = TestCommandServerHandler()
-                // 注释已清理。
                 commandServer = Libbox.newCommandServer(serverHandler, platformInterface)
                 commandServer.start()
 
@@ -409,15 +393,9 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER")
     private suspend fun testWithLibboxStaticUrlTest(
@@ -471,8 +449,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod", "LongMethod")
     private suspend fun testOutboundsLatencyBatchInternal(
@@ -517,7 +493,6 @@ class SingBoxCore private constructor(private val context: Context) {
             ensureLibboxSetup(context)
             val platformInterface = TestPlatformInterface(context)
             val serverHandler = TestCommandServerHandler()
-            // 注释已清理。
             commandServer = Libbox.newCommandServer(serverHandler, platformInterface)
             commandServer.start()
 
@@ -721,15 +696,8 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun allocateMultipleLocalPorts(count: Int): List<Int> {
         val ports = mutableListOf<Int>()
@@ -750,10 +718,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun testOutboundLatency(
         outbound: Outbound,
@@ -819,9 +783,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun testOutboundsLatency(
         outbounds: List<Outbound>,
@@ -829,7 +790,6 @@ class SingBoxCore private constructor(private val context: Context) {
     ) = withContext(Dispatchers.IO) {
         val settings = SettingsRepository.getInstance(context).settings.first()
 
-        // 注释已清理。
 
         val isNativeUrlTestSupported = BoxWrapperManager.isAvailable()
 
@@ -837,7 +797,6 @@ class SingBoxCore private constructor(private val context: Context) {
             val url = adjustUrlForMode(settings.latencyTestUrl, settings.latencyTestMethod)
             val timeoutMs = settings.latencyTestTimeout
 
-            // 注释已清理。
             SafeLatencyTester.getInstance().testOutboundsLatencySafe(
                 outbounds = outbounds,
                 targetUrl = url,
@@ -881,8 +840,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun getPhysicalNetworkInterface(): String? {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -912,7 +869,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun validateConfig(config: SingBoxConfig): Result<Unit> = withContext(Dispatchers.IO) {
         if (!libboxAvailable) {
@@ -935,8 +891,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun validateOutbound(outbound: Outbound): Boolean {
         if (!libboxAvailable) {
@@ -1021,7 +975,6 @@ class SingBoxCore private constructor(private val context: Context) {
 
         override fun startDefaultInterfaceMonitor(listener: InterfaceUpdateListener?) {
 
-            // 注释已清理。
 
             if (listener == null) return
 
@@ -1087,7 +1040,6 @@ class SingBoxCore private constructor(private val context: Context) {
         override fun usePlatformAutoDetectInterfaceControl(): Boolean = true
         override fun useProcFS(): Boolean = false
 
-        // 注释已清理。
         override fun findConnectionOwner(
             p0: Int,
             p1: String?,
@@ -1110,9 +1062,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
 /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private class TestCommandServerHandler : io.nekohasekai.libbox.CommandServerHandler {
         override fun serviceStop() {}
@@ -1130,8 +1079,6 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun hasActiveConnections(): Boolean {
         if (!libboxAvailable) return false
@@ -1145,15 +1092,11 @@ class SingBoxCore private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("FunctionOnlyReturningConstant")
     fun getActiveConnections(): List<ActiveConnection> = emptyList()
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun closeConnectionsForApp(packageName: String): Int {
         if (!libboxAvailable) return 0

@@ -42,7 +42,6 @@ class StartupManager(
     }
 
     /**
-     * 注释已清理。
      */
     private fun isPortAvailable(port: Int): Boolean {
         if (port <= 0) return true
@@ -53,16 +52,13 @@ class StartupManager(
                 true
             }
         } catch (@Suppress("SwallowedException") e: Exception) {
-            // 注释已清理。
             false
         }
     }
 
     /**
-     * 注释已清理。
      */
     interface Callbacks {
-        // 注释已清理。
         fun onStarting()
         fun onStarted(configContent: String)
         fun onFailed(error: String)
@@ -71,7 +67,6 @@ class StartupManager(
         fun createNotification(): Notification
         fun markForegroundStarted()
 
-        // 注释已清理。
         fun registerScreenStateReceiver()
         fun startForeignVpnMonitor()
         fun stopForeignVpnMonitor()
@@ -87,7 +82,6 @@ class StartupManager(
         fun scheduleKeepaliveWorker()
         fun startTrafficMonitor()
 
-        // 注释已清理。
         fun updateTileState()
         fun setIsRunning(running: Boolean)
         fun setIsStarting(starting: Boolean)
@@ -100,9 +94,6 @@ class StartupManager(
         fun setLastKnownNetwork(network: Network?)
         fun setNetworkCallbackReady(ready: Boolean)
         /**
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
          */
         fun restoreUnderlyingNetwork(network: Network)
 
@@ -111,7 +102,6 @@ class StartupManager(
     }
 
     /**
-     * 注释已清理。
      */
     sealed class StartResult {
         data class Success(val configContent: String, val durationMs: Long) : StartResult()
@@ -132,7 +122,6 @@ class StartupManager(
     )
 
     /**
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod", "CyclomaticComplexMethod", "LongMethod")
     suspend fun startVpn(
@@ -196,7 +185,6 @@ class StartupManager(
             }
             log("[STEP] network ready: ${initResult.network}")
 
-            // 注释已清理。
             callbacks.setLastKnownNetwork(initResult.network)
             callbacks.setNetworkCallbackReady(true)
 
@@ -222,7 +210,6 @@ class StartupManager(
 
             callbacks.restoreUnderlyingNetwork(initResult.network)
 
-            // 注释已清理。
             stepStart = SystemClock.elapsedRealtime()
             when (val result = coreManager.startLibbox(configContent)) {
                 is CoreManager.StartResult.Success -> {
@@ -248,7 +235,6 @@ class StartupManager(
             callbacks.initSelectorManager(configContent)
             log("[STEP] postInit (clients+selector): ${SystemClock.elapsedRealtime() - stepStart}ms")
 
-            // 注释已清理。
             stepStart = SystemClock.elapsedRealtime()
             callbacks.setIsRunning(true)
             callbacks.setLastError(null)
@@ -256,7 +242,6 @@ class StartupManager(
             callbacks.stopForeignVpnMonitor()
             log("[STEP] markRunning: ${SystemClock.elapsedRealtime() - stepStart}ms")
 
-            // 注释已清理。
             stepStart = SystemClock.elapsedRealtime()
             callbacks.startTrafficMonitor()
             callbacks.startHealthMonitor()
@@ -265,7 +250,6 @@ class StartupManager(
             callbacks.scheduleAsyncRuleSetUpdate()
             log("[STEP] startMonitors: ${SystemClock.elapsedRealtime() - stepStart}ms")
 
-            // 注释已清理。
             stepStart = SystemClock.elapsedRealtime()
             callbacks.persistVpnPending("")
             callbacks.updateTileState()
@@ -309,7 +293,6 @@ class StartupManager(
             "[parallelInit] readConfig: ${SystemClock.elapsedRealtime() - stepStart}ms, size=${rawConfigContent.length}"
         )
 
-        // 注释已清理。
         val networkDeferred = async { ensureNetworkCallbackReady(callbacks) }
         val ruleSetDeferred = async { ensureRuleSetReady() }
         val settingsDeferred = async {

@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository
+﻿package com.kunk.singbox.repository
 
 import android.content.Context
 import android.util.Log
@@ -43,8 +43,6 @@ data class TrafficSummary(
 )
 
 /**
- * [乱码注释已清理]
- * [乱码注释已清理]
  */
 class TrafficRepository private constructor(private val context: Context) {
 
@@ -408,8 +406,6 @@ class TrafficRepository private constructor(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * [乱码注释已清理]
      */
     fun reloadFromDisk() {
         trafficMap.clear()

@@ -11,8 +11,6 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class SubscriptionAutoUpdateWorker(
     context: Context,
@@ -24,10 +22,7 @@ class SubscriptionAutoUpdateWorker(
         private const val WORK_NAME_PREFIX = "subscription_auto_update_"
 
         /**
-         * 注释已清理。
          * @param context Context
-         * 注释已清理。
-         * 注释已清理。
          */
         fun schedule(context: Context, profileId: String, intervalMinutes: Int) {
             val workManager = WorkManager.getInstance(context)
@@ -68,7 +63,6 @@ class SubscriptionAutoUpdateWorker(
         }
 
         /**
-         * 注释已清理。
          */
         fun cancel(context: Context, profileId: String) {
             val workManager = WorkManager.getInstance(context)
@@ -77,7 +71,6 @@ class SubscriptionAutoUpdateWorker(
         }
 
         /**
-         * 注释已清理。
          */
         fun cancelAll(context: Context) {
             val workManager = WorkManager.getInstance(context)
@@ -85,8 +78,6 @@ class SubscriptionAutoUpdateWorker(
         }
 
         /**
-         * 注释已清理。
-         * 注释已清理。
          */
         suspend fun rescheduleAll(context: Context) = withContext(Dispatchers.IO) {
             try {
@@ -133,7 +124,6 @@ class SubscriptionAutoUpdateWorker(
                 return@withContext Result.success()
             }
 
-            // 注释已清理。
             val result = configRepository.updateProfile(profileId)
 
             Result.success()

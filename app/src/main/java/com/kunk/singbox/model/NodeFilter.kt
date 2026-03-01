@@ -1,4 +1,4 @@
-package com.kunk.singbox.model
+﻿package com.kunk.singbox.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -9,7 +9,6 @@ enum class FilterMode {
     @SerializedName("EXCLUDE") EXCLUDE // 閹烘帡娅庨崠鍛儓閸忔娊鏁€涙娈戦懞鍌滃仯
 }
 
-// 注释已清理。
 data class NodeFilter(
     @SerializedName("filterMode") val filterMode: FilterMode = FilterMode.NONE,
     @SerializedName("includeKeywords") val includeKeywords: List<String> = emptyList(),

@@ -42,15 +42,9 @@ enum class UpdateStatus {
 }
 
 /**
- * 注释已清理。
  */
 sealed class SubscriptionUpdateResult {
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     data class SuccessWithChanges(
         val profileName: String,
@@ -60,9 +54,6 @@ sealed class SubscriptionUpdateResult {
     ) : SubscriptionUpdateResult()
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     data class SuccessNoChanges(
         val profileName: String,
@@ -70,9 +61,6 @@ sealed class SubscriptionUpdateResult {
     ) : SubscriptionUpdateResult()
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     data class Failed(
         val profileName: String,
@@ -81,7 +69,6 @@ sealed class SubscriptionUpdateResult {
 }
 
 /**
- * 注释已清理。
  */
 data class BatchUpdateResult(
     val successWithChanges: Int = 0,
@@ -122,8 +109,6 @@ data class NodeUi(
         get() = name
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     val protocolDisplay: String
         get() = when (protocol.lowercase()) {
@@ -189,7 +174,6 @@ data class SavedProfilesData(
 )
 
 /**
- * 注释已清理。
  */
 @Keep
 data class VMessLinkConfig(

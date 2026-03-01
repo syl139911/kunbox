@@ -7,20 +7,14 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 object StateCache {
     private const val TAG = "StateCache"
 
     private val cachedNetwork = AtomicReference<NetworkCache?>(null)
-    private const val networkCacheTtlMs = 5000L // 注释已清理。
 
-    // 注释已清理。
     private val cachedVpnState = AtomicReference<VpnStateCache?>(null)
-    private const val vpnStateCacheTtlMs = 1000L // 注释已清理。
     private val cachedSettings = AtomicReference<SettingsCache?>(null)
-    private const val settingsCacheTtlMs = 10000L // 注释已清理。
 
     private val ipcSavedCount = AtomicLong(0)
     private val ipcTotalCount = AtomicLong(0)
@@ -44,9 +38,6 @@ object StateCache {
     )
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun getNetwork(fetcher: () -> Network?): Network? {
         ipcTotalCount.incrementAndGet()
@@ -73,15 +64,12 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun invalidateNetworkCache() {
         cachedNetwork.set(null)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun getVpnState(fetcher: () -> VpnStateCache): VpnStateCache {
         ipcTotalCount.incrementAndGet()
@@ -100,7 +88,6 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun updateVpnState(isRunning: Boolean, isConnecting: Boolean, activeNode: String?) {
         cachedVpnState.set(VpnStateCache(
@@ -112,15 +99,12 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun invalidateVpnState() {
         cachedVpnState.set(null)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("UNCHECKED_CAST")
     fun <T> getSettings(fetcher: () -> T): T {
@@ -140,14 +124,12 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun invalidateSettings() {
         cachedSettings.set(null)
     }
 
     /**
-     * 注释已清理。
      */
     fun clearAll() {
         cachedNetwork.set(null)
@@ -156,7 +138,6 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      * @return Pair<savedCount, totalCount>
      */
     fun getIpcStats(): Pair<Long, Long> {
@@ -164,7 +145,6 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun getIpcSavedPercent(): Int {
         val total = ipcTotalCount.get()
@@ -173,7 +153,6 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun logStats() {
         val (saved, total) = getIpcStats()
@@ -182,7 +161,6 @@ object StateCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun resetStats() {
         ipcSavedCount.set(0)

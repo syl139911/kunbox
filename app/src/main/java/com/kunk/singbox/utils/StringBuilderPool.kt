@@ -1,9 +1,8 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
- * [乱码注释已清理]
  */
 object StringBuilderPool {
     private const val MAX_POOL_SIZE = 16

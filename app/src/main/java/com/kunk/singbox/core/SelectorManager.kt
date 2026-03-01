@@ -7,20 +7,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 object SelectorManager {
     private const val TAG = "SelectorManager"
@@ -34,17 +23,12 @@ object SelectorManager {
     private val _selectedOutbound = MutableStateFlow<String?>(null)
     val selectedOutbound: StateFlow<String?> = _selectedOutbound.asStateFlow()
 
-    // 注释已清理。
     private val _canHotSwitch = MutableStateFlow(false)
     val canHotSwitchFlow: StateFlow<Boolean> = _canHotSwitch.asStateFlow()
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      */
     fun recordSelectorSignature(outboundTags: List<String>, selectedTag: String? = null) {
         currentOutboundTags = outboundTags.toList()
@@ -57,14 +41,8 @@ object SelectorManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      */
     fun canHotSwitch(newOutboundTags: List<String>): Boolean {
         val currentSig = currentSelectorSignature ?: return false
@@ -79,11 +57,7 @@ object SelectorManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      * @return true if successful
      */
     fun selectOutbound(client: CommandClient, selectorTag: String, outboundTag: String): Boolean {
@@ -99,9 +73,7 @@ object SelectorManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      * @return true if successful
      */
     fun selectOutboundViaWrapper(outboundTag: String): Boolean {
@@ -114,22 +86,18 @@ object SelectorManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getSelectedOutbound(): String? = _selectedOutbound.value
 
     /**
-     * 注释已清理。
      */
     fun getCurrentOutboundTags(): List<String> = currentOutboundTags
 
     /**
-     * 注释已清理。
      */
     fun hasSelector(): Boolean = currentSelectorSignature != null && currentOutboundTags.isNotEmpty()
 
     /**
-     * 注释已清理。
      */
     fun clear() {
         currentSelectorSignature = null
@@ -140,8 +108,6 @@ object SelectorManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun computeSignature(tags: List<String>): String {
         return tags.sorted().hashCode().toString()

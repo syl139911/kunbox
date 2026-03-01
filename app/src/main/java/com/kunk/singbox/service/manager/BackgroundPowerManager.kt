@@ -6,12 +6,7 @@ import com.kunk.singbox.repository.LogRepository
 import kotlinx.coroutines.CoroutineScope
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class BackgroundPowerManager(
     @Suppress("unused")
@@ -20,30 +15,22 @@ class BackgroundPowerManager(
     companion object {
         private const val TAG = "BackgroundPowerManager"
 
-        /* 注释已清理。 */
         const val DEFAULT_BACKGROUND_THRESHOLD_MS = 30 * 60 * 1000L
 
-        /* 注释已清理。 */
         const val MIN_THRESHOLD_MS = 5 * 60 * 1000L
 
-        /* 注释已清理。 */
         const val MAX_THRESHOLD_MS = 2 * 60 * 60 * 1000L
 
-        /* 注释已清理。 */
         private const val MIN_RECOVERY_AWAY_MS = 1_000L
 
-        /* 注释已清理。 */
         private const val FORCE_RECOVERY_AWAY_MS_APP_FOREGROUND = 3_000L
 
-        /* 注释已清理。 */
         private const val FORCE_RECOVERY_AWAY_MS_SCREEN_ON = 8_000L
 
-        /* 注释已清理。 */
         private const val RETURN_RECOVERY_COALESCE_MS = 2_500L
     }
 
     /**
-     * 注释已清理。
      */
     enum class PowerMode {
         NORMAL,
@@ -51,19 +38,14 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     interface Callbacks {
-        /* 注释已清理。 */
         val isVpnRunning: Boolean
 
-        /* 注释已清理。 */
         fun suspendNonEssentialProcesses()
 
-        /* 注释已清理。 */
         fun resumeNonEssentialProcesses()
 
-        /* 注释已清理。 */
         fun requestCoreNetworkRecovery(reason: String, force: Boolean = false)
     }
 
@@ -99,22 +81,18 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     val powerMode: PowerMode get() = currentMode
 
     /**
-     * 注释已清理。
      */
     val isPowerSaving: Boolean get() = currentMode == PowerMode.POWER_SAVING
 
     /**
-     * 注释已清理。
      */
     private val isUserAway: Boolean get() = isAppInBackground || isScreenOff
 
     /**
-     * 注释已清理。
      */
     fun init(callbacks: Callbacks, thresholdMs: Long = DEFAULT_BACKGROUND_THRESHOLD_MS) {
         this.callbacks = callbacks
@@ -128,7 +106,6 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun setThreshold(thresholdMs: Long) {
         backgroundThresholdMs = if (thresholdMs == Long.MAX_VALUE) {
@@ -141,7 +118,6 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun onAppBackground() {
         if (isAppInBackground) return
@@ -152,7 +128,6 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun onAppForeground() {
         if (!isAppInBackground) {
@@ -185,10 +160,8 @@ class BackgroundPowerManager(
         evaluateUserPresence()
     }
 
-    // 注释已清理。
 
     /**
-     * 注释已清理。
      */
     fun onScreenOff() {
         if (isScreenOff) return
@@ -198,7 +171,6 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun onScreenOn() {
         if (!isScreenOff) return
@@ -223,7 +195,6 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     private fun maybeRequestRecoveryOnReturn(
         source: String,
@@ -267,7 +238,6 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     private fun shouldCoalesceReturnRecovery(source: String): Boolean {
         val lastAt = lastReturnRecoveryAtMs
@@ -316,35 +286,30 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     private fun enterPowerSavingMode() {
         Log.d(TAG, "enterPowerSavingMode ignored: state-recorder-only mode")
     }
 
     /**
-     * 注释已清理。
      */
     private fun exitPowerSavingMode() {
         Log.d(TAG, "exitPowerSavingMode ignored: state-recorder-only mode")
     }
 
     /**
-     * 注释已清理。
      */
     fun forceEnterPowerSaving() {
         enterPowerSavingMode()
     }
 
     /**
-     * 注释已清理。
      */
     fun forceExitPowerSaving() {
         exitPowerSavingMode()
     }
 
     /**
-     * 注释已清理。
      */
     fun cleanup() {
         currentMode = PowerMode.NORMAL
@@ -359,7 +324,6 @@ class BackgroundPowerManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun getStats(): Map<String, Any> {
         return mapOf(

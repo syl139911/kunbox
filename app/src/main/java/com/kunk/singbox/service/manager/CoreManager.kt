@@ -25,15 +25,7 @@ import kotlinx.coroutines.flow.first
 import java.io.File
 
 /**
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class CoreManager(
     private val context: Context,
@@ -47,7 +39,6 @@ class CoreManager(
     private val tunManager = VpnTunManager(context, vpnService)
     private val settingsRepository by lazy { SettingsRepository.getInstance(context) }
 
-    // 注释已清理。
     @Volatile var commandServer: CommandServer? = null
         private set
 
@@ -77,11 +68,9 @@ class CoreManager(
     @Volatile
     private var wifiLockSuppressed: Boolean = false
 
-    // 注释已清理。
     private var platformInterface: PlatformInterface? = null
 
     /**
-     * 注释已清理。
      */
     sealed class StartResult {
         data class Success(val durationMs: Long, val configContent: String) : StartResult()
@@ -90,7 +79,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     sealed class StopResult {
         object Success : StopResult()
@@ -98,7 +86,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun init(platformInterface: PlatformInterface): Result<Unit> {
         return runCatching {
@@ -118,7 +105,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun loadSettings(): Result<AppSettings> {
         return runCatching {
@@ -131,14 +117,12 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun setCurrentSettings(settings: AppSettings) {
         currentSettings = settings
     }
 
     /**
-     * 注释已清理。
      */
     fun acquireLocks(): Result<Unit> {
         return runCatching {
@@ -173,7 +157,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun releaseLocks(): Result<Unit> {
         return runCatching {
@@ -213,7 +196,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun cleanCacheDb(): Result<Boolean> {
         return runCatching {
@@ -230,14 +212,12 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun setCommandServer(server: CommandServer?) {
         commandServer = server
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun startLibbox(configContent: String): StartResult {
         if (isStarting) {
@@ -294,13 +274,10 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun stopService(): Result<Unit> {
         return runCatching {
             withContext(Dispatchers.IO) {
-                // 注释已清理。
                 BoxWrapperManager.release()
 
                 SelectorManager.clear()
@@ -315,7 +292,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun stopFully(): Result<Unit> {
         if (isStopping) {
@@ -336,7 +312,6 @@ class CoreManager(
 
                 tunManager.cleanup()
 
-                // 注释已清理。
                 releaseLocks()
 
                 currentSettings = null
@@ -349,14 +324,10 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun stop(): Result<Unit> = stopFully()
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun applyUnderlyingNetworkIfPossible(underlyingNetwork: Network?, reason: String) {
         if (underlyingNetwork == null) return
@@ -371,7 +342,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun openTun(
         options: TunOptions?,
@@ -383,7 +353,6 @@ class CoreManager(
         }
 
         return runCatching {
-            // 注释已清理。
             if (reuseExisting) {
                 vpnInterface?.let { existing ->
                     val existingFd = existing.fd
@@ -423,7 +392,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun closeTunInterface(): Result<Unit> {
         return runCatching {
@@ -437,7 +405,6 @@ class CoreManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun preserveTunInterface(): ParcelFileDescriptor? = vpnInterface
 
@@ -446,7 +413,6 @@ class CoreManager(
 
     fun isVpnInterfaceValid(): Boolean = vpnInterface?.fileDescriptor?.valid() == true
 
-    // 注释已清理。
     suspend fun wakeService(): Result<Unit> {
         return runCatching {
             withContext(Dispatchers.IO) {
@@ -456,7 +422,6 @@ class CoreManager(
         }
     }
 
-    // 注释已清理。
     suspend fun resetNetwork(): Result<Unit> {
         return runCatching {
             withContext(Dispatchers.IO) {
@@ -468,7 +433,6 @@ class CoreManager(
 
     /**
      * Hot reload config without destroying VPN service
-     * 注释已清理。
      * Returns true if hot reload succeeded, false if fallback to full restart is needed
      */
     @Suppress("UNUSED_PARAMETER")

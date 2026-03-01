@@ -7,20 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/**
- * 注释已清理。
- *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- */
 object BoxWrapperManager {
     private const val TAG = "BoxWrapperManager"
 
@@ -46,8 +32,6 @@ object BoxWrapperManager {
     private const val RESET_NETWORK_DEBOUNCE_MS = 500L
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun init(server: CommandServer): Boolean {
         return try {
@@ -64,8 +48,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun release() {
         commandServer = null
@@ -78,12 +60,8 @@ object BoxWrapperManager {
         return commandServer != null
     }
 
-    // 注释已清理。
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun selectOutbound(nodeTag: String): Boolean {
         if (!isAvailable()) return false
@@ -102,7 +80,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getSelectedOutbound(): String? {
         if (!isAvailable()) return null
@@ -115,8 +92,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun listOutbounds(): List<String> {
         if (!isAvailable()) return emptyList()
@@ -132,7 +107,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun hasSelector(): Boolean {
         if (!isAvailable()) return false
@@ -143,11 +117,8 @@ object BoxWrapperManager {
         }
     }
 
-    // 注释已清理。
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun pause(): Boolean {
         if (!isAvailable()) return false
@@ -163,8 +134,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun resume(): Boolean {
         if (!isAvailable()) return false
@@ -196,33 +165,21 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun sleep(): Boolean {
         return pause()
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun wake(): Boolean {
-        // 注释已清理。
         return resume()
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun wakeAndResetNetwork(source: String, force: Boolean = false): Boolean {
         return recoverNetwork(source = source, mode = RecoveryMode.SOFT, force = force)
@@ -271,19 +228,10 @@ object BoxWrapperManager {
         }
     }
 
-    // 注释已清理。
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun smartRecover(
         context: android.content.Context,
@@ -424,7 +372,6 @@ object BoxWrapperManager {
     )
 
     /**
-     * 注释已清理。
      */
     fun getUploadTotal(): Long {
         if (!isAvailable()) return -1L
@@ -437,7 +384,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getDownloadTotal(): Long {
         if (!isAvailable()) return -1L
@@ -450,7 +396,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun resetTraffic(): Boolean {
         if (!isAvailable()) return false
@@ -465,7 +410,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getConnectionCount(): Int {
         if (!isAvailable()) return 0
@@ -479,8 +423,6 @@ object BoxWrapperManager {
     // ==================== 鐎规悶鍎遍崣鍧楀礄閼恒儲娈?====================
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun resetAllConnections(system: Boolean = true): Boolean {
         if (!isAvailable()) return false
@@ -490,18 +432,14 @@ object BoxWrapperManager {
             true
         } catch (e: Exception) {
             Log.w(TAG, "resetAllConnections failed: ${e.message}")
-            // 注释已清理。
             LibboxCompat.resetAllConnections(system)
         }
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun resetNetwork(): Boolean {
         if (!isAvailable()) return false
-        // 注释已清理。
         return try {
             Libbox.resetAllConnections(false)
             Log.i(TAG, "resetNetwork() success (via resetAllConnections)")
@@ -513,7 +451,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun closeAllTrackedConnections(): Int {
         if (!isAvailable()) return 0
@@ -530,11 +467,7 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      */
     fun closeIdleConnections(maxIdleSeconds: Int = 30): Int {
         if (!isAvailable()) return 0
@@ -556,7 +489,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getExtensionVersion(): String {
         return try {
@@ -567,8 +499,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun getCommandServer(): CommandServer? {
         return commandServer
@@ -646,9 +576,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER")
     fun urlTestOutbound(outboundTag: String, url: String, timeoutMs: Int): Int {
@@ -658,9 +585,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER")
     fun urlTestBatch(
@@ -670,18 +594,12 @@ object BoxWrapperManager {
         concurrency: Int
     ): Map<String, Int> {
 
-        // 注释已清理。
         Log.d(TAG, "urlTestBatch: sync method, returning empty map to trigger fallback")
         return emptyMap()
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun urlTestGroupAsync(groupTag: String, timeoutMs: Long = 10000L): Map<String, Int> {
         val service = com.kunk.singbox.service.SingBoxService.instance
@@ -698,9 +616,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun getCachedUrlTestDelay(tag: String): Int? {
         val service = com.kunk.singbox.service.SingBoxService.instance
@@ -710,8 +625,6 @@ object BoxWrapperManager {
     // ==================== Main Traffic Protection ====================
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun notifyMainTrafficActive() {
 
@@ -721,10 +634,7 @@ object BoxWrapperManager {
     // ==================== Per-Outbound Traffic ====================
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun getTrafficByOutbound(): Map<String, Pair<Long, Long>> {
         if (!isAvailable()) return emptyMap()
@@ -746,8 +656,6 @@ object BoxWrapperManager {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER")
     fun closeConnectionsForApp(packageName: String): Int {

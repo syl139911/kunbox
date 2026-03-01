@@ -77,10 +77,8 @@ fun BigToggle(
         }
     }
 
-    // 注释已清理。
     val rotation = remember { Animatable(0f) }
 
-    // 注释已清理。
     val bounceOffset = remember { Animatable(0f) }
 
     val floatOffset = remember { Animatable(0f) }
@@ -102,11 +100,9 @@ fun BigToggle(
 
     LaunchedEffect(shakeKey) {
         if (isRunning) {
-            // 注释已清理。
             bounceOffset.snapTo(0f)
             rotation.snapTo(0f)
 
-            // 注释已清理。
             val bounceJob = launch {
 
                 bounceOffset.animateTo(

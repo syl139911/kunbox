@@ -1,4 +1,4 @@
-package com.kunk.singbox.viewmodel
+﻿package com.kunk.singbox.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -10,7 +10,6 @@ import kotlinx.coroutines.launch
 
 /**
  * 宸插畨瑁呭簲鐢ㄧ殑 ViewModel
- * [乱码注释已清理]
  */
 class InstalledAppsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -23,7 +22,6 @@ class InstalledAppsViewModel(application: Application) : AndroidViewModel(applic
     val loadingState: StateFlow<InstalledAppsRepository.LoadingState> = repository.loadingState
 
     /**
-     * [乱码注释已清理]
      */
     fun loadAppsIfNeeded() {
         if (repository.needsLoading()) {

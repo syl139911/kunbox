@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.Flow
 /**
  * [涔辩爜娉ㄩ噴宸叉竻鐞哴
  *
- * 注释已清理。
  * [涔辩爜娉ㄩ噴宸叉竻鐞哴
  * [涔辩爜娉ㄩ噴宸叉竻鐞哴
  * [涔辩爜娉ㄩ噴宸叉竻鐞哴
@@ -31,25 +30,21 @@ interface SettingsDao {
     suspend fun getSettings(): SettingsEntity?
 
     /**
-     * 注释已清理。
      */
     @Query("SELECT * FROM settings WHERE id = 1")
     fun getSettingsSync(): SettingsEntity?
 
     /**
-     * 注释已清理。
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveSettings(settings: SettingsEntity)
 
     /**
-     * 注释已清理。
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun saveSettingsSync(settings: SettingsEntity)
 
     /**
-     * 注释已清理。
      */
     @Query("DELETE FROM settings")
     suspend fun deleteSettings()

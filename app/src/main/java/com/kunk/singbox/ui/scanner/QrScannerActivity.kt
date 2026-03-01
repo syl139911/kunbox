@@ -25,8 +25,6 @@ import kotlinx.coroutines.withContext
 import java.io.InputStream
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class QrScannerActivity : AppCompatActivity() {
 
@@ -48,18 +46,15 @@ class QrScannerActivity : AppCompatActivity() {
 
         barcodeScannerView = findViewById(R.id.barcode_scanner)
 
-        // 注释已清理。
         capture = CaptureManager(this, barcodeScannerView)
         capture.initializeFromIntent(intent, savedInstanceState)
         capture.decode()
 
-        // 注释已清理。
         findViewById<ImageButton>(R.id.btn_back).setOnClickListener {
             setResult(Activity.RESULT_CANCELED)
             finish()
         }
 
-        // 注释已清理。
         findViewById<ImageButton>(R.id.btn_gallery).setOnClickListener {
             galleryLauncher.launch(arrayOf("image/*"))
         }
@@ -68,7 +63,6 @@ class QrScannerActivity : AppCompatActivity() {
             toggleFlash()
         }
 
-        // 注释已清理。
         barcodeScannerView.setStatusText("")
     }
 

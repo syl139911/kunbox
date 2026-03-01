@@ -153,7 +153,6 @@ class ProxyOnlyService : Service() {
             return procPaths.all { path -> hasUidHeader(path) }
         }
 
-        // 注释已清理。
         override fun findConnectionOwner(
             ipProtocol: Int,
             sourceAddress: String?,
@@ -563,9 +562,6 @@ class ProxyOnlyService : Service() {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod", "LongMethod")
     private fun stopCore(stopService: Boolean): Job? {
@@ -591,7 +587,6 @@ class ProxyOnlyService : Service() {
         notificationUpdateJob = null
         hasForegroundStarted.set(false)
 
-        // 注释已清理。
         val proxyPort = runCatching {
             com.kunk.singbox.repository.SettingsRepository
                 .getInstance(this@ProxyOnlyService)
@@ -660,7 +655,6 @@ class ProxyOnlyService : Service() {
     }
 
     /**
-     * 注释已清理。
      */
     private suspend fun waitForCleanupJob() {
         val job = cleanupJob
@@ -673,7 +667,6 @@ class ProxyOnlyService : Service() {
     }
 
     /**
-     * 注释已清理。
      */
     private fun isPortAvailable(port: Int): Boolean {
         if (port <= 0) return true
@@ -684,13 +677,11 @@ class ProxyOnlyService : Service() {
                 true
             }
         } catch (@Suppress("SwallowedException") e: Exception) {
-            // 注释已清理。
             false
         }
     }
 
     /**
-     * 注释已清理。
      */
     private suspend fun waitForPortAvailable(port: Int, timeoutMs: Long = PORT_WAIT_TIMEOUT_MS): Boolean {
         if (port <= 0) return true

@@ -4,13 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 @Entity(tableName = "settings")
 data class SettingsEntity(
@@ -18,7 +12,6 @@ data class SettingsEntity(
     val id: Int = 1,
 
     /**
-     * 注释已清理。
      */
     val version: Int = CURRENT_VERSION,
 
@@ -28,7 +21,6 @@ data class SettingsEntity(
     val data: String,
 
     /**
-     * 注释已清理。
      */
     val updatedAt: Long = System.currentTimeMillis()
 ) {

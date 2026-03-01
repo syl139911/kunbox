@@ -100,7 +100,6 @@ fun SettingsScreen(
         uri?.let { viewModel.validateImportFile(it) }
     }
 
-    // 注释已清理。
     fun generateExportFileName(): String {
         val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
         return "singbox_backup_${dateFormat.format(Date())}.json"
@@ -147,7 +146,6 @@ fun SettingsScreen(
         onDismiss = { viewModel.resetExportState() }
     )
 
-    // 注释已清理。
     if (importState is ImportState.Preview) {
         val previewState = importState as ImportState.Preview
         ImportPreviewDialog(
@@ -347,7 +345,6 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 注释已清理。
         SettingsGroupTitle(stringResource(R.string.settings_data_management))
         StandardCard {
             SettingItem(

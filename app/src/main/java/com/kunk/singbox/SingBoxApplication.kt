@@ -60,9 +60,7 @@ class SingBoxApplication : Application(), Configuration.Provider {
                     }
                 }
 
-                // 注释已清理。
                 SubscriptionAutoUpdateWorker.rescheduleAll(this@SingBoxApplication)
-                // 注释已清理。
                 RuleSetAutoUpdateWorker.rescheduleAll(this@SingBoxApplication)
 
                 VpnKeepaliveWorker.schedule(this@SingBoxApplication)
@@ -87,8 +85,6 @@ class SingBoxApplication : Application(), Configuration.Provider {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun cleanupOrphanedTempFiles() {
         try {

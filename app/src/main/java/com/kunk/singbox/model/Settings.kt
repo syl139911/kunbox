@@ -5,7 +5,6 @@ import com.google.gson.annotations.SerializedName
 import com.kunk.singbox.R
 
 /**
- * 注释已清理。
  */
 data class AppSettings(
 
@@ -15,14 +14,11 @@ data class AppSettings(
     @SerializedName("appLanguage") val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     @SerializedName("showNotificationSpeed") val showNotificationSpeed: Boolean = true,
 
-    // 注释已清理。
     @SerializedName("tunEnabled") val tunEnabled: Boolean = true,
     @SerializedName("tunStack") val tunStack: TunStack = TunStack.MIXED,
     // Throughput defaults:
     // - 1280 is IPv6 minimum MTU, safe but often reduces throughput.
-    // 注释已清理。
     @SerializedName("tunMtu") val tunMtu: Int = 1500,
-    // 注释已清理。
     // Higher MTU for QUIC-based proxies (Hysteria2/TUIC) to avoid fragmentation blackholes.
     // Note: For existing installs, Gson may deserialize missing boolean fields as false.
     @SerializedName("tunMtuAuto") val tunMtuAuto: Boolean = true,
@@ -36,15 +32,11 @@ data class AppSettings(
     @SerializedName("vpnAllowlist") val vpnAllowlist: String = "",
     @SerializedName("vpnBlocklist") val vpnBlocklist: String = "",
 
-    // 注释已清理。
     @SerializedName("proxyPort") val proxyPort: Int = 2080,
     @SerializedName("allowLan") val allowLan: Boolean = false,
     @SerializedName("appendHttpProxy") val appendHttpProxy: Boolean = false,
 
-    // 注释已清理。
 
-    // 注释已清理。
-    // 注释已清理。
 
     @SerializedName("localDns") val localDns: String = "local",
 
@@ -58,7 +50,6 @@ data class AppSettings(
     @SerializedName("serverAddressStrategy") val serverAddressStrategy: DnsStrategy = DnsStrategy.AUTO,
     @SerializedName("dnsCacheEnabled") val dnsCacheEnabled: Boolean = true,
 
-    // 注释已清理。
     @SerializedName("routingMode") val routingMode: RoutingMode = RoutingMode.RULE,
     @SerializedName("defaultRule") val defaultRule: DefaultRule = DefaultRule.PROXY,
     @SerializedName("bypassLan") val bypassLan: Boolean = true,
@@ -66,7 +57,6 @@ data class AppSettings(
     @SerializedName("blockQuic") val blockQuic: Boolean = false,
     @SerializedName("debugLoggingEnabled") val debugLoggingEnabled: Boolean = false,
 
-    // 注释已清理。
     @SerializedName("wakeResetConnections") val wakeResetConnections: Boolean = true,
 
     @SerializedName("tcpKeepAliveEnabled") val tcpKeepAliveEnabled: Boolean = true,
@@ -75,7 +65,6 @@ data class AppSettings(
 
     @SerializedName("connectTimeout") val connectTimeout: Int = 10,
 
-    // 注释已清理。
     @SerializedName("latencyTestMethod") val latencyTestMethod: LatencyTestMethod = LatencyTestMethod.REAL_RTT,
     @SerializedName("latencyTestUrl") val latencyTestUrl: String = "https://www.google.com/generate_204",
     @SerializedName("latencyTestTimeout") val latencyTestTimeout: Int = 5000,
@@ -89,22 +78,17 @@ data class AppSettings(
     @SerializedName("appRules") val appRules: List<AppRule> = emptyList(),
     @SerializedName("appGroups") val appGroups: List<AppGroup> = emptyList(),
 
-    // 注释已清理。
     @SerializedName("ruleSetAutoUpdateEnabled") val ruleSetAutoUpdateEnabled: Boolean = false,
     @SerializedName("ruleSetAutoUpdateInterval") val ruleSetAutoUpdateInterval: Int = 60, // ·告帒妫濋幐?
 
-    // 注释已清理。
     @SerializedName("subscriptionUpdateTimeout") val subscriptionUpdateTimeout: Int = 30, // ·佸甯槐·囶渶濡鍚?0·?
 
-    // 注释已清理。
     @SerializedName("nodeFilter") val nodeFilter: NodeFilter = NodeFilter(),
     @SerializedName("nodeSortType") val nodeSortType: NodeSortType = NodeSortType.DEFAULT,
     @SerializedName("customNodeOrder") val customNodeOrder: List<String> = emptyList(),
 
-    // 注释已清理。
     @SerializedName("autoCheckUpdate") val autoCheckUpdate: Boolean = true,
 
-    // 注释已清理。
     @SerializedName("backgroundPowerSavingDelay") val backgroundPowerSavingDelay: BackgroundPowerSavingDelay = BackgroundPowerSavingDelay.MINUTES_30
 )
 

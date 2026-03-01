@@ -11,17 +11,8 @@ import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class VpnKeepaliveWorker(
     context: Context,
@@ -35,13 +26,7 @@ class VpnKeepaliveWorker(
         private const val CHECK_INTERVAL_MINUTES = 15L
 
         /**
-         * 注释已清理。
          *
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
          */
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
@@ -59,7 +44,6 @@ class VpnKeepaliveWorker(
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP, // 注释已清理。
                 workRequest
             )
 
@@ -67,7 +51,6 @@ class VpnKeepaliveWorker(
         }
 
         /**
-         * 注释已清理。
          */
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
@@ -75,7 +58,6 @@ class VpnKeepaliveWorker(
         }
 
         /**
-         * 注释已清理。
          */
         private fun isBackgroundProcessAlive(context: Context): Boolean {
             val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -119,22 +101,15 @@ class VpnKeepaliveWorker(
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private suspend fun attemptVpnRecovery(mode: VpnStateStore.CoreMode) {
         try {
             Log.i(TAG, "Attempting to recover VPN service (mode: $mode)...")
 
-            // 注释已清理。
             val settingsRepo = SettingsRepository.getInstance(applicationContext)
             val settings = settingsRepo.settings.first()
 
-            // 注释已清理。
             val intent = when (mode) {
                 VpnStateStore.CoreMode.VPN -> {
                     Intent(applicationContext, SingBoxService::class.java).apply {

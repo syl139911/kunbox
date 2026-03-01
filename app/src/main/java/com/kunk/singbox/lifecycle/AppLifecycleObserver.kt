@@ -40,7 +40,6 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
     }
 
     /**
-     * 注释已清理。
      */
     fun setBackgroundTimeout(timeoutMs: Long) {
         backgroundTimeoutMs = timeoutMs
@@ -69,7 +68,6 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
     }
 
     /**
-     * 注释已清理。
      */
     private fun scheduleKillProcess() {
         if (backgroundTimeoutMs == Long.MAX_VALUE) {
@@ -86,12 +84,10 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
 
         killProcessRunnable = Runnable {
 
-            // 注释已清理。
             if (!_isAppInForeground.value && VpnStateStore.getActive()) {
                 Log.i(TAG, ">>> Background timeout reached, killing main process to save power")
                 Log.i(TAG, ">>> VPN will continue running in :bg process")
 
-                // 注释已清理。
                 android.os.Process.killProcess(android.os.Process.myPid())
             }
         }
@@ -101,7 +97,6 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
     }
 
     /**
-     * 注释已清理。
      */
     private fun cancelKillProcess() {
         killProcessRunnable?.let {

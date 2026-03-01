@@ -18,15 +18,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class SettingsStore private constructor(context: Context) {
     companion object {
@@ -64,7 +56,6 @@ class SettingsStore private constructor(context: Context) {
         try {
             val startTime = System.currentTimeMillis()
 
-            // 注释已清理。
             val entity = settingsDao.getSettingsSync()
             if (entity != null) {
                 val loaded = gson.fromJson(entity.data, AppSettings::class.java)
@@ -83,7 +74,6 @@ class SettingsStore private constructor(context: Context) {
                 }
             }
 
-            // 注释已清理。
             Log.i(TAG, "No existing settings, using defaults")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load settings", e)
@@ -134,7 +124,6 @@ class SettingsStore private constructor(context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     fun updateSettings(update: (AppSettings) -> AppSettings) {
         val newSettings = update(_settings.value)
@@ -146,7 +135,6 @@ class SettingsStore private constructor(context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun updateSettingsAndWait(update: (AppSettings) -> AppSettings) {
         val newSettings = update(_settings.value)
@@ -175,7 +163,6 @@ class SettingsStore private constructor(context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     private fun saveSettingsSync(settings: AppSettings) {
         try {
@@ -193,12 +180,10 @@ class SettingsStore private constructor(context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     fun getCurrentSettings(): AppSettings = _settings.value
 
     /**
-     * 注释已清理。
      */
     fun reload() {
         loadSettings()
@@ -207,7 +192,6 @@ class SettingsStore private constructor(context: Context) {
     fun hasSettings(): Boolean = settingsDao.hasSettingsSync()
 
     /**
-     * 注释已清理。
      */
     suspend fun resetSettings() {
         writeMutex.withLock {

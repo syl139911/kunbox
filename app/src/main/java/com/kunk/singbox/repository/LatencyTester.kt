@@ -11,12 +11,7 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class LatencyTester(
     private val context: Context,
@@ -29,12 +24,7 @@ class LatencyTester(
     private val inFlightTests = ConcurrentHashMap<String, CompletableDeferred<Long>>()
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun testNode(
         nodeId: String,
@@ -83,10 +73,7 @@ class LatencyTester(
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun testBatch(
         outbounds: List<Outbound>,
@@ -104,7 +91,6 @@ class LatencyTester(
     }
 
     /**
-     * 注释已清理。
      */
     fun cancelAll() {
         inFlightTests.values.forEach { deferred ->
@@ -120,7 +106,6 @@ class LatencyTester(
     }
 
     /**
-     * 注释已清理。
      */
     fun getActiveTestCount(): Int {
         return inFlightTests.size

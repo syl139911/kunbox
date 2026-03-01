@@ -1,16 +1,14 @@
-package com.kunk.singbox.repository.config
+﻿package com.kunk.singbox.repository.config
 
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.Inbound
 import com.kunk.singbox.model.TunStack
 
 /**
- * 注释已清理。
  */
 object InboundBuilder {
 
     /**
-     * 注释已清理。
      */
     fun build(settings: AppSettings, effectiveTunStack: TunStack): List<Inbound> {
         val inbounds = mutableListOf<Inbound>()

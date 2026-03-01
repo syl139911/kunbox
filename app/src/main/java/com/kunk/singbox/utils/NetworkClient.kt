@@ -26,7 +26,6 @@ object NetworkClient {
         maxRequestsPerHost = 10
     }
 
-    // 注释已清理。
     private val isVpnActive = AtomicBoolean(false)
     private val lastVpnStateChangeAt = AtomicLong(0)
 
@@ -35,7 +34,6 @@ object NetworkClient {
     private val connectionPoolHits = AtomicLong(0)
 
     /**
-     * 注释已清理。
      */
     private val statsInterceptor = Interceptor { chain ->
         totalRequests.incrementAndGet()
@@ -48,7 +46,6 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
      */
     val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -68,14 +65,12 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
      */
     fun newBuilder(): OkHttpClient.Builder {
         return client.newBuilder()
     }
 
     /**
-     * 注释已清理。
      */
     fun createClientWithTimeout(
         connectTimeoutSeconds: Long,
@@ -90,7 +85,6 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
      */
     fun createClientWithoutRetry(
         connectTimeoutSeconds: Long,
@@ -110,7 +104,6 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
      */
     fun createClientWithProxy(
         proxyPort: Int,
@@ -137,8 +130,6 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun onVpnStateChanged(active: Boolean) {
         val previousState = isVpnActive.getAndSet(active)
@@ -150,8 +141,6 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun onNetworkChanged() {
         Log.i(TAG, "Network changed, clearing connection pool")
@@ -159,14 +148,12 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
      */
     fun clearConnectionPool() {
         connectionPool.evictAll()
     }
 
     /**
-     * 注释已清理。
      */
     fun getPoolStatus(): PoolStatus {
         return PoolStatus(
@@ -179,7 +166,6 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
      */
     fun resetStats() {
         totalRequests.set(0)
@@ -210,13 +196,7 @@ object NetworkClient {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun executeWithFallback(
         request: okhttp3.Request,

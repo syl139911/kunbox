@@ -3,9 +3,7 @@
 import com.kunk.singbox.model.*
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
  * ```
  * settingsStore.setAutoConnect(true)
  * settingsStore.setTunStack(TunStack.MIXED)
@@ -33,7 +31,6 @@ fun SettingsStore.setShowNotificationSpeed(value: Boolean) {
     updateSettings { it.copy(showNotificationSpeed = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setTunEnabled(value: Boolean) {
     updateSettings { it.copy(tunEnabled = value) }
@@ -87,7 +84,6 @@ fun SettingsStore.setVpnBlocklist(value: String) {
     updateSettings { it.copy(vpnBlocklist = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setProxyPort(value: Int) {
     updateSettings { it.copy(proxyPort = value) }
@@ -101,7 +97,6 @@ fun SettingsStore.setAppendHttpProxy(value: Boolean) {
     updateSettings { it.copy(appendHttpProxy = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setLocalDns(value: String) {
     updateSettings { it.copy(localDns = value) }
@@ -139,7 +134,6 @@ fun SettingsStore.setDnsCacheEnabled(value: Boolean) {
     updateSettings { it.copy(dnsCacheEnabled = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setRoutingMode(value: RoutingMode) {
     updateSettings { it.copy(routingMode = value) }
@@ -161,13 +155,11 @@ fun SettingsStore.setDebugLoggingEnabled(value: Boolean) {
     updateSettings { it.copy(debugLoggingEnabled = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setWakeResetConnections(value: Boolean) {
     updateSettings { it.copy(wakeResetConnections = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setLatencyTestMethod(value: LatencyTestMethod) {
     updateSettings { it.copy(latencyTestMethod = value) }
@@ -207,7 +199,6 @@ fun SettingsStore.setAppGroups(value: List<AppGroup>) {
     updateSettings { it.copy(appGroups = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setRuleSetAutoUpdateEnabled(value: Boolean) {
     updateSettings { it.copy(ruleSetAutoUpdateEnabled = value) }
@@ -217,13 +208,11 @@ fun SettingsStore.setRuleSetAutoUpdateInterval(value: Int) {
     updateSettings { it.copy(ruleSetAutoUpdateInterval = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setSubscriptionUpdateTimeout(value: Int) {
     updateSettings { it.copy(subscriptionUpdateTimeout = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setNodeFilter(value: NodeFilter) {
     updateSettings { it.copy(nodeFilter = value) }
@@ -237,7 +226,6 @@ fun SettingsStore.setCustomNodeOrder(value: List<String>) {
     updateSettings { it.copy(customNodeOrder = value) }
 }
 
-// 注释已清理。
 
 fun SettingsStore.setAutoCheckUpdate(value: Boolean) {
     updateSettings { it.copy(autoCheckUpdate = value) }

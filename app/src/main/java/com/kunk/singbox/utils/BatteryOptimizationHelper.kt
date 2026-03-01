@@ -9,8 +9,6 @@ import android.provider.Settings
 import android.util.Log
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 object BatteryOptimizationHelper {
     private const val TAG = "BatteryOptHelper"
@@ -26,8 +24,6 @@ object BatteryOptimizationHelper {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun requestIgnoreBatteryOptimizations(context: Context): Boolean {
         return try {
@@ -61,8 +57,6 @@ object BatteryOptimizationHelper {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun openBatteryOptimizationSettings(context: Context) {
         try {
@@ -85,8 +79,6 @@ object BatteryOptimizationHelper {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun getManufacturerBatteryIntent(context: Context): Intent? {
         val packageName = context.packageName
@@ -94,7 +86,6 @@ object BatteryOptimizationHelper {
 
         return try {
             when {
-                // 注释已清理。
                 manufacturer.contains("xiaomi") || manufacturer.contains("redmi") -> {
                     Intent().apply {
                         component = android.content.ComponentName(
@@ -106,7 +97,6 @@ object BatteryOptimizationHelper {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                 }
-                // 注释已清理。
                 manufacturer.contains("huawei") || manufacturer.contains("honor") -> {
                     Intent().apply {
                         component = android.content.ComponentName(

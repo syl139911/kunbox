@@ -1,13 +1,11 @@
-package com.kunk.singbox.core
+﻿package com.kunk.singbox.core
 
 import android.util.Log
 import io.nekohasekai.libbox.Libbox
 import java.lang.reflect.Method
 
 /**
- * [乱码注释已清理]
  *
- * [乱码注释已清理]
  */
 object LibboxCompat {
     private const val TAG = "LibboxCompat"
@@ -59,9 +57,6 @@ object LibboxCompat {
     }
 
     /**
-     * [乱码注释已清理]
-     * [乱码注释已清理]
-     * [乱码注释已清理]
      */
     fun resetAllConnections(system: Boolean = true): Boolean {
         // 浼樺厛浣跨敤 BoxWrapperManager

@@ -20,19 +20,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  * - 閺夆晝鍋炵敮瀛樻交閸婄喖鍤?
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 @Suppress("TooManyFunctions")
 class CommandManager(
@@ -61,7 +50,6 @@ class CommandManager(
 
     private var connectionsSnapshot: Connections? = null
 
-    // 注释已清理。
     private val groupSelectedOutbounds = ConcurrentHashMap<String, String>()
     @Volatile var realTimeNodeName: String? = null
         private set
@@ -83,7 +71,6 @@ class CommandManager(
     private var lastConnectionsLabelLogged: String? = null
 
     /**
-     * 注释已清理。
      */
     interface Callbacks {
         fun requestNotificationUpdate(force: Boolean)
@@ -99,7 +86,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER")
     fun createServer(platformInterface: PlatformInterface): Result<CommandServer> = runCatching {
@@ -132,7 +118,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun startServer(): Result<Unit> = runCatching {
         commandServer?.start() ?: throw IllegalStateException("CommandServer not created")
@@ -143,7 +128,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun startService(configContent: String, platformInterface: PlatformInterface): Result<Unit> = runCatching {
         val overrideOptions = OverrideOptions().apply {
@@ -155,7 +139,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun closeService(): Result<Unit> = runCatching {
         commandServer?.closeService()
@@ -164,14 +147,12 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun startClients(): Result<Unit> = runCatching {
 
         val handler = createClientHandler()
         clientHandler = handler
 
-        // 注释已清理。
 
         val optionsStatus = CommandClientOptions()
         optionsStatus.addCommand(Libbox.CommandStatus)
@@ -187,7 +168,6 @@ class CommandManager(
         commandClientGroup?.connect()
         Log.i(TAG, "CommandClient connected (Group, interval=3s)")
 
-        // 注释已清理。
         serviceScope.launch {
             delay(3500)
             val groupsSize = groupSelectedOutbounds.size
@@ -201,8 +181,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     suspend fun stopAndWaitPortRelease(
@@ -272,7 +250,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun stop(): Result<Unit> = runCatching {
         commandClient?.disconnect()
@@ -298,7 +275,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     private suspend fun waitForPortRelease(port: Int, timeoutMs: Long): Boolean {
         val startTime = SystemClock.elapsedRealtime()
@@ -312,7 +288,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     private fun isPortAvailable(port: Int): Boolean {
         return try {
@@ -327,28 +302,23 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun getCommandServer(): CommandServer? = commandServer
 
     /**
-     * 注释已清理。
      */
     fun getCommandClient(): CommandClient? = commandClient
     fun getConnectionsClient(): CommandClient? = commandClientConnections
 
     /**
-     * 注释已清理。
      */
     fun getSelectedOutbound(groupTag: String): String? = groupSelectedOutbounds[groupTag]
 
     /**
-     * 注释已清理。
      */
     fun getGroupsCount(): Int = groupSelectedOutbounds.size
 
     /**
-     * 注释已清理。
      */
     fun closeConnections(): Boolean {
         val clients = listOfNotNull(commandClientConnections, commandClient)
@@ -365,7 +335,6 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun closeConnection(connId: String): Boolean {
         val client = commandClientConnections ?: commandClient ?: return false
@@ -381,15 +350,8 @@ class CommandManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun urlTestGroup(groupTag: String, timeoutMs: Long = 10000L): Map<String, Int> {
 
@@ -777,7 +739,6 @@ class CommandManager(
 
     @Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod", "NestedBlockDepth")
     private fun processConnections(connections: Connections) {
-        // 注释已清理。
         val iterator = connections.iterator()
         var newestConnection: io.nekohasekai.libbox.Connection? = null
         val ids = ArrayList<String>(64)
@@ -788,7 +749,6 @@ class CommandManager(
             val connection = iterator.next() ?: continue
 
             if (connection.closedAt > 0) continue
-            // 注释已清理。
             val outbound = connection.outbound
             if (outbound == "dns-out") continue
 
@@ -801,7 +761,6 @@ class CommandManager(
                 ids.add(id)
             }
 
-            // 注释已清理。
             var candidateTag: String? = outbound
             if (candidateTag.isNullOrBlank() || candidateTag == "dns-out") {
                 candidateTag = null
@@ -819,7 +778,6 @@ class CommandManager(
 
         recentConnectionIds = ids
 
-        // 注释已清理。
         val newLabel = when {
             egressCounts.isEmpty() -> null
             egressCounts.size == 1 -> egressCounts.keys.first()
@@ -841,10 +799,8 @@ class CommandManager(
             }
         }
 
-        // 注释已清理。
         var newNode: String? = null
         if (newestConnection != null) {
-            // 注释已清理。
             val chainIter = newestConnection.chain()
             val chainList = mutableListOf<String>()
             if (chainIter != null) {
@@ -905,7 +861,6 @@ class CommandManager(
 
         try {
             val optionsLog = CommandClientOptions()
-            // 注释已清理。
             optionsLog.addCommand(Libbox.CommandLog)
             optionsLog.statusInterval = 1500L * 1000L * 1000L
             commandClientLogs = Libbox.newCommandClient(handler, optionsLog)
@@ -917,7 +872,6 @@ class CommandManager(
 
         try {
             val optionsConn = CommandClientOptions()
-            // 注释已清理。
             optionsConn.addCommand(Libbox.CommandConnections)
             optionsConn.statusInterval = 5000L * 1000L * 1000L
             commandClientConnections = Libbox.newCommandClient(handler, optionsConn)

@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.content.Context
 import android.os.SystemClock
@@ -11,8 +11,6 @@ import kotlinx.coroutines.sync.Semaphore
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * [乱码注释已清理]
- * [乱码注释已清理]
  */
 class RouteGroupSelector(
     private val context: Context,
@@ -43,7 +41,6 @@ class RouteGroupSelector(
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun start(configContent: String) {
         stop()
@@ -60,7 +57,6 @@ class RouteGroupSelector(
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun stop() {
         autoSelectJob?.cancel()
@@ -68,7 +64,6 @@ class RouteGroupSelector(
     }
 
     /**
-     * [乱码注释已清理]
      */
     private suspend fun selectBestForRouteGroups(configContent: String) {
         val cfg = runCatching { gson.fromJson(configContent, SingBoxConfig::class.java) }.getOrNull() ?: return

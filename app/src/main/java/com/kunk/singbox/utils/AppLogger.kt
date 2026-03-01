@@ -1,13 +1,11 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.util.Log
 
 /**
  * 搴旂敤鏃ュ織宸ュ叿绫?
  *
- * [乱码注释已清理]
  * - Release 鏋勫缓榛樿鍏抽棴 DEBUG/VERBOSE 绾у埆鏃ュ織
- * [乱码注释已清理]
  * - 鏀寔鍔ㄦ€佽皟鏁存棩蹇楃骇鍒?
  */
 object AppLogger {
@@ -25,14 +23,11 @@ object AppLogger {
     }
 
     /**
-     * [乱码注释已清理]
-     * [乱码注释已清理]
      */
     @Volatile
     var minLevel: Level = Level.INFO
 
     /**
-     * [乱码注释已清理]
      */
     @Volatile
     var enabled: Boolean = true
@@ -79,7 +74,6 @@ object AppLogger {
     }
 
     /**
-     * [乱码注释已清理]
      */
     inline fun w(tag: String, throwable: Throwable?, message: () -> String) {
         if (isLoggable(Level.WARN)) {
@@ -97,7 +91,6 @@ object AppLogger {
     }
 
     /**
-     * [乱码注释已清理]
      */
     inline fun e(tag: String, throwable: Throwable?, message: () -> String) {
         if (isLoggable(Level.ERROR)) {
@@ -106,7 +99,6 @@ object AppLogger {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun v(tag: String, message: String) {
         if (isLoggable(Level.VERBOSE)) Log.v(tag, message)

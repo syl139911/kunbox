@@ -7,7 +7,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
- * 注释已清理。
  */
 data class SubscriptionUserInfo(
     val upload: Long = 0,
@@ -17,12 +16,7 @@ data class SubscriptionUserInfo(
 )
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class SubscriptionFetcher(
     private val client: OkHttpClient,
@@ -31,7 +25,6 @@ class SubscriptionFetcher(
     companion object {
         private const val TAG = "SubscriptionFetcher"
 
-        // 注释已清理。
         private val USER_AGENTS = listOf(
             "clash-verge/v1.3.8",
             "ClashforWindows/0.20.39",
@@ -46,11 +39,7 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun fetch(
         url: String,
@@ -89,12 +78,10 @@ class SubscriptionFetcher(
                         return@use
                     }
 
-                    // 注释已清理。
                     userInfo = parseUserInfo(response.header("Subscription-Userinfo"), responseBody)
 
                     onProgress("Parsing subscription response...")
 
-                    // 注释已清理。
                     val config = subscriptionManager.parse(responseBody)
                     if (config != null && !config.outbounds.isNullOrEmpty()) {
                         parsedConfig = config
@@ -121,22 +108,17 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 注释已清理。
      */
     private fun parseUserInfo(header: String?, body: String): SubscriptionUserInfo? {
-        // 注释已清理。
         if (!header.isNullOrBlank()) {
             val info = parseUserInfoHeader(header)
             if (info != null) return info
         }
 
-        // 注释已清理。
         return parseUserInfoFromBody(body)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun parseUserInfoHeader(header: String): SubscriptionUserInfo? {
         try {
@@ -169,7 +151,6 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 注释已清理。
      */
     private fun parseUserInfoFromBody(body: String): SubscriptionUserInfo? {
 
@@ -177,7 +158,6 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 注释已清理。
      */
     fun sanitizeSnippet(body: String, maxLen: Int = 220): String {
         var s = body
@@ -193,7 +173,6 @@ class SubscriptionFetcher(
     }
 
     /**
-     * 注释已清理。
      */
     data class FetchResult(
         val config: SingBoxConfig,

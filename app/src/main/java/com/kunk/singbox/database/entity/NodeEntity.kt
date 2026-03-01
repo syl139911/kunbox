@@ -60,7 +60,6 @@ data class NodeEntity(
 
     companion object {
         /**
-         * 注释已清理。
          */
         fun fromUiModel(ui: NodeUi, sortOrder: Int = 0): NodeEntity = NodeEntity(
             id = ui.id,

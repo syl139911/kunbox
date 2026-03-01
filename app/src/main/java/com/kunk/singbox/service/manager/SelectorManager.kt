@@ -6,14 +6,8 @@ import io.nekohasekai.libbox.CommandClient
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
  * 2. BoxWrapperManager (濠㈣泛娲ㄩ弫?
- * 注释已清理。
  */
 class SelectorManager {
     companion object {
@@ -24,7 +18,6 @@ class SelectorManager {
     private var commandClient: CommandClient? = null
 
     /**
-     * 注释已清理。
      */
     sealed class SwitchResult {
         data class Success(val nodeTag: String, val method: String) : SwitchResult()
@@ -33,7 +26,6 @@ class SelectorManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun init(commandClient: CommandClient?): Result<Unit> {
         return runCatching {
@@ -43,7 +35,6 @@ class SelectorManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun recordSelector(outboundTags: List<String>, selectedTag: String?): Result<Unit> {
         return runCatching {
@@ -58,14 +49,12 @@ class SelectorManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun switchNode(nodeTag: String): SwitchResult {
         if (!canHotSwitch(nodeTag)) {
             return SwitchResult.NeedRestart(nodeTag, "Node not in current selector")
         }
 
-        // 注释已清理。
         commandClient?.let { client ->
             try {
                 val success = CoreSelectorManager.selectOutbound(client, PROXY_SELECTOR_TAG, nodeTag)
@@ -79,7 +68,6 @@ class SelectorManager {
             Unit
         }
 
-        // 注释已清理。
         try {
             val success = CoreSelectorManager.selectOutboundViaWrapper(nodeTag)
             if (success) {
@@ -94,32 +82,26 @@ class SelectorManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getSelectedOutbound(): String? = CoreSelectorManager.getSelectedOutbound()
 
     /**
-     * 注释已清理。
      */
     fun getSelectedOutboundFlow(): StateFlow<String?> = CoreSelectorManager.selectedOutbound
 
     /**
-     * 注释已清理。
      */
     fun getCurrentOutbounds(): List<String> = CoreSelectorManager.getCurrentOutboundTags()
 
     /**
-     * 注释已清理。
      */
     fun hasSelector(): Boolean = CoreSelectorManager.hasSelector()
 
     /**
-     * 注释已清理。
      */
     fun getCanHotSwitchFlow(): StateFlow<Boolean> = CoreSelectorManager.canHotSwitchFlow
 
     /**
-     * 注释已清理。
      */
     fun clear(): Result<Unit> {
         return runCatching {
@@ -130,7 +112,6 @@ class SelectorManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun updateCommandClient(client: CommandClient?) {
         this.commandClient = client

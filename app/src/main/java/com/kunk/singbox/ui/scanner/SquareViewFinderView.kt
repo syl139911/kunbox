@@ -11,8 +11,6 @@ import com.kunk.singbox.R
 import kotlin.math.min
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class SquareViewFinderView @JvmOverloads constructor(
     context: Context,
@@ -95,7 +93,6 @@ class SquareViewFinderView @JvmOverloads constructor(
         val leftOffset = (width - frameSize) / 2
         val topOffset = (height - frameSize) / 2
 
-        // 注释已清理。
         val rect = Rect(
             leftOffset,
             topOffset,
@@ -112,14 +109,12 @@ class SquareViewFinderView @JvmOverloads constructor(
         val right = frame.right.toFloat()
         val bottom = frame.bottom.toFloat()
 
-        // 注释已清理。
         canvas.drawLine(left, top + cornerLength, left, top, cornerPaint)
         canvas.drawLine(left, top, left + cornerLength, top, cornerPaint)
 
         canvas.drawLine(right, top + cornerLength, right, top, cornerPaint)
         canvas.drawLine(right, top, right - cornerLength, top, cornerPaint)
 
-        // 注释已清理。
         canvas.drawLine(left, bottom - cornerLength, left, bottom, cornerPaint)
         canvas.drawLine(left, bottom, left + cornerLength, bottom, cornerPaint)
 

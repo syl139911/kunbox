@@ -128,7 +128,6 @@ fun DashboardScreen(
         viewModel.onVpnPermissionResult(result.resultCode == Activity.RESULT_OK)
     }
 
-    // 注释已清理。
     LaunchedEffect(vpnPermissionNeeded) {
         if (vpnPermissionNeeded) {
             val prepareIntent = VpnService.prepare(context)
@@ -419,7 +418,6 @@ fun DashboardScreen(
                 }
             }
 
-            // 注释已清理。
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.weight(1f)

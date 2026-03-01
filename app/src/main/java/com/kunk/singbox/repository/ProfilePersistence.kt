@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository
+﻿package com.kunk.singbox.repository
 
 import android.content.Context
 import android.util.Log
@@ -25,7 +25,6 @@ import java.io.File
 /**
  * 閰嶇疆鎸佷箙鍖栫鐞嗗櫒
  *
- * [乱码注释已清理]
  */
 class ProfilePersistence(private val context: Context) {
 
@@ -60,7 +59,6 @@ class ProfilePersistence(private val context: Context) {
         get() = File(context.filesDir, "profiles.json")
 
     /**
-     * [乱码注释已清理]
      */
     data class LoadResult(
         val profiles: List<ProfileUi>,
@@ -71,7 +69,6 @@ class ProfilePersistence(private val context: Context) {
 
     /**
      * 浠?Room 鏁版嵁搴撳姞杞介厤缃?
-     * [乱码注释已清理]
      */
     fun loadSync(): LoadResult {
         val startTime = System.currentTimeMillis()
@@ -190,7 +187,6 @@ class ProfilePersistence(private val context: Context) {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun saveActiveStateSync(activeProfileId: String?, activeNodeId: String?) {
         try {
@@ -242,7 +238,6 @@ class ProfilePersistence(private val context: Context) {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun saveNodeLatency(nodeId: String, latencyMs: Long) {
         scope.launch {

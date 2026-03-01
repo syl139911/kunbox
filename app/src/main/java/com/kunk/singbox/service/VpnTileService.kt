@@ -64,7 +64,6 @@ class VpnTileService : TileService() {
                     ?: ServiceState.STOPPED
                 lastServiceState = mappedState
                 if (mappedState == ServiceState.STOPPING || mappedState == ServiceState.STOPPED) {
-                    // 注释已清理。
                     isStartingSequence = false
                     startSequenceId = 0L
                 }
@@ -81,8 +80,6 @@ class VpnTileService : TileService() {
         const val ACTION_REFRESH_TILE = "com.kunk.singbox.REFRESH_TILE"
         private const val STOP_NOTIFICATION_CLEANUP_DELAY_MS = 250L
         /**
-         * 注释已清理。
-         * 注释已清理。
          */
         fun persistVpnState(context: Context, isActive: Boolean) {
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -97,7 +94,6 @@ class VpnTileService : TileService() {
                 .edit()
                 .putString(KEY_VPN_PENDING, value)
                 .commit()
-            // 注释已清理。
             VpnStateStore.setPending(value)
         }
     }
@@ -163,7 +159,6 @@ class VpnTileService : TileService() {
 
             executeStopVpn()
         } else {
-            // 注释已清理。
 
             tile.state = Tile.STATE_ACTIVE
             tile.label = getString(R.string.connection_connecting)
@@ -268,10 +263,8 @@ class VpnTileService : TileService() {
     }
 
     /**
-     * 注释已清理。
      */
     private fun executeStopVpn() {
-        // 注释已清理。
         isStartingSequence = false
         startSequenceId = 0L
 
@@ -309,7 +302,6 @@ class VpnTileService : TileService() {
     }
 
     /**
-     * 注释已清理。
      */
     @Suppress("CognitiveComplexMethod")
     private fun executeStartVpn() {
@@ -336,7 +328,6 @@ class VpnTileService : TileService() {
                     }
                 }
 
-                // 注释已清理。
                 val configRepository = ConfigRepository.getInstance(applicationContext)
                 val configResult = configRepository.generateConfigFile()
 
@@ -344,7 +335,6 @@ class VpnTileService : TileService() {
 
                     VpnServiceManager.startVpn(this@VpnTileService, settings.tunEnabled)
 
-                    // 注释已清理。
                 } else {
                     handleStartFailure(getString(R.string.dashboard_config_generation_failed))
                 }

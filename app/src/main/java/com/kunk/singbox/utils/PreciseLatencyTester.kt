@@ -16,37 +16,22 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 object PreciseLatencyTester {
     private const val TAG = "PreciseLatencyTester"
 
     /**
-     * 注释已清理。
      */
     enum class Standard {
-        /* 注释已清理。 */
         RTT,
-        /* 注释已清理。 */
         HANDSHAKE,
-        /* 注释已清理。 */
         FIRST_BYTE,
-        /* 注释已清理。 */
         TOTAL
     }
 
     /**
-     * 注释已清理。
      */
     data class LatencyResult(
         val latencyMs: Long,
@@ -60,13 +45,7 @@ object PreciseLatencyTester {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun test(
         proxyPort: Int,
@@ -111,7 +90,6 @@ object PreciseLatencyTester {
                 }
             }
 
-            // 注释已清理。
             timingListener.reset()
             val response = client.newCall(request).execute()
             response.use { resp ->
@@ -121,7 +99,6 @@ object PreciseLatencyTester {
                 resp.body?.close()
             }
 
-            // 注释已清理。
             val latency = when (standard) {
                 Standard.RTT -> {
 
@@ -136,7 +113,6 @@ object PreciseLatencyTester {
                     }
                 }
                 Standard.HANDSHAKE -> {
-                    // 注释已清理。
                     val start = timingListener.secureConnectStart.get()
                     val end = timingListener.secureConnectEnd.get()
                     if (start > 0 && end > start) {
@@ -174,7 +150,6 @@ object PreciseLatencyTester {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun testSimple(
         proxyPort: Int,
@@ -186,7 +161,6 @@ object PreciseLatencyTester {
     }
 
     /**
-     * 注释已清理。
      */
     private class TimingEventListener : EventListener() {
         val callStart = AtomicLong(0)

@@ -1,11 +1,10 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * [乱码注释已清理]
  */
 object DeepLinkHandler {
 

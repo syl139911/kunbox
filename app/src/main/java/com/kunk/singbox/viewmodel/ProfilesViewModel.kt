@@ -43,11 +43,9 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
             initialValue = null
         )
 
-    // 注释已清理。
     private val _importState = MutableStateFlow<ImportState>(ImportState.Idle)
     val importState: StateFlow<ImportState> = _importState.asStateFlow()
 
-    // 注释已清理。
     private val _updateStatus = MutableStateFlow<String?>(null)
     val updateStatus: StateFlow<String?> = _updateStatus.asStateFlow()
 
@@ -148,7 +146,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 注释已清理。
      */
     fun importSubscription(
         name: String,
@@ -238,7 +235,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 注释已清理。
      */
     fun cancelImport() {
         importJob?.cancel()

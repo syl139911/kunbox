@@ -166,8 +166,6 @@ class LogRepository private constructor() {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun setFilter(category: String?) {
         _currentFilter.value = category
@@ -175,7 +173,6 @@ class LogRepository private constructor() {
     }
 
     /**
-     * 注释已清理。
      */
     fun getFilteredLogs(): List<String> {
         val filter = _currentFilter.value
@@ -192,9 +189,6 @@ class LogRepository private constructor() {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun searchLogs(keyword: String): List<String> {
         if (keyword.isBlank()) return getFilteredLogs()
@@ -206,7 +200,6 @@ class LogRepository private constructor() {
     }
 
     /**
-     * 注释已清理。
      */
     fun getErrorSummary(): List<String> {
         return synchronized(buffer) {

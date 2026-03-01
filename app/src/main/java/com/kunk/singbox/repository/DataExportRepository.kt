@@ -19,8 +19,6 @@ import kotlinx.coroutines.SupervisorJob
 import java.io.File
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class DataExportRepository(private val context: Context) {
 
@@ -53,16 +51,12 @@ class DataExportRepository(private val context: Context) {
         get() = File(context.filesDir, "configs").also { it.mkdirs() }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun exportAllData(): Result<String> = withContext(Dispatchers.IO) {
         try {
 
-            // 注释已清理。
             val settings = settingsRepository.settings.first()
 
-            // 注释已清理。
             val profiles = configRepository.profiles.value
             val activeProfileId = configRepository.activeProfileId.value
             val activeNodeId = configRepository.activeNodeId.value
@@ -108,8 +102,6 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun exportToFile(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
         try {
@@ -133,9 +125,6 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun validateImportData(jsonData: String): Result<ExportData> = withContext(Dispatchers.IO) {
         try {
@@ -148,7 +137,6 @@ class DataExportRepository(private val context: Context) {
                 )
             }
 
-            // 注释已清理。
             if (exportData.settings == null) {
                 return@withContext Result.failure(Exception("Data format error: missing settings info"))
             }
@@ -164,9 +152,6 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun getExportDataSummary(exportData: ExportData): ExportDataSummary {
         val totalNodeCount = exportData.profiles.sumOf { profileData ->
@@ -193,14 +178,9 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun importData(jsonData: String, options: ImportOptions = ImportOptions()): Result<ImportResult> = withContext(Dispatchers.IO) {
         try {
-            // 注释已清理。
             val validateResult = validateImportData(jsonData)
             if (validateResult.isFailure) {
                 return@withContext Result.failure(validateResult.exceptionOrNull()!!)
@@ -212,7 +192,6 @@ class DataExportRepository(private val context: Context) {
             var settingsImported = false
             val errors = mutableListOf<String>()
 
-            // 注释已清理。
             if (options.importSettings) {
                 try {
                     importSettings(exportData.settings)
@@ -236,7 +215,6 @@ class DataExportRepository(private val context: Context) {
                 }
             }
 
-            // 注释已清理。
             if (options.importProfiles) {
                 for (profileData in exportData.profiles) {
                     try {
@@ -250,7 +228,6 @@ class DataExportRepository(private val context: Context) {
                 }
             }
 
-            // 注释已清理。
             if (options.importProfiles && exportData.activeProfileId != null) {
                 try {
 
@@ -288,9 +265,6 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun importFromFile(uri: Uri, options: ImportOptions = ImportOptions()): Result<ImportResult> = withContext(Dispatchers.IO) {
         try {
@@ -306,7 +280,6 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun validateFromFile(uri: Uri): Result<ExportData> = withContext(Dispatchers.IO) {
         try {
@@ -322,7 +295,6 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     private suspend fun importSettings(settings: AppSettings) {
 
@@ -330,7 +302,6 @@ class DataExportRepository(private val context: Context) {
         settingsRepository.setExcludeFromRecent(settings.excludeFromRecent)
         settingsRepository.setAppTheme(settings.appTheme)
 
-        // 注释已清理。
         settingsRepository.setTunEnabled(settings.tunEnabled)
         settingsRepository.setTunStack(settings.tunStack)
         settingsRepository.setTunMtu(settings.tunMtu)
@@ -344,7 +315,6 @@ class DataExportRepository(private val context: Context) {
         settingsRepository.setVpnAllowlist(settings.vpnAllowlist)
         settingsRepository.setVpnBlocklist(settings.vpnBlocklist)
 
-        // 注释已清理。
         settingsRepository.setLocalDns(settings.localDns)
         settingsRepository.setRemoteDns(settings.remoteDns)
         settingsRepository.setFakeDnsEnabled(settings.fakeDnsEnabled)
@@ -355,14 +325,12 @@ class DataExportRepository(private val context: Context) {
         settingsRepository.setServerAddressStrategy(settings.serverAddressStrategy)
         settingsRepository.setDnsCacheEnabled(settings.dnsCacheEnabled)
 
-        // 注释已清理。
         settingsRepository.setRoutingMode(settings.routingMode, notifyRestartRequired = false)
         settingsRepository.setDefaultRule(settings.defaultRule)
         settingsRepository.setBypassLan(settings.bypassLan)
         settingsRepository.setBlockQuic(settings.blockQuic)
         settingsRepository.setDebugLoggingEnabled(settings.debugLoggingEnabled)
 
-        // 注释已清理。
         settingsRepository.setLatencyTestMethod(settings.latencyTestMethod)
         settingsRepository.setLatencyTestUrl(settings.latencyTestUrl)
 
@@ -370,7 +338,6 @@ class DataExportRepository(private val context: Context) {
             settingsRepository.setGhProxyMirror(settings.ghProxyMirror)
         }
 
-        // 注释已清理。
         settingsRepository.setProxyPort(settings.proxyPort)
         settingsRepository.setAllowLan(settings.allowLan)
         settingsRepository.setAppendHttpProxy(settings.appendHttpProxy)
@@ -381,19 +348,15 @@ class DataExportRepository(private val context: Context) {
         settingsRepository.setAppRules(settings.appRules)
         settingsRepository.setAppGroups(settings.appGroups)
 
-        // 注释已清理。
         settingsRepository.setRuleSetAutoUpdateEnabled(settings.ruleSetAutoUpdateEnabled)
         settingsRepository.setRuleSetAutoUpdateInterval(settings.ruleSetAutoUpdateInterval)
 
-        // 注释已清理。
         settingsRepository.setNodeFilter(settings.nodeFilter)
         settingsRepository.setNodeSortType(settings.nodeSortType)
         settingsRepository.setCustomNodeOrder(settings.customNodeOrder)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private suspend fun importProfile(profileData: ProfileExportData, overwrite: Boolean): Int {
         val profile = profileData.profile
@@ -407,18 +370,15 @@ class DataExportRepository(private val context: Context) {
             if (!overwrite) {
                 throw Exception("Profile already exists")
             }
-            // 注释已清理。
             val existingId = existingById?.id ?: existingByName?.id
             if (existingId != null) {
                 configRepository.deleteProfile(existingId)
             }
         }
 
-        // 注释已清理。
         val configFile = File(configDir, "${profile.id}.json")
         configFile.writeText(gson.toJson(config))
 
-        // 注释已清理。
         val newProfile = profile.copy(
             id = profile.id,
             lastUpdated = System.currentTimeMillis(),
@@ -427,7 +387,6 @@ class DataExportRepository(private val context: Context) {
 
         configRepository.importProfileDirectly(newProfile, config)
 
-        // 注释已清理。
         val nodeCount = config.outbounds?.count { outbound ->
             outbound.type in listOf(
                 "shadowsocks", "vmess", "vless", "trojan",
@@ -440,12 +399,7 @@ class DataExportRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun cleanup() {
         repositoryScope.cancel()

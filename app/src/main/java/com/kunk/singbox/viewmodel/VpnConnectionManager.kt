@@ -1,4 +1,4 @@
-package com.kunk.singbox.viewmodel
+﻿package com.kunk.singbox.viewmodel
 
 import android.content.Context
 import android.content.Intent
@@ -32,7 +32,6 @@ import kotlinx.coroutines.withTimeout
 /**
  * VPN 杩炴帴绠＄悊鍣?
  *
- * [乱码注释已清理]
  */
 class VpnConnectionManager(
     private val context: Context,
@@ -45,7 +44,6 @@ class VpnConnectionManager(
     }
 
     /**
-     * [乱码注释已清理]
      */
     interface PermissionCallback {
         fun onVpnPermissionNeeded()
@@ -288,7 +286,6 @@ class VpnConnectionManager(
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun onVpnPermissionResult(granted: Boolean) {
         _vpnPermissionNeeded.value = false

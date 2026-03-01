@@ -12,12 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 @Suppress("TooManyFunctions")
 class SafeLatencyTester private constructor() {
@@ -25,7 +20,6 @@ class SafeLatencyTester private constructor() {
     companion object {
         private const val TAG = "SafeLatencyTester"
 
-        // 注释已清理。
         private const val DEFAULT_GROUP_TAG = "PROXY"
 
         private const val URL_TEST_TIMEOUT_MS = 15000L
@@ -33,7 +27,6 @@ class SafeLatencyTester private constructor() {
         private const val CIRCUIT_BREAKER_THRESHOLD = 3
         private const val CIRCUIT_BREAKER_COOLDOWN_MS = 10000L
 
-        /* 注释已清理。 */
         const val DEFAULT_CONCURRENCY = 1
 
         @Volatile
@@ -46,7 +39,6 @@ class SafeLatencyTester private constructor() {
         }
     }
 
-    // 注释已清理。
     private val isTestingActive = AtomicBoolean(false)
     private val consecutiveFailures = AtomicInteger(0)
     private val lastCircuitBreakerTrip = AtomicLong(0)
@@ -54,13 +46,7 @@ class SafeLatencyTester private constructor() {
     private var guardJob: Job? = null
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("UNUSED_PARAMETER", "CyclomaticComplexMethod", "CognitiveComplexMethod")
     suspend fun testOutboundsLatencySafe(
@@ -99,7 +85,6 @@ class SafeLatencyTester private constructor() {
                 return
             }
 
-            // 注释已清理。
             consecutiveFailures.set(0)
 
             var successCount = 0
@@ -126,8 +111,6 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private suspend fun triggerGroupUrlTest(groupTag: String): Map<String, Int> {
         val service = SingBoxService.instance
@@ -172,7 +155,6 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 注释已清理。
      */
     private fun handleTestFailure() {
         val failures = consecutiveFailures.incrementAndGet()
@@ -190,7 +172,6 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 注释已清理。
      */
     private fun tripCircuitBreaker() {
         lastCircuitBreakerTrip.set(System.currentTimeMillis())
@@ -198,7 +179,6 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 注释已清理。
      */
     fun cancelTest() {
         guardJob?.cancel()
@@ -206,7 +186,6 @@ class SafeLatencyTester private constructor() {
     }
 
     /**
-     * 注释已清理。
      */
     fun isTesting(): Boolean = isTestingActive.get()
 }

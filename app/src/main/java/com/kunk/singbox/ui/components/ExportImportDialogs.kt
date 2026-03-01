@@ -25,7 +25,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * 注释已清理。
  */
 @Composable
 fun ExportProgressDialog(
@@ -122,7 +121,6 @@ fun ExportProgressDialog(
 }
 
 /**
- * 注释已清理。
  */
 @Composable
 fun ImportPreviewDialog(
@@ -156,7 +154,6 @@ fun ImportPreviewDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 注释已清理。
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -188,7 +185,6 @@ fun ImportPreviewDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 注释已清理。
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -218,7 +214,6 @@ fun ImportPreviewDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 注释已清理。
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -258,7 +253,6 @@ private fun SummaryRow(label: String, value: String) {
 }
 
 /**
- * 注释已清理。
  */
 @Composable
 fun ImportProgressDialog(
@@ -439,7 +433,6 @@ fun ImportProgressDialog(
 }
 
 /**
- * 注释已清理。
  */
 @Composable
 fun ValidatingDialog() {

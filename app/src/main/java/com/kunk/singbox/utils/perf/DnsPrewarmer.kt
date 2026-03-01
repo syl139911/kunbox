@@ -22,14 +22,11 @@ object DnsPrewarmer {
     // 妤犵偠娉涜ぐ鍌炴⒔閹邦剙鐓?
     private const val MAX_CONCURRENCY = 8
 
-    // 注释已清理。
     private const val RESOLVE_TIMEOUT_MS = 2000L
 
-    // 注释已清理。
     private const val TOTAL_TIMEOUT_MS = 3000L
 
     /**
-     * 注释已清理。
      */
     data class PrewarmResult(
         val totalDomains: Int,
@@ -40,9 +37,6 @@ object DnsPrewarmer {
     )
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun prewarm(configContent: String): PrewarmResult = withContext(Dispatchers.IO) {
         PerfTracer.begin(PerfTracer.Phases.DNS_PREWARM)
@@ -100,7 +94,6 @@ object DnsPrewarmer {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun prewarmSingle(domain: String): Boolean = withContext(Dispatchers.IO) {
         if (domain.isBlank() || isIpAddress(domain)) {
@@ -118,7 +111,6 @@ object DnsPrewarmer {
     }
 
     /**
-     * 注释已清理。
      */
     fun getCachedAddresses(domain: String): List<String>? {
         val timestamp = cacheTimestamps[domain] ?: return null
@@ -143,7 +135,6 @@ object DnsPrewarmer {
             return ResolveResult.CACHED
         }
 
-        // 注释已清理。
         return withTimeoutOrNull(RESOLVE_TIMEOUT_MS) {
             try {
                 val addresses = InetAddress.getAllByName(domain)
@@ -164,13 +155,10 @@ object DnsPrewarmer {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun extractNodeDomains(configJson: String): Set<String> {
         val domains = mutableSetOf<String>()
 
-        // 注释已清理。
         val serverRegex = """"server"\s*:\s*"([^"]+)"""".toRegex()
         serverRegex.findAll(configJson).forEach { match ->
             val server = match.groupValues[1]
@@ -195,7 +183,6 @@ object DnsPrewarmer {
     }
 
     /**
-     * 注释已清理。
      */
     private fun isValidDomain(host: String): Boolean {
         if (!host.contains('.')) return false

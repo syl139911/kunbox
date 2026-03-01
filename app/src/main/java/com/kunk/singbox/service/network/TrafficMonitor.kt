@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.network
+﻿package com.kunk.singbox.service.network
 
 import android.net.TrafficStats
 import android.os.SystemClock
@@ -104,7 +104,6 @@ class TrafficMonitor(
         }
     }
 
-    // 注释已清理。
     private fun collectAndEmitTraffic(uid: Int, listener: Listener) {
         val nowElapsed = SystemClock.elapsedRealtime()
         val tx = TrafficStats.getUidTxBytes(uid).coerceAtLeast(0L)

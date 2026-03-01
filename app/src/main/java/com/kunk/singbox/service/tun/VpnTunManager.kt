@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class VpnTunManager(
     private val context: Context,
@@ -46,7 +44,6 @@ class VpnTunManager(
 
     /**
      * 濡澘瀚崹搴ㄦ煀?TUN Builder
-     * 注释已清理。
      */
     fun preallocateBuilder() {
         if (preallocatedBuilder != null) return
@@ -62,7 +59,6 @@ class VpnTunManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun consumePreallocatedBuilder(): VpnService.Builder? {
         return preallocatedBuilder?.also {
@@ -72,10 +68,8 @@ class VpnTunManager(
     }
 
     /**
-     * 注释已清理。
      * @param builder VpnService.Builder
      * @param options TunOptions from libbox
-     * 注释已清理。
      */
     fun configureBuilder(
         builder: VpnService.Builder,
@@ -119,10 +113,8 @@ class VpnTunManager(
             proxyPort = settings?.proxyPort ?: 2080
         )
 
-        // 注释已清理。
         configureSecuritySettings(builder)
 
-        // 注释已清理。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setMetered(false)
             configureHttpProxy(builder, settings)
@@ -360,8 +352,6 @@ class VpnTunManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun establishWithRetry(
         builder: VpnService.Builder,
@@ -390,7 +380,6 @@ class VpnTunManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun cleanup() {
         preallocatedBuilder = null

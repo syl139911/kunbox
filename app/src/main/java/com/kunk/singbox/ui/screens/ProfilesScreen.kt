@@ -119,11 +119,9 @@ fun ProfilesScreen(
         }
     }
 
-    // 注释已清理。
     val pendingImport by DeepLinkHandler.pendingSubscriptionImport.collectAsState()
     androidx.compose.runtime.LaunchedEffect(pendingImport) {
         pendingImport?.let { data ->
-            // 注释已清理。
             viewModel.importSubscription(
                 name = data.name,
                 url = data.url,
@@ -222,7 +220,6 @@ fun ProfilesScreen(
         }
     }
 
-    // 注释已清理。
     val qrCodeLauncher = rememberLauncherForActivityResult(
         contract = ScanContract()
     ) { result ->
@@ -243,7 +240,6 @@ fun ProfilesScreen(
 
             when {
                 isNodeLink -> {
-                    // 注释已清理。
                     viewModel.importFromContent(context.getString(R.string.profiles_qrcode_import), scannedContent)
                 }
                 isSubscriptionUrl -> {
@@ -278,7 +274,6 @@ fun ProfilesScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // 注释已清理。
             qrCodeLauncher.launch(createScanOptions())
         } else {
             Toast.makeText(context, context.getString(R.string.profiles_camera_permission_required), Toast.LENGTH_SHORT).show()
@@ -561,7 +556,6 @@ private fun ImportSelectionDialog(
 
 @Composable
 private fun ImportLoadingDialog(message: String, onCancel: () -> Unit = {}) {
-    // 注释已清理。
     var displayMessage = message
     val progress = remember(message) {
         val regex = Regex(".*?\\((\\d+)/(\\d+)\\).*")
@@ -737,7 +731,6 @@ private fun SubscriptionInputDialog(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 注释已清理。
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

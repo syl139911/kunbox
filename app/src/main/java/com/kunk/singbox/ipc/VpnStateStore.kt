@@ -1,14 +1,11 @@
-package com.kunk.singbox.ipc
+﻿package com.kunk.singbox.ipc
 
 import android.util.Log
 import com.tencent.mmkv.MMKV
 
 /**
- * [乱码注释已清理]
  *
  * MMKV 浼樺娍:
- * 注释已清理。
- * [乱码注释已清理]
  * - 鎬ц兘姣?SharedPreferences 蹇?100x
  */
 @Suppress("TooManyFunctions")
@@ -194,7 +191,6 @@ object VpnStateStore {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun clear() {
         mmkv.clearAll()

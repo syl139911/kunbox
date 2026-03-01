@@ -22,8 +22,6 @@ import java.net.NetworkInterface
 import java.net.Socket
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class NetworkHelper(
     private val context: Context,
@@ -87,7 +85,6 @@ class NetworkHelper(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun ensureNetworkCallbackReady(
         isCallbackReady: () -> Boolean,
@@ -116,7 +113,6 @@ class NetworkHelper(
             }
         }
 
-        // 注释已清理。
         val startTime = System.currentTimeMillis()
         while (!isCallbackReady() && System.currentTimeMillis() - startTime < timeoutMs) {
             delay(100)
@@ -134,7 +130,6 @@ class NetworkHelper(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun waitForUsablePhysicalNetwork(
         lastKnownNetwork: Network?,
@@ -215,7 +210,6 @@ class NetworkHelper(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun performConnectivityCheck(): Boolean = withContext(Dispatchers.IO) {
         val testTargets = listOf(
@@ -242,7 +236,6 @@ class NetworkHelper(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun resetConnectionsOptimal(
         reason: String,
@@ -288,7 +281,6 @@ class NetworkHelper(
     }
 
     /**
-     * 注释已清理。
      */
     fun isAnyVpnActive(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false
@@ -304,7 +296,6 @@ class NetworkHelper(
     }
 
     /**
-     * 注释已清理。
      */
     @Suppress(
         "UnusedParameter", "LongParameterList",
@@ -383,8 +374,6 @@ class NetworkHelper(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun findBestPhysicalNetworkFallback(): Network? {
         val cm = connectivityManager ?: return null

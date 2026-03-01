@@ -1,4 +1,4 @@
-package com.kunk.singbox.database.dao
+﻿package com.kunk.singbox.database.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Node 鏁版嵁璁块棶瀵硅薄
  *
- * [乱码注释已清理]
  */
 @Dao
 interface NodeDao {

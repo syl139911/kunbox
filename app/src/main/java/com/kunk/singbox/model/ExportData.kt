@@ -4,8 +4,6 @@ import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 @Keep
 data class ExportData(
@@ -13,23 +11,18 @@ data class ExportData(
     @SerializedName("exportTime") val exportTime: Long,
     @SerializedName("appVersion") val appVersion: String,
     @SerializedName("settings") val settings: AppSettings, // 閹煎瓨姊婚弫·囨媼閸撗呮瀭
-    @SerializedName("profiles") val profiles: List<ProfileExportData>, // 注释已清理。
     @SerializedName("activeProfileId") val activeProfileId: String?,
     @SerializedName("activeNodeId") val activeNodeId: String?
 )
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 @Keep
 data class ProfileExportData(
-    @SerializedName("profile") val profile: ProfileUi, // 注释已清理。
     @SerializedName("config") val config: SingBoxConfig
 )
 
 /**
- * 注释已清理。
  */
 @Keep
 data class ImportOptions(
@@ -40,12 +33,10 @@ data class ImportOptions(
 )
 
 /**
- * 注释已清理。
  */
 @Keep
 sealed class ImportResult {
     /**
-     * 注释已清理。
      */
     data class Success(
         val profilesImported: Int,
@@ -54,7 +45,6 @@ sealed class ImportResult {
     ) : ImportResult()
 
     /**
-     * 注释已清理。
      */
     data class PartialSuccess(
         val profilesImported: Int,
@@ -63,14 +53,11 @@ sealed class ImportResult {
     ) : ImportResult()
 
     /**
-     * 注释已清理。
      */
     data class Failed(val error: String) : ImportResult()
 }
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 @Keep
 data class ExportDataSummary(

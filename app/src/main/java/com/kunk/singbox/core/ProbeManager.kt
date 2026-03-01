@@ -17,8 +17,6 @@ object ProbeManager {
     private const val TAG = "ProbeManager"
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private val DEFAULT_PROBE_TARGETS = listOf(
         ProbeTarget("1.1.1.1", 53, "Cloudflare DNS"),
@@ -27,12 +25,10 @@ object ProbeManager {
     )
 
     /**
-     * 注释已清理。
      */
     private const val DEFAULT_TIMEOUT_MS = 2000L
 
     /**
-     * 注释已清理。
      */
     data class ProbeTarget(
         val host: String,
@@ -41,13 +37,9 @@ object ProbeManager {
     )
 
     /**
-     * 注释已清理。
      */
     sealed class ProbeResult {
         /**
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
          */
         data class Success(
             val target: ProbeTarget,
@@ -55,9 +47,6 @@ object ProbeManager {
         ) : ProbeResult()
 
         /**
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
          */
         data class Timeout(
             val target: ProbeTarget,
@@ -65,10 +54,6 @@ object ProbeManager {
         ) : ProbeResult()
 
         /**
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
-         * 注释已清理。
          */
         data class Error(
             val target: ProbeTarget,
@@ -78,7 +63,6 @@ object ProbeManager {
     }
 
     /**
-     * 注释已清理。
      */
     data class BatchProbeResult(
         val results: List<ProbeResult>,
@@ -96,12 +80,8 @@ object ProbeManager {
     )
 
     /**
-     * 注释已清理。
      *
      * @param context Android Context
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun probeViaVpn(
         context: Context,
@@ -124,12 +104,8 @@ object ProbeManager {
     }
 
     /**
-     * 注释已清理。
      *
      * @param context Android Context
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun probeAllViaVpn(
         context: Context,
@@ -183,12 +159,8 @@ object ProbeManager {
     }
 
     /**
-     * 注释已清理。
      *
      * @param context Android Context
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun probeFirstSuccessViaVpn(
         context: Context,
@@ -236,11 +208,8 @@ object ProbeManager {
     }
 
     /**
-     * 注释已清理。
      *
      * @param context Android Context
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun isVpnLinkAvailable(
         context: Context,
@@ -250,7 +219,6 @@ object ProbeManager {
     }
 
     /**
-     * 注释已清理。
      */
     private fun findProbeNetwork(context: Context): Network? {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -289,12 +257,7 @@ object ProbeManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private suspend fun probeTarget(
         network: Network,
@@ -347,12 +310,10 @@ object ProbeManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getDefaultTargets(): List<ProbeTarget> = DEFAULT_PROBE_TARGETS.toList()
 
     /**
-     * 注释已清理。
      */
     fun createTarget(host: String, port: Int, name: String? = null): ProbeTarget {
         return ProbeTarget(host, port, name ?: "$host:$port")

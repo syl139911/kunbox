@@ -13,9 +13,6 @@ object LatencyCache {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun get(nodeId: String): Long? {
         val timestamp = mmkv.decodeLong(KEY_TIMESTAMP_PREFIX + nodeId, 0L)
@@ -31,9 +28,6 @@ object LatencyCache {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun set(nodeId: String, latency: Long) {
         mmkv.encode(KEY_PREFIX + nodeId, latency)
@@ -46,14 +40,12 @@ object LatencyCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun clear() {
         mmkv.clearAll()
     }
 
     /**
-     * 注释已清理。
      * @return Map<nodeId, latency>
      */
     fun getAll(): Map<String, Long> {
@@ -70,7 +62,6 @@ object LatencyCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun setAll(latencies: Map<String, Long>) {
         val now = System.currentTimeMillis()

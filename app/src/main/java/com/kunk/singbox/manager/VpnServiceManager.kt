@@ -10,12 +10,8 @@ import com.kunk.singbox.service.ProxyOnlyService
 import com.kunk.singbox.service.SingBoxService
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
  */
 object VpnServiceManager {
     private const val TAG = "VpnServiceManager"
@@ -29,9 +25,7 @@ object VpnServiceManager {
     private const val CACHE_VALIDITY_MS = 5_000L
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun isRunning(context: Context): Boolean {
         val prefs = context.applicationContext.getSharedPreferences(
@@ -57,14 +51,12 @@ object VpnServiceManager {
     private const val KEY_VPN_PENDING = "vpn_pending"
 
     /**
-     * 注释已清理。
      */
     fun isStarting(): Boolean {
         return SingBoxRemote.isStarting.value
     }
 
     /**
-     * 注释已清理。
      *
      * @return "tun" | "proxy" | null
      */
@@ -75,10 +67,7 @@ object VpnServiceManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      */
     fun toggleVpn(context: Context) {
         if (isRunning(context)) {
@@ -89,9 +78,7 @@ object VpnServiceManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun startVpn(context: Context) {
         val tunEnabled = isTunEnabled(context)
@@ -99,9 +86,7 @@ object VpnServiceManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun startVpn(context: Context, tunMode: Boolean) {
         Log.d(TAG, "startVpn: tunMode=$tunMode")
@@ -132,9 +117,7 @@ object VpnServiceManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun stopVpn(context: Context) {
         Log.d(TAG, "stopVpn")
@@ -163,9 +146,7 @@ object VpnServiceManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun restartVpn(context: Context) {
         Log.d(TAG, "restartVpn")
@@ -179,9 +160,7 @@ object VpnServiceManager {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     private fun isTunEnabled(context: Context? = null): Boolean {
         val now = System.currentTimeMillis()
@@ -221,7 +200,6 @@ object VpnServiceManager {
     }
 
     /**
-     * 注释已清理。
      */
     fun getCurrentConfig(context: Context): String {
         return buildString {

@@ -10,13 +10,11 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.error.YAMLException
 
 /**
- * 注释已清理。
  */
 class ClashYamlParser : SubscriptionParser {
     override fun canParse(content: String): Boolean {
         val trimmed = content.trim()
 
-        // 注释已清理。
         val nodeLinkPrefixes = listOf(
             "vmess://", "vless://", "ss://", "trojan://",
             "hysteria2://", "hy2://", "hysteria://",
@@ -64,7 +62,6 @@ class ClashYamlParser : SubscriptionParser {
             android.util.Log.d("ClashYamlParser", "Parsed ${outbounds.size} proxies, skipped $skippedCount")
         }
 
-        // 注释已清理。
         val proxyGroupsRaw = rootMap["proxy-groups"] as? List<*>
         if (proxyGroupsRaw != null) {
             for (g in proxyGroupsRaw) {
@@ -168,7 +165,6 @@ class ClashYamlParser : SubscriptionParser {
         val flow = asString(map["flow"])
         val packetEncoding = asString(map["packet-encoding"]) ?: "xudp"
 
-        // 注释已清理。
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         // Reality support
@@ -176,7 +172,6 @@ class ClashYamlParser : SubscriptionParser {
         val realityPublicKey = asString(realityOpts?.get("public-key"))
         val realityShortId = asString(realityOpts?.get("short-id"))
 
-        // 注释已清理。
         val finalAlpn = if (tlsEnabled && network == "ws" && (alpn == null || alpn.isEmpty())) listOf("http/1.1") else alpn
 
         val tlsConfig = if (tlsEnabled) {
@@ -209,7 +204,6 @@ class ClashYamlParser : SubscriptionParser {
                     headers[ks] = vs
                 }
 
-                // 注释已清理。
                 val host = headers["Host"] ?: headers["host"] ?: serverName
                 if (!host.isNullOrBlank()) headers["Host"] = host
 
@@ -263,7 +257,6 @@ class ClashYamlParser : SubscriptionParser {
             else -> null
         }
 
-        // 注释已清理。
         val multiplex = parseSmux(map)
 
         return Outbound(
@@ -293,7 +286,6 @@ class ClashYamlParser : SubscriptionParser {
 
         val fingerprint = asString(map["client-fingerprint"]) ?: globalFingerprint
 
-        // 注释已清理。
 
         val skipCertVerifyValue = map["skip-cert-verify"]
         val insecure = when {
@@ -306,7 +298,6 @@ class ClashYamlParser : SubscriptionParser {
         val alpn = asStringList(map["alpn"])
         val packetEncoding = asString(map["packet-encoding"]) ?: "xudp"
 
-        // 注释已清理。
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         val finalAlpn = if (tlsEnabled && network == "ws" && (alpn == null || alpn.isEmpty())) listOf("http/1.1") else alpn
@@ -382,7 +373,6 @@ class ClashYamlParser : SubscriptionParser {
             else -> null
         }
 
-        // 注释已清理。
         val multiplex = parseSmux(map)
 
         return Outbound(
@@ -402,9 +392,7 @@ class ClashYamlParser : SubscriptionParser {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
      *   - type: ss
      *     plugin: shadow-tls
      *     plugin-opts:
@@ -412,9 +400,6 @@ class ClashYamlParser : SubscriptionParser {
      *       password: xxx
      *       version: 3
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun parseShadowsocksWithPlugin(
         map: Map<*, *>,
@@ -581,7 +566,6 @@ class ClashYamlParser : SubscriptionParser {
         val insecure = asBool(map["skip-cert-verify"]) == true
         val alpn = asStringList(map["alpn"])
 
-        // 注释已清理。
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         val tlsConfig = TlsConfig(
@@ -595,7 +579,6 @@ class ClashYamlParser : SubscriptionParser {
 
         val transport = parseTrojanTransport(network, map, sni, fingerprint)
 
-        // 注释已清理。
         val multiplex = parseSmux(map)
 
         return Outbound(
@@ -677,12 +660,10 @@ class ClashYamlParser : SubscriptionParser {
         val obfs = asString(map["obfs"])
         val obfsPassword = asString(map["obfs-password"])
 
-        // 注释已清理。
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         val network = asString(map["network"])
 
-        // 注释已清理。
         val upMbps = asInt(map["up"]) ?: asInt(map["up-mbps"])
         val downMbps = asInt(map["down"]) ?: asInt(map["down-mbps"])
 
@@ -728,7 +709,6 @@ class ClashYamlParser : SubscriptionParser {
         val udpRelayMode = asString(map["udp-relay-mode"]) ?: "native"
         val zeroRtt = asBool(map["reduce-rtt"]) == true || asBool(map["zero-rtt-handshake"]) == true
 
-        // 注释已清理。
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         return Outbound(
@@ -808,7 +788,6 @@ class ClashYamlParser : SubscriptionParser {
 
         val fingerprint = asString(map["client-fingerprint"]) ?: asString(map["fingerprint"]) ?: globalFingerprint
 
-        // 注释已清理。
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         val idleSessionCheckInterval = asString(map["idle-session-check-interval"])
@@ -847,7 +826,6 @@ class ClashYamlParser : SubscriptionParser {
         val fingerprint = asString(map["client-fingerprint"]) ?: globalFingerprint
         val obfs = asString(map["obfs"])
 
-        // 注释已清理。
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         val portsStr = asString(map["ports"])?.takeIf { it.isNotBlank() }
@@ -882,7 +860,6 @@ class ClashYamlParser : SubscriptionParser {
         val username = asString(map["username"])
         val password = asString(map["password"])
 
-        // 注释已清理。
         val tlsEnabled = asBool(map["tls"]) == true
 
         val fingerprint = asString(map["client-fingerprint"]) ?: asString(map["fingerprint"]) ?: globalFingerprint
@@ -892,7 +869,6 @@ class ClashYamlParser : SubscriptionParser {
             val skipCertVerify = map["skip-cert-verify"]
             val insecure = if (skipCertVerify == null) true else asBool(skipCertVerify) == true
             val alpn = asStringList(map["alpn"])
-            // 注释已清理。
             val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
             TlsConfig(
                 enabled = true,
@@ -904,7 +880,6 @@ class ClashYamlParser : SubscriptionParser {
             )
         } else null
 
-        // 注释已清理。
         val path = asString(map["path"])
         val headersRaw = map["headers"] as? Map<*, *>
         val headers = if (headersRaw != null) {
@@ -976,8 +951,6 @@ class ClashYamlParser : SubscriptionParser {
     // --- Helpers ---
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      * smux:
      *   enabled: true
      *   protocol: smux  # smux/yamux/h2mux

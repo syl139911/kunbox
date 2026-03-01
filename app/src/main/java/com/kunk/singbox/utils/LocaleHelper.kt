@@ -10,7 +10,6 @@ import java.util.Locale
 object LocaleHelper {
 
     /**
-     * 注释已清理。
      */
     fun setLocale(context: Context, language: AppLanguage): Context {
         val locale = when (language) {
@@ -23,7 +22,6 @@ object LocaleHelper {
     }
 
     /**
-     * 注释已清理。
      */
     private fun getSystemLocale(): Locale {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -35,7 +33,6 @@ object LocaleHelper {
     }
 
     /**
-     * 注释已清理。
      */
     private fun updateResources(context: Context, locale: Locale): Context {
         Locale.setDefault(locale)
@@ -51,7 +48,6 @@ object LocaleHelper {
     }
 
     /**
-     * 注释已清理。
      */
     fun getLanguageDisplayName(language: AppLanguage): String {
         return when (language) {
@@ -62,8 +58,6 @@ object LocaleHelper {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun wrap(context: Context, language: AppLanguage): Context {
         return setLocale(context, language)

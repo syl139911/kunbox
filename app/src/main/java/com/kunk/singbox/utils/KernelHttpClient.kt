@@ -11,19 +11,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 object KernelHttpClient {
     private const val TAG = "KernelHttpClient"
 
-    // 注释已清理。
     private const val DEFAULT_TIMEOUT_MS = 30000
 
     // 濮掓稒顭堥缁樼閿濆洦鍊炵紒鏃戝灠瑜?
@@ -33,7 +26,6 @@ object KernelHttpClient {
     private var cachedProxyPort: Int = DEFAULT_PROXY_PORT
 
     /**
-     * 注释已清理。
      */
     data class HttpResult(
         val success: Boolean,
@@ -51,8 +43,6 @@ object KernelHttpClient {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun updateProxyPort(port: Int) {
         cachedProxyPort = port
@@ -60,7 +50,6 @@ object KernelHttpClient {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun updateProxyPortFromSettings(context: Context) {
         try {
@@ -73,17 +62,11 @@ object KernelHttpClient {
     }
 
     /**
-     * 注释已清理。
      */
     fun getProxyPort(): Int = cachedProxyPort
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      * @return HttpResult
      */
     @Suppress("UNUSED_PARAMETER")
@@ -101,19 +84,12 @@ object KernelHttpClient {
             Log.w(TAG, "Kernel fetch failed, falling back to OkHttp: ${kernelResult.error}")
         }
 
-        // 注释已清理。
         Log.d(TAG, "fetch: $url (using OkHttp)")
         fetchWithOkHttp(url, timeoutMs)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      * @return HttpResult
      */
     @Suppress("UNUSED_PARAMETER")
@@ -132,18 +108,12 @@ object KernelHttpClient {
             Log.w(TAG, "Kernel fetch with headers failed, falling back to OkHttp: ${kernelResult.error}")
         }
 
-        // 注释已清理。
         Log.d(TAG, "fetchWithHeaders: $url (using OkHttp)")
         fetchWithOkHttpAndHeaders(url, headers, timeoutMs)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      * @return HttpResult
      */
     @Suppress("UNUSED_PARAMETER")
@@ -161,12 +131,10 @@ object KernelHttpClient {
             Log.w(TAG, "smartFetch kernel failed, falling back to OkHttp: ${kernelResult.error}")
         }
 
-        // 注释已清理。
         fetchWithOkHttp(url, timeoutMs)
     }
 
     /**
-     * 注释已清理。
      */
     private fun fetchWithOkHttp(url: String, timeoutMs: Int): HttpResult {
         return try {
@@ -196,7 +164,6 @@ object KernelHttpClient {
     }
 
     /**
-     * 注释已清理。
      */
     private fun fetchWithOkHttpAndHeaders(
         url: String,
@@ -233,11 +200,7 @@ object KernelHttpClient {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      * @return HttpResult
      */
     private fun fetchViaKernel(
@@ -252,7 +215,6 @@ object KernelHttpClient {
             val proxyPort = cachedProxyPort
             client.trySocks5(proxyPort)
 
-            // 注释已清理。
             client.modernTLS()
             client.keepAlive()
 
@@ -261,7 +223,6 @@ object KernelHttpClient {
             request.setMethod("GET")
             request.randomUserAgent()
 
-            // 注释已清理。
             headers.forEach { (key, value) ->
                 request.setHeader(key, value)
             }
@@ -290,8 +251,6 @@ object KernelHttpClient {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun isKernelFetchAvailable(): Boolean {
 
@@ -301,7 +260,6 @@ object KernelHttpClient {
     }
 
     /**
-     * 注释已清理。
      */
     fun isVpnRunning(): Boolean {
         return BoxWrapperManager.isAvailable()

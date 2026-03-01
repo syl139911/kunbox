@@ -11,29 +11,23 @@ import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 注释已清理。
  */
 interface SubscriptionParser {
     /**
-     * 注释已清理。
      */
     fun canParse(content: String): Boolean
 
     /**
-     * 注释已清理。
      */
     fun parse(content: String): SingBoxConfig?
 }
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 object DnsResolveCache {
     private const val TAG = "DnsResolveCache"
 
     /**
-     * 注释已清理。
      */
     private data class CacheEntry(val ip: String, val timestamp: Long)
 
@@ -46,8 +40,6 @@ object DnsResolveCache {
     private const val RETRY_INTERVAL_MS = 5 * 60 * 1000L
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun getResolvedIp(domain: String): String? {
         val entry = cache[domain] ?: return null
@@ -62,9 +54,6 @@ object DnsResolveCache {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun preResolve(domains: List<String>): Int = withContext(Dispatchers.IO) {
         val currentTime = System.currentTimeMillis()
@@ -118,7 +107,6 @@ object DnsResolveCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun extractDomains(outbounds: List<Outbound>): List<String> {
         return outbounds.mapNotNull { outbound ->
@@ -130,14 +118,11 @@ object DnsResolveCache {
     }
 
     /**
-     * 注释已清理。
      */
     private fun isIpAddress(host: String): Boolean {
-        // 注释已清理。
         if (host.matches(Regex("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$"))) {
             return true
         }
-        // 注释已清理。
         if (host.contains(":") && !host.contains(".")) {
             return true
         }
@@ -150,13 +135,11 @@ object DnsResolveCache {
     }
 
     /**
-     * 注释已清理。
      */
     fun getStats(): Pair<Int, Int> = Pair(cache.size, failedDomains.size)
 }
 
 /**
- * 注释已清理。
  */
 class SubscriptionManager(private val parsers: List<SubscriptionParser>) {
 
@@ -164,8 +147,6 @@ class SubscriptionManager(private val parsers: List<SubscriptionParser>) {
         private const val TAG = "SubscriptionManager"
 
         /**
-         * 注释已清理。
-         * 注释已清理。
          */
         private fun getDeduplicationKey(outbound: Outbound): String? {
             val server = outbound.server ?: return null
@@ -181,8 +162,6 @@ class SubscriptionManager(private val parsers: List<SubscriptionParser>) {
         }
 
         /**
-         * 注释已清理。
-         * 注释已清理。
          */
         fun deduplicateOutbounds(outbounds: List<Outbound>): List<Outbound> {
             val seen = mutableSetOf<String>()
@@ -212,7 +191,6 @@ class SubscriptionManager(private val parsers: List<SubscriptionParser>) {
     }
 
     /**
-     * 注释已清理。
      */
     fun parse(content: String): SingBoxConfig? {
         for (parser in parsers) {
@@ -220,7 +198,6 @@ class SubscriptionManager(private val parsers: List<SubscriptionParser>) {
                 try {
                     val config = parser.parse(content)
                     if (config != null && !config.outbounds.isNullOrEmpty()) {
-                        // 注释已清理。
                         val deduplicatedOutbounds = deduplicateOutbounds(config.outbounds)
                         return config.copy(outbounds = deduplicatedOutbounds)
                     }
@@ -233,10 +210,6 @@ class SubscriptionManager(private val parsers: List<SubscriptionParser>) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun parseWithDnsPreResolve(content: String, preResolveDns: Boolean = true): Pair<SingBoxConfig?, Int> {
         val config = parse(content)
@@ -248,7 +221,6 @@ class SubscriptionManager(private val parsers: List<SubscriptionParser>) {
             return Pair(config, 0)
         }
 
-        // 注释已清理。
         val domains = DnsResolveCache.extractDomains(config.outbounds)
         val resolvedCount = DnsResolveCache.preResolve(domains)
 

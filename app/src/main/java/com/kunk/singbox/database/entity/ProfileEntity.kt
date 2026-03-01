@@ -7,9 +7,7 @@ import com.kunk.singbox.model.ProfileUi
 import com.kunk.singbox.model.UpdateStatus
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
  */
 @Entity(tableName = "profiles")
 data class ProfileEntity(
@@ -31,7 +29,6 @@ data class ProfileEntity(
     val dnsServer: String? = null
 ) {
     /**
-     * 注释已清理。
      */
     fun toUiModel(): ProfileUi = ProfileUi(
         id = id,
@@ -51,7 +48,6 @@ data class ProfileEntity(
 
     companion object {
         /**
-         * 注释已清理。
          */
         fun fromUiModel(ui: ProfileUi, sortOrder: Int = 0): ProfileEntity = ProfileEntity(
             id = ui.id,

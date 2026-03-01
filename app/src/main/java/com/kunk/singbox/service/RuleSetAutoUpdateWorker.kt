@@ -12,8 +12,6 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class RuleSetAutoUpdateWorker(
     context: Context,
@@ -25,9 +23,7 @@ class RuleSetAutoUpdateWorker(
         private const val WORK_NAME = "ruleset_global_auto_update"
 
         /**
-         * 注释已清理。
          * @param context Context
-         * 注释已清理。
          */
         fun schedule(context: Context, intervalMinutes: Int) {
             val workManager = WorkManager.getInstance(context)
@@ -62,7 +58,6 @@ class RuleSetAutoUpdateWorker(
         }
 
         /**
-         * 注释已清理。
          */
         fun cancel(context: Context) {
             val workManager = WorkManager.getInstance(context)
@@ -70,8 +65,6 @@ class RuleSetAutoUpdateWorker(
         }
 
         /**
-         * 注释已清理。
-         * 注释已清理。
          */
         suspend fun rescheduleAll(context: Context) = withContext(Dispatchers.IO) {
             try {

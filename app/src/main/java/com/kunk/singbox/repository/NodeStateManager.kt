@@ -1,4 +1,4 @@
-package com.kunk.singbox.repository
+﻿package com.kunk.singbox.repository
 
 import com.kunk.singbox.model.NodeUi
 import com.tencent.mmkv.MMKV
@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * 鑺傜偣鐘舵€佺鐞嗗櫒
  *
- * [乱码注释已清理]
  */
 @Suppress("TooManyFunctions")
 class NodeStateManager {

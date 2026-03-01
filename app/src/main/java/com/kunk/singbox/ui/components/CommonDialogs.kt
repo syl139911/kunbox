@@ -288,7 +288,6 @@ fun AppMultiSelectDialog(
     val installedApps by repository.installedApps.collectAsState()
     val loadingState by repository.loadingState.collectAsState()
 
-    // 注释已清理。
     LaunchedEffect(Unit) {
         repository.loadApps()
     }
@@ -1001,11 +1000,9 @@ fun AboutDialog(onDismiss: () -> Unit) {
     val githubUrl = "https://github.com/roseforljh/singboxforandriod.git"
     val linkColor = MaterialTheme.colorScheme.primary
 
-    // 注释已清理。
     val appVersion = remember { com.kunk.singbox.utils.VersionInfo.getAppVersionName(context) }
     val appVersionCode = remember { com.kunk.singbox.utils.VersionInfo.getAppVersionCode(context) }
 
-    // 注释已清理。
     val kernelLoadingMsg = stringResource(R.string.about_kernel_loading)
     val kernelBuiltinMsg = stringResource(R.string.about_kernel_builtin)
     var singBoxVersion by remember { mutableStateOf(kernelLoadingMsg) }
@@ -1265,7 +1262,6 @@ fun NodeFilterDialog(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 注释已清理。
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)

@@ -1,4 +1,4 @@
-package com.kunk.singbox.utils
+﻿package com.kunk.singbox.utils
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -8,7 +8,6 @@ import io.nekohasekai.libbox.Libbox
 
 /**
  * 鐗堟湰淇℃伅宸ュ叿绫?
- * [乱码注释已清理]
  */
 object VersionInfo {
     private const val TAG = "VersionInfo"
@@ -35,7 +34,6 @@ object VersionInfo {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun getAppVersionCode(context: Context): Long {
         return try {
@@ -61,7 +59,6 @@ object VersionInfo {
     }
 
     /**
-     * 注释已清理。
      */
     fun getSingBoxVersion(): String {
         return try {
@@ -79,7 +76,6 @@ object VersionInfo {
     }
 
     /**
-     * [乱码注释已清理]
      */
     fun getFormattedVersionInfo(context: Context): String {
         val appVersion = getAppVersionName(context)

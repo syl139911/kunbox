@@ -15,11 +15,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 閺夆晝鍋炵敮瀵哥不閿涘嫭鍊為柛?
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class ConnectManager(
     private val context: Context,
@@ -41,9 +37,6 @@ class ConnectManager(
     private var setUnderlyingNetworksFn: ((Array<Network>?) -> Unit)? = null
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     @Volatile
     private var upstreamInterfaceName: String? = null
@@ -116,7 +109,6 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun unregisterNetworkCallback(): Result<Unit> {
         return runCatching {
@@ -137,12 +129,10 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun getPhysicalNetwork(): Network? {
         val cm = connectivityManager ?: return null
 
-        // 注释已清理。
         lastKnownNetwork?.let { network ->
             val caps = cm.getNetworkCapabilities(network)
             if (isValidPhysicalNetwork(caps)) {
@@ -163,7 +153,6 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun waitForNetwork(timeoutMs: Long): Result<Network?> {
         return runCatching {
@@ -177,14 +166,12 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun markVpnStarted() {
         vpnStartedAtMs.set(SystemClock.elapsedRealtime())
     }
 
     /**
-     * 注释已清理。
      */
     fun isInStartupWindow(): Boolean {
         val startedAt = vpnStartedAtMs.get()
@@ -193,8 +180,6 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun setUnderlyingNetworks(
         networks: Array<Network>?,
@@ -214,7 +199,6 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun resetConnections(resetFn: () -> Unit): Result<Boolean> {
         return runCatching {
@@ -233,7 +217,6 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun getNetworkState(): NetworkState {
         val network = lastKnownNetwork
@@ -248,12 +231,10 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun isReady(): Boolean = isReady
 
     /**
-     * 注释已清理。
      */
     fun cleanup(): Result<Unit> {
         return runCatching {
@@ -282,16 +263,8 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun handleNetworkLost(network: Network) {
         Log.i(TAG, "Network lost: $network")
@@ -361,8 +334,6 @@ class ConnectManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun checkAndResetOnInterfaceChange(network: Network) {
         val linkProps = connectivityManager?.getLinkProperties(network)

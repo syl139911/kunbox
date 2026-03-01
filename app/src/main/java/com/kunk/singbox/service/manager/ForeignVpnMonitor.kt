@@ -1,4 +1,4 @@
-package com.kunk.singbox.service.manager
+﻿package com.kunk.singbox.service.manager
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -10,7 +10,6 @@ import android.util.Log
 
 /**
  * 澶栭儴 VPN 鐩戞帶鍣?
- * [乱码注释已清理]
  */
 class ForeignVpnMonitor(
     private val context: Context
@@ -51,9 +50,6 @@ class ForeignVpnMonitor(
     }
 
     /**
-     * [乱码注释已清理]
-     * [乱码注释已清理]
-     * [乱码注释已清理]
      */
     fun hasExistingVpn(): Boolean {
         val vpnNetworks = detectExistingVpnNetworks()

@@ -31,9 +31,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
  */
 class SettingsRepository(private val context: Context) {
 
@@ -82,13 +80,10 @@ class SettingsRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     val settings: StateFlow<AppSettings> = settingsStore.settings
 
     /**
-     * 注释已清理。
      */
     fun reloadFromStorage() {
         settingsStore.reload()
@@ -114,7 +109,6 @@ class SettingsRepository(private val context: Context) {
         settingsStore.updateSettingsAndWait { it.copy(showNotificationSpeed = value) }
     }
 
-    // 注释已清理。
 
     suspend fun setTunEnabled(value: Boolean) {
         settingsStore.updateSettingsAndWait { it.copy(tunEnabled = value) }
@@ -181,7 +175,6 @@ class SettingsRepository(private val context: Context) {
         notifyRestartRequired()
     }
 
-    // 注释已清理。
 
     suspend fun setLocalDns(value: String) {
         settingsStore.updateSettingsAndWait { it.copy(localDns = value) }
@@ -228,7 +221,6 @@ class SettingsRepository(private val context: Context) {
         notifyRestartRequired()
     }
 
-    // 注释已清理。
 
     suspend fun setRoutingMode(value: RoutingMode, notifyRestartRequired: Boolean = true) {
         settingsStore.updateSettingsAndWait { it.copy(routingMode = value) }
@@ -325,7 +317,6 @@ class SettingsRepository(private val context: Context) {
         notifyRestartRequired()
     }
 
-    // 注释已清理。
 
     suspend fun setRuleSetAutoUpdateEnabled(value: Boolean) {
         settingsStore.updateSettingsAndWait { it.copy(ruleSetAutoUpdateEnabled = value) }
@@ -335,25 +326,21 @@ class SettingsRepository(private val context: Context) {
         settingsStore.updateSettingsAndWait { it.copy(ruleSetAutoUpdateInterval = value) }
     }
 
-    // 注释已清理。
 
     suspend fun setSubscriptionUpdateTimeout(value: Int) {
         settingsStore.updateSettingsAndWait { it.copy(subscriptionUpdateTimeout = value) }
     }
 
-    // 注释已清理。
 
     suspend fun setAutoCheckUpdate(value: Boolean) {
         settingsStore.updateSettingsAndWait { it.copy(autoCheckUpdate = value) }
     }
 
-    // 注释已清理。
 
     suspend fun setBackgroundPowerSavingDelay(value: BackgroundPowerSavingDelay) {
         settingsStore.updateSettingsAndWait { it.copy(backgroundPowerSavingDelay = value) }
     }
 
-    // 注释已清理。
 
     suspend fun setNodeFilter(value: NodeFilter) {
         settingsStore.updateSettingsAndWait { it.copy(nodeFilter = value) }
@@ -387,7 +374,6 @@ class SettingsRepository(private val context: Context) {
         try {
             val currentSettings = settings.value
 
-            // 注释已清理。
             if (currentSettings.ruleSets.isEmpty()) {
                 Log.i("SettingsRepository", "Initializing default rule sets")
                 setRuleSets(getDefaultRuleSets(), notify = false)
@@ -402,12 +388,10 @@ class SettingsRepository(private val context: Context) {
                 var updatedUrl = ruleSet.url
                 var updatedTag = ruleSet.tag
 
-                // 注释已清理。
                 if (updatedTag.equals("geosite-ads", ignoreCase = true)) {
                     updatedTag = "geosite-category-ads-all"
                 }
 
-                // 注释已清理。
                 if (updatedUrl.contains("geosite-ads.srs")) {
                     updatedUrl = updatedUrl.replace("geosite-ads.srs", "geosite-category-ads-all.srs")
                 }

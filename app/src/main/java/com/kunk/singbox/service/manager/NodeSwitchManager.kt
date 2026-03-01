@@ -9,8 +9,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class NodeSwitchManager(
     private val context: Context,
@@ -44,7 +42,6 @@ class NodeSwitchManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun performHotSwitch(
         nodeId: String,
@@ -88,8 +85,6 @@ class NodeSwitchManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun switchNextNode(
         serviceClass: Class<*>,

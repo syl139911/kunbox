@@ -90,7 +90,6 @@ object SingBoxRemote {
 
     private val callback = object : ISingBoxServiceCallback.Stub() {
         override fun onStateChanged(state: Int, activeLabel: String?, lastError: String?, manuallyStopped: Boolean) {
-            // 注释已清理。
             lastCallbackReceivedAtMs = SystemClock.elapsedRealtime()
             val st = ServiceState.values().getOrNull(state)
                 ?: ServiceState.STOPPED
@@ -116,8 +115,6 @@ object SingBoxRemote {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun syncStateFromStore() {
         val isActive = VpnStateStore.getActive()
@@ -404,10 +401,7 @@ object SingBoxRemote {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
      */
     fun queryAndSyncState(context: Context): Boolean {
         contextRef = WeakReference(context.applicationContext)
@@ -455,8 +449,6 @@ object SingBoxRemote {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun rebind(context: Context) {
         Log.i(TAG, "rebind: forcing disconnect -> connect cycle")
@@ -470,15 +462,8 @@ object SingBoxRemote {
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun rebindAndNotifyForeground(context: Context) {
         Log.i(TAG, "rebindAndNotifyForeground: start (atomic rebind + foreground)")
@@ -487,13 +472,10 @@ object SingBoxRemote {
 
         pendingAppLifecycle = true
 
-        // 注释已清理。
         disconnect(context)
 
-        // 注释已清理。
         connect(context)
 
-        // 注释已清理。
         syncStateFromStore()
     }
 
@@ -504,17 +486,12 @@ object SingBoxRemote {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun forceStoreSync() {
         syncStateFromStore()
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun instantRecovery(context: Context) {
 
@@ -569,8 +546,6 @@ object SingBoxRemote {
     fun getLastSyncAge(): Long = System.currentTimeMillis() - lastSyncTimeMs
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun notifyAppLifecycle(isForeground: Boolean) {
         val version = pendingLifecycleVersion + 1

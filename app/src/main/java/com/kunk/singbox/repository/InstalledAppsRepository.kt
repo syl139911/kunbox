@@ -12,29 +12,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class InstalledAppsRepository private constructor(private val context: Context) {
 
     /**
-     * 注释已清理。
      */
     sealed class LoadingState {
-        /* 注释已清理。 */
         object Idle : LoadingState()
 
-        /* 注释已清理。 */
         data class Loading(
             val progress: Float,
             val current: Int,
             val total: Int
         ) : LoadingState()
 
-        /* 注释已清理。 */
         object Loaded : LoadingState()
 
-        /* 注释已清理。 */
         data class Error(val message: String) : LoadingState()
     }
 
@@ -45,8 +38,6 @@ class InstalledAppsRepository private constructor(private val context: Context) 
     val loadingState: StateFlow<LoadingState> = _loadingState.asStateFlow()
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun loadApps() {
 
@@ -63,7 +54,6 @@ class InstalledAppsRepository private constructor(private val context: Context) 
                 val total = allApps.size
                 val result = mutableListOf<InstalledApp>()
 
-                // 注释已清理。
                 _loadingState.value = LoadingState.Loading(
                     progress = 0f,
                     current = 0,
@@ -72,7 +62,6 @@ class InstalledAppsRepository private constructor(private val context: Context) 
 
                 val batchSize = 20
                 allApps.forEachIndexed { index, app ->
-                    // 注释已清理。
                     val appName = try {
                         app.loadLabel(pm).toString()
                     } catch (e: Exception) {
@@ -96,7 +85,6 @@ class InstalledAppsRepository private constructor(private val context: Context) 
                     }
                 }
 
-                // 注释已清理。
                 _installedApps.value = result.sortedBy { it.appName.lowercase() }
                 _loadingState.value = LoadingState.Loaded
             }
@@ -106,7 +94,6 @@ class InstalledAppsRepository private constructor(private val context: Context) 
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun reloadApps() {
         _loadingState.value = LoadingState.Idle

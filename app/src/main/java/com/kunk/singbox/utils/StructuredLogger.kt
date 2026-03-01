@@ -4,17 +4,8 @@ import android.util.Log
 import com.kunk.singbox.repository.LogRepository
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
  * ```
  * L.connection("HotSwitch", "Starting hot switch to node: $nodeTag")
  * L.vpn("Lifecycle", "VPN service started")
@@ -24,12 +15,10 @@ import com.kunk.singbox.repository.LogRepository
 object L {
 
     /**
-     * 注释已清理。
      */
     enum class Category(val prefix: String, val emoji: String) {
         CONNECTION("CONN", "\uD83D\uDD17"),
         VPN("VPN", "\uD83D\uDEE1\uFE0F"),
-        CONFIG("CFG", "\u2699\uFE0F"), // 注释已清理。
         NETWORK("NET", "\uD83C\uDF10"),
         ERROR("ERR", "\u274C"), // ·
         DEBUG("DBG", "\uD83D\uDC1B"),
@@ -37,93 +26,74 @@ object L {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Volatile
     var minCategoryLevel: Int = Log.INFO
 
     /**
-     * 注释已清理。
      */
     @Volatile
     var showEmoji: Boolean = true
 
     /**
-     * 注释已清理。
      */
     @Volatile
     var logcatEnabled: Boolean = true
 
     /**
-     * 注释已清理。
      */
     @Volatile
     var uiLogEnabled: Boolean = true
 
-    // 注释已清理。
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun connection(tag: String, message: String, level: Int = Log.INFO) {
         log(Category.CONNECTION, tag, message, level)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun vpn(tag: String, message: String, level: Int = Log.INFO) {
         log(Category.VPN, tag, message, level)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun config(tag: String, message: String, level: Int = Log.INFO) {
         log(Category.CONFIG, tag, message, level)
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun network(tag: String, message: String, level: Int = Log.INFO) {
         log(Category.NETWORK, tag, message, level)
     }
 
     /**
-     * 注释已清理。
      */
     fun error(tag: String, message: String, throwable: Throwable? = null) {
         log(Category.ERROR, tag, message, Log.ERROR, throwable)
     }
 
     /**
-     * 注释已清理。
      */
     fun warn(tag: String, message: String, throwable: Throwable? = null) {
         log(Category.ERROR, tag, message, Log.WARN, throwable)
     }
 
     /**
-     * 注释已清理。
      */
     fun debug(tag: String, message: String) {
         log(Category.DEBUG, tag, message, Log.DEBUG)
     }
 
     /**
-     * 注释已清理。
      */
     fun info(tag: String, message: String) {
         log(Category.INFO, tag, message, Log.INFO)
     }
 
-    // 注释已清理。
 
     private fun log(
         category: Category,
@@ -176,8 +146,6 @@ object L {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      * 閺夊牊鎸搁崵? 妫ｅ啯鏅?[CONN][I] HotSwitch: [Step 1/3] Calling wake()
      */
     fun step(tag: String, current: Int, total: Int, message: String, category: Category = Category.CONNECTION) {
@@ -185,8 +153,6 @@ object L {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun result(tag: String, success: Boolean, message: String, category: Category = Category.CONNECTION) {
         val level = if (success) Log.INFO else Log.WARN
@@ -203,8 +169,6 @@ object L {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun metric(tag: String, name: String, value: Number, unit: String = "", category: Category = Category.NETWORK) {
         log(category, tag, "$name: $value $unit".trim(), Log.DEBUG)

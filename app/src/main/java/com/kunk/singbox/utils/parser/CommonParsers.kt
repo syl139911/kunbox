@@ -9,9 +9,6 @@ import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.SingBoxConfig
 
 /**
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class SingBoxParser(private val gson: Gson) : SubscriptionParser {
     companion object {
@@ -36,7 +33,6 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
     }
 
     /**
-     * 注释已清理。
      */
     private fun parseAsOutboundArray(content: String): SingBoxConfig? {
         return try {
@@ -51,7 +47,6 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
     }
 
     /**
-     * 注释已清理。
      */
     private fun parseAsConfigObject(content: String): SingBoxConfig? {
         return try {
@@ -74,7 +69,6 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
 }
 
 /**
- * 注释已清理。
  */
 class Base64Parser(private val nodeParser: (String) -> Outbound?) : SubscriptionParser {
     private val LINK_PREFIXES = listOf(
@@ -169,7 +163,6 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
 
         if (linkPositions.isEmpty()) return emptyList()
 
-        // 注释已清理。
         val sortedPositions = linkPositions.sortedBy { it.first }
 
         val results = mutableListOf<String>()

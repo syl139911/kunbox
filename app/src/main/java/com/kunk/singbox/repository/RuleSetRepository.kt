@@ -15,7 +15,6 @@ import okhttp3.OkHttpClient
 import java.io.File
 
 /**
- * 注释已清理。
  */
 class RuleSetRepository(private val context: Context) {
 
@@ -58,16 +57,12 @@ class RuleSetRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     fun isRuleSetLocal(tag: String): Boolean {
         return getRuleSetFile(tag).exists()
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun hasLocalCache(): Boolean = withContext(Dispatchers.IO) {
         val settings = settingsRepository.settings.first()
@@ -82,10 +77,6 @@ class RuleSetRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend fun ensureRuleSetsReady(
         forceUpdate: Boolean = false,
@@ -119,7 +110,6 @@ class RuleSetRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     suspend fun prefetchRuleSet(
         ruleSet: RuleSet,
@@ -150,7 +140,6 @@ class RuleSetRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     private fun installBaselineRuleSet(tag: String, targetFile: File): Boolean {
         return try {
@@ -171,7 +160,6 @@ class RuleSetRepository(private val context: Context) {
     }
 
     /**
-     * 注释已清理。
      */
     fun getRuleSetPath(tag: String): String {
         return getRuleSetFile(tag).absolutePath
@@ -182,7 +170,6 @@ class RuleSetRepository(private val context: Context) {
     }
 
     private fun isExpired(file: File): Boolean {
-        // 注释已清理。
 
         val lastModified = file.lastModified()
         val now = System.currentTimeMillis()
@@ -213,13 +200,10 @@ class RuleSetRepository(private val context: Context) {
         val rawPrefix = "https://raw.githubusercontent.com/"
         val cdnPrefix = "https://cdn.jsdelivr.net/gh/"
 
-        // 注释已清理。
         var rawUrl = url
 
-        // 注释已清理。
         if (rawUrl.startsWith(cdnPrefix)) {
             val path = rawUrl.removePrefix(cdnPrefix)
-            // 注释已清理。
             val parts = path.split("@", limit = 2)
             if (parts.size == 2) {
                 val userRepo = parts[0]
@@ -228,11 +212,9 @@ class RuleSetRepository(private val context: Context) {
             }
         }
 
-        // 注释已清理。
 
         if (rawUrl.contains("raw.githubusercontent.com")) {
 
-            // 注释已清理。
             var path = rawUrl.substringAfter("raw.githubusercontent.com/")
 
             while (path.contains("raw.githubusercontent.com/")) {
@@ -253,7 +235,6 @@ class RuleSetRepository(private val context: Context) {
 
             if (rawUrl.startsWith(rawPrefix)) {
                 val path = rawUrl.removePrefix(rawPrefix)
-                // 注释已清理。
                 val parts = path.split("/", limit = 4)
                 if (parts.size >= 4) {
                     val user = parts[0]

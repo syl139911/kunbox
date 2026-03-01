@@ -1,4 +1,4 @@
-package com.kunk.singbox.ui.screens
+﻿package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -579,7 +579,6 @@ private fun NodeSearchBar(
             .height(40.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        // 注释已清理。
         IconButton(
             onClick = onToggle,
             modifier = Modifier.size(40.dp)

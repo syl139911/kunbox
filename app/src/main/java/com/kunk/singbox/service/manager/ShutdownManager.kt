@@ -21,12 +21,7 @@ import io.nekohasekai.libbox.InterfaceUpdateListener
 import kotlinx.coroutines.*
 
 /**
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  * - 鐎殿喖鍊归鐐哄礂閹惰姤锛?
- * 注释已清理。
  */
 class ShutdownManager(
     private val context: Context,
@@ -38,10 +33,8 @@ class ShutdownManager(
     }
 
     /**
-     * 注释已清理。
      */
     interface Callbacks {
-        // 注释已清理。
         fun updateServiceState(state: ServiceState)
         fun updateTileState()
         fun stopForegroundService()
@@ -52,19 +45,16 @@ class ShutdownManager(
         fun cancelRemoteStateUpdateJob()
         fun cancelRouteGroupAutoSelectJob()
 
-        // 注释已清理。
         fun stopForeignVpnMonitor()
         fun tryClearRunningServiceForLibbox()
         fun unregisterScreenStateReceiver()
         fun closeDefaultInterfaceMonitor(listener: InterfaceUpdateListener?)
 
-        // 注释已清理。
         fun isServiceRunning(): Boolean
         fun getVpnInterface(): ParcelFileDescriptor?
         fun getCurrentInterfaceListener(): InterfaceUpdateListener?
         fun getConnectivityManager(): ConnectivityManager?
 
-        // 注释已清理。
         fun setVpnInterface(fd: ParcelFileDescriptor?)
         fun setIsRunning(running: Boolean)
         fun setRealTimeNodeName(name: String?)
@@ -75,7 +65,6 @@ class ShutdownManager(
         fun setLastKnownNetwork(network: android.net.Network?)
         fun clearUnderlyingNetworks()
 
-        // 注释已清理。
         fun getPendingStartConfigPath(): String?
         fun clearPendingStartConfigPath()
         fun startVpn(configPath: String)
@@ -84,7 +73,6 @@ class ShutdownManager(
     }
 
     /**
-     * 注释已清理。
      */
     data class ShutdownOptions(
         val stopService: Boolean,
@@ -94,7 +82,6 @@ class ShutdownManager(
     )
 
     /**
-     * 注释已清理。
      */
     @Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")
     fun stopVpn(
@@ -121,13 +108,10 @@ class ShutdownManager(
 
         notificationManager.resetState()
 
-        // 注释已清理。
         trafficMonitor.stop()
 
-        // 注释已清理。
         networkManager?.reset()
 
-        // 注释已清理。
         callbacks.stopForeignVpnMonitor()
 
         callbacks.setVpnLinkValidated(false)
@@ -144,14 +128,12 @@ class ShutdownManager(
 
         callbacks.tryClearRunningServiceForLibbox()
 
-        // 注释已清理。
 
         CoreSelectorManager.clear()
         selectorManager.clear()
 
         Log.i(TAG, "stopVpn(stopService=$stopService, proxyPort=$proxyPort)")
 
-        // 注释已清理。
         callbacks.setRealTimeNodeName(null)
         callbacks.setIsRunning(false)
         NetworkClient.onVpnStateChanged(false)
@@ -168,7 +150,6 @@ class ShutdownManager(
             Log.i(TAG, "Keeping vpnInterface for reuse")
         }
 
-        // 注释已清理。
         if (stopService) {
             coreManager.releaseLocks()
             callbacks.unregisterScreenStateReceiver()
@@ -194,7 +175,6 @@ class ShutdownManager(
                 }
             }
 
-            // 注释已清理。
             val serviceCloseStart = SystemClock.elapsedRealtime()
             runCatching { coreManager.stopService() }
                 .onFailure { e -> Log.w(TAG, "CoreManager.stopService failed: ${e.message}") }

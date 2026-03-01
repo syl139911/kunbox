@@ -1,4 +1,4 @@
-package com.kunk.singbox.database.dao
+﻿package com.kunk.singbox.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -8,9 +8,7 @@ import com.kunk.singbox.database.entity.ActiveStateEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * [乱码注释已清理]
  *
- * [乱码注释已清理]
  */
 @Dao
 interface ActiveStateDao {

@@ -14,9 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class ScreenStateManager(
     private val context: Context,
@@ -32,13 +29,10 @@ class ScreenStateManager(
         val isRunning: Boolean
 
         /**
-         * 注释已清理。
-         * 注释已清理。
          */
         fun notifyRemoteStateUpdate(force: Boolean)
 
         /**
-         * 注释已清理。
          */
         fun requestCoreNetworkRecovery(reason: String, force: Boolean = false)
     }
@@ -62,7 +56,6 @@ class ScreenStateManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun setPowerManager(manager: BackgroundPowerManager?) {
         powerManager = manager
@@ -70,7 +63,6 @@ class ScreenStateManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun registerScreenStateReceiver() {
         try {
@@ -138,7 +130,6 @@ class ScreenStateManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun unregisterScreenStateReceiver() {
         try {
@@ -153,10 +144,7 @@ class ScreenStateManager(
     }
 
     /**
-     * 注释已清理。
      *
-     * 注释已清理。
-     * 注释已清理。
      * (AppLifecycleObserver -> SingBoxIpcHub -> BackgroundPowerManager) 濠㈣泛瀚幃濠囧Υ?
      */
     @Suppress("CognitiveComplexMethod")
@@ -209,7 +197,6 @@ class ScreenStateManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun unregisterActivityLifecycleCallbacks(application: Application?) {
         try {
@@ -232,7 +219,6 @@ class ScreenStateManager(
     }
 
     /**
-     * 注释已清理。
      */
     private suspend fun handleDeviceIdle() {
         if (callbacks?.isRunning != true) return
@@ -241,7 +227,6 @@ class ScreenStateManager(
     }
 
     /**
-     * 注释已清理。
      */
     private suspend fun handleDeviceWake() {
         if (callbacks?.isRunning != true) return

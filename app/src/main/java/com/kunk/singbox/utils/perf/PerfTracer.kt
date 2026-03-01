@@ -5,8 +5,6 @@ import android.util.Log
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 object PerfTracer {
     private const val TAG = "PerfTracer"
@@ -34,7 +32,6 @@ object PerfTracer {
     /**
      * 鐎殿喒鍋撳┑顔碱儓閹风兘鐓?
      * @param name 閺夆晛鈧喖鍤嬮柛姘Ф琚?
-     * 注释已清理。
      */
     fun begin(name: String, parent: String? = null) {
         activeTraces[name] = TraceInfo(
@@ -45,9 +42,7 @@ object PerfTracer {
     }
 
     /**
-     * 注释已清理。
      * @param name 閺夆晛鈧喖鍤嬮柛姘Ф琚?
-     * 注释已清理。
      */
     fun end(name: String): Long {
         val trace = activeTraces.remove(name) ?: return -1
@@ -62,7 +57,6 @@ object PerfTracer {
             }
         }
 
-        // 注释已清理。
         val parentInfo = trace.parent?.let { " (parent: $it)" } ?: ""
         Log.d(TAG, "[$name] completed in ${durationMs}ms$parentInfo")
 
@@ -70,10 +64,7 @@ object PerfTracer {
     }
 
     /**
-     * 注释已清理。
      * @param name 閺夆晛鈧喖鍤嬮柛姘Ф琚?
-     * 注释已清理。
-     * 注释已清理。
      */
     inline fun <T> trace(name: String, block: () -> T): T {
         begin(name)
@@ -85,10 +76,7 @@ object PerfTracer {
     }
 
     /**
-     * 注释已清理。
      * @param name 閺夆晛鈧喖鍤嬮柛姘Ф琚?
-     * 注释已清理。
-     * 注释已清理。
      */
     suspend inline fun <T> traceSuspend(name: String, block: () -> T): T {
         begin(name)
@@ -100,17 +88,14 @@ object PerfTracer {
     }
 
     /**
-     * 注释已清理。
      */
     fun getStats(name: String): TraceStats? = stats[name]
 
     /**
-     * 注释已清理。
      */
     fun getAllStats(): Map<String, TraceStats> = stats.toMap()
 
     /**
-     * 注释已清理。
      */
     fun logStats() {
         if (stats.isEmpty()) {
@@ -129,7 +114,6 @@ object PerfTracer {
     }
 
     /**
-     * 注释已清理。
      */
     fun clearStats() {
         stats.clear()
@@ -137,7 +121,6 @@ object PerfTracer {
     }
 
     /**
-     * 注释已清理。
      */
     object Phases {
         const val VPN_STARTUP = "vpn_startup"

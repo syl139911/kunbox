@@ -11,7 +11,6 @@ import android.util.Log
 import com.google.gson.Gson
 
 /**
- * 注释已清理。
  */
 class NodeLinkParser(private val gson: Gson) {
 
@@ -49,14 +48,10 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun sanitizeUri(link: String): String {
         var result = link
 
-        // 注释已清理。
         val hashIndex = result.indexOf('#')
         var fragment = ""
         if (hashIndex != -1) {
@@ -76,7 +71,6 @@ class NodeLinkParser(private val gson: Gson) {
             result = "$base?$cleanedQuery"
         }
 
-        // 注释已清理。
         if (fragment.isNotEmpty()) {
             result = "$result#${fragment.replace(" ", "%20")}"
         }
@@ -261,7 +255,6 @@ class NodeLinkParser(private val gson: Gson) {
             .replace(" ", "")
 
         try {
-            // 注释已清理。
             val urlSafeDecoder = java.util.Base64.getUrlDecoder()
 
             val padded = when (cleaned.length % 4) {
@@ -277,7 +270,6 @@ class NodeLinkParser(private val gson: Gson) {
         }
 
         try {
-            // 注释已清理。
             val standardDecoder = java.util.Base64.getDecoder()
             val padded = when (cleaned.length % 4) {
                 2 -> cleaned + "=="
@@ -291,7 +283,6 @@ class NodeLinkParser(private val gson: Gson) {
         } catch (_: Exception) {
         }
 
-        // 注释已清理。
         val candidates = arrayOf(
             android.util.Base64.DEFAULT,
             android.util.Base64.NO_WRAP,
@@ -399,7 +390,6 @@ class NodeLinkParser(private val gson: Gson) {
                 else -> null
             }
 
-            // 注释已清理。
             if (aid != 0) {
                 Log.d("NodeLinkParser", "VMess node '$ps' uses legacy protocol (alterId=$aid)")
             }
@@ -833,8 +823,6 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *       https://[username:password@]host:port[#name]
      */
     private fun parseHttpLink(link: String, useTls: Boolean): Outbound? {
@@ -847,7 +835,6 @@ class NodeLinkParser(private val gson: Gson) {
             val server = uri.host ?: return null
             val port = if (uri.port > 0) uri.port else if (useTls) 443 else 8080
 
-            // 注释已清理。
             var username: String? = null
             var password: String? = null
             if (uri.userInfo != null) {
@@ -874,8 +861,6 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      *       socks://[username:password@]host:port[#name]
      */
     private fun parseSocks5Link(link: String): Outbound? {
@@ -888,7 +873,6 @@ class NodeLinkParser(private val gson: Gson) {
             val server = uri.host ?: return null
             val port = if (uri.port > 0) uri.port else 1080
 
-            // 注释已清理。
             var username: String? = null
             var password: String? = null
             if (uri.userInfo != null) {

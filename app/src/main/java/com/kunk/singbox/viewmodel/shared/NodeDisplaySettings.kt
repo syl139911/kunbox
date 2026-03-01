@@ -12,11 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class NodeDisplaySettings private constructor(
     settingsRepository: SettingsRepository,

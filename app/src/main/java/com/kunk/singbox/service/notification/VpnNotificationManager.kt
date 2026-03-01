@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class VpnNotificationManager(
     private val context: Context,
@@ -55,7 +53,6 @@ class VpnNotificationManager(
     private var lastTextLogged: String? = null
 
     /**
-     * 注释已清理。
      */
     data class NotificationState(
         val isRunning: Boolean = false,
@@ -67,7 +64,6 @@ class VpnNotificationManager(
     )
 
     /**
-     * 注释已清理。
      */
     fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -92,9 +88,6 @@ class VpnNotificationManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun updateNotification(state: NotificationState, service: SingBoxService) {
         val notification = createNotification(state)
@@ -126,10 +119,6 @@ class VpnNotificationManager(
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
-     * 注释已清理。
      */
     fun requestNotificationUpdate(
         state: NotificationState,
@@ -168,7 +157,6 @@ class VpnNotificationManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun createNotification(state: NotificationState): Notification {
 
@@ -189,7 +177,6 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        // 注释已清理。
         val switchIntent = Intent(context, SingBoxService::class.java).apply {
             action = ACTION_SWITCH_NODE
         }
@@ -198,7 +185,6 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // 注释已清理。
         val stopIntent = Intent(context, SingBoxService::class.java).apply {
             action = ACTION_STOP
         }
@@ -207,7 +193,6 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // 注释已清理。
         val resetIntent = Intent(context, SingBoxService::class.java).apply {
             action = ACTION_RESET_CONNECTIONS
         }
@@ -216,10 +201,8 @@ class VpnNotificationManager(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // 注释已清理。
         val nodeName = state.activeNodeName ?: context.getString(R.string.connection_connected)
 
-        // 注释已清理。
         val contentText = if (state.showSpeed) {
             val uploadStr = formatSpeed(state.uploadSpeed)
             val downloadStr = formatSpeed(state.downloadSpeed)
@@ -259,7 +242,6 @@ class VpnNotificationManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun createStartingNotification(message: String): Notification {
         return buildNotificationBuilder()
@@ -271,29 +253,24 @@ class VpnNotificationManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun showTemporaryNotification(id: Int, notification: Notification) {
         notificationManager.notify(NOTIFICATION_ID + id, notification)
     }
 
     /**
-     * 注释已清理。
      */
     fun cancelNotification(id: Int = NOTIFICATION_ID) {
         notificationManager.cancel(id)
     }
 
     /**
-     * 注释已清理。
      */
     fun setSuppressUpdates(suppress: Boolean) {
         suppressUpdates = suppress
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun resetState() {
         updateJob?.cancel()
@@ -306,7 +283,6 @@ class VpnNotificationManager(
     fun hasForegroundStarted(): Boolean = hasForegroundStarted.get()
 
     /**
-     * 注释已清理。
      */
     fun markForegroundStarted() {
         hasForegroundStarted.set(true)

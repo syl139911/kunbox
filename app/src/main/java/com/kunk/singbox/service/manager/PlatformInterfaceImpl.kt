@@ -29,8 +29,6 @@ import java.net.NetworkInterface
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 class PlatformInterfaceImpl(
     private val context: Context,
@@ -50,7 +48,6 @@ class PlatformInterfaceImpl(
         }
     }
 
-    // 注释已清理。
     private val networkSwitchCallbacks = object : NetworkSwitchManager.Callbacks {
         override fun getConnectivityManager(): ConnectivityManager? = callbacks.getConnectivityManager()
 
@@ -76,10 +73,8 @@ class PlatformInterfaceImpl(
     }
 
     /**
-     * 注释已清理。
      */
     interface Callbacks {
-        // 注释已清理。
         fun protect(fd: Int): Boolean
         fun openTun(options: TunOptions): Result<Int>
 
@@ -111,7 +106,6 @@ class PlatformInterfaceImpl(
         fun cacheUidToPackage(uid: Int, packageName: String)
         fun getUidFromCache(uid: Int): String?
 
-        // 注释已清理。
         fun findBestPhysicalNetwork(): Network?
     }
 
@@ -689,7 +683,6 @@ class PlatformInterfaceImpl(
 
     override fun systemCertificates(): StringIterator? = null
 
-    // 注释已清理。
 
     private fun updateDefaultInterface(network: Network) {
 

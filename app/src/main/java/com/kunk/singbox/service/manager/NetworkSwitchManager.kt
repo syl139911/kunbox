@@ -13,14 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * 注释已清理。
- * 注释已清理。
  *
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
- * 注释已清理。
  */
 class NetworkSwitchManager(
     private val scope: CoroutineScope,
@@ -34,7 +27,6 @@ class NetworkSwitchManager(
         private const val MIN_SWITCH_INTERVAL_MS = 500L
     }
 
-    // 注释已清理。
     interface Callbacks {
         fun getConnectivityManager(): ConnectivityManager?
         fun setUnderlyingNetworks(networks: Array<Network>?)
@@ -47,7 +39,6 @@ class NetworkSwitchManager(
 
     private var callbacks: Callbacks? = null
 
-    // 注释已清理。
     private val vpnStartedAtMs = AtomicLong(0L)
     private val lastSwitchAtMs = AtomicLong(0L)
     private val lastNetworkType = AtomicReference(NetworkType.OTHER)
@@ -73,7 +64,6 @@ class NetworkSwitchManager(
 
     /**
      * 濠㈣泛瀚幃濠勭磾閹寸姷鎹曢柡鍥х摠閺?
-     * 注释已清理。
      */
     fun handleNetworkUpdate(network: Network) {
         val now = SystemClock.elapsedRealtime()
@@ -95,12 +85,10 @@ class NetworkSwitchManager(
             return
         }
 
-        // 注释已清理。
         processNetworkUpdate(network)
     }
 
     /**
-     * 注释已清理。
      */
     private fun deferNetworkUpdate(network: Network, delayMs: Long) {
         pendingNetworkUpdate.set(network)
@@ -113,7 +101,6 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 注释已清理。
      */
     private fun aggregateNetworkUpdate(network: Network) {
         pendingNetworkUpdate.set(network)
@@ -130,7 +117,6 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 注释已清理。
      */
     @Suppress("CyclomaticComplexMethod")
     private fun processNetworkUpdate(network: Network) {
@@ -159,12 +145,10 @@ class NetworkSwitchManager(
             Log.i(TAG, "Network type changed: $previousType -> $currentType")
         }
 
-        // 注释已清理。
         val linkProps = cm.getLinkProperties(network)
         val interfaceName = linkProps?.interfaceName ?: ""
         val isExpensive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == false
 
-        // 注释已清理。
         val lastKnown = cb.getLastKnownNetwork()
         val networkChanged = network != lastKnown
 
@@ -199,7 +183,6 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 注释已清理。
      */
     private fun detectNetworkType(caps: NetworkCapabilities?): NetworkType {
         if (caps == null) return NetworkType.OTHER
@@ -263,7 +246,6 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun cancelPendingUpdates() {
         pendingNetworkUpdate.set(null)
@@ -272,7 +254,6 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun getMetrics(): Map<String, Long> {
         return mapOf(
@@ -284,7 +265,6 @@ class NetworkSwitchManager(
     }
 
     /**
-     * 注释已清理。
      */
     fun cleanup() {
         cancelPendingUpdates()

@@ -5,8 +5,6 @@ import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.repository.SettingsRepository
 
 /**
- * 注释已清理。
- * 注释已清理。
  */
 object OutboundFixer {
     @Volatile private var cachedTcpKeepAliveEnabled: Boolean? = null
@@ -14,8 +12,6 @@ object OutboundFixer {
     @Volatile private var cachedConnectTimeout: String? = null
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun getTcpKeepAliveConfig(context: android.content.Context): Triple<Boolean, String?, String?> {
         cachedTcpKeepAliveEnabled?.let { enabled ->
@@ -48,7 +44,6 @@ object OutboundFixer {
         }
     }
 
-    // 注释已清理。
     private val REGEX_INTERVAL_DIGITS = Regex("^\\d+$")
     private val REGEX_INTERVAL_DECIMAL = Regex("^\\d+\\.\\d+$")
     private val REGEX_INTERVAL_UNIT = Regex("^\\d+(\\.\\d+)?[smhSMH]$")
@@ -58,8 +53,6 @@ object OutboundFixer {
     private val REGEX_ED_PARAM_MID = Regex("&ed=\\d+")
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     fun fix(outbound: Outbound): Outbound {
         var result = outbound
@@ -272,14 +265,11 @@ object OutboundFixer {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     @Suppress("LongMethod")
     fun buildForRuntime(context: android.content.Context, outbound: Outbound): Outbound {
         val fixed = fix(outbound)
 
-        // 注释已清理。
         val (tcpKeepAliveEnabled, tcpKeepAliveInterval, connectTimeout) = getTcpKeepAliveConfig(context)
 
         return when (fixed.type) {
@@ -522,8 +512,6 @@ object OutboundFixer {
     }
 
     /**
-     * 注释已清理。
-     * 注释已清理。
      */
     private fun convertPortRangeFormat(portSpec: String): String {
         return portSpec.split(",").joinToString(",") { part ->

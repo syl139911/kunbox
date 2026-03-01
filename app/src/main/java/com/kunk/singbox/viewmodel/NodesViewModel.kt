@@ -61,7 +61,6 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
         displaySettings.nodeFilter,
         _customNodeOrder
     ) { nodes: List<NodeUi>, sortType: NodeSortType, filter: NodeFilter, customOrder: List<String> ->
-        // 注释已清理。
         val filtered = when (filter.filterMode) {
             FilterMode.NONE -> nodes
             FilterMode.INCLUDE -> {
@@ -89,7 +88,6 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
-        // 注释已清理。
         when (sortType) {
             NodeSortType.DEFAULT -> filtered
             NodeSortType.LATENCY -> filtered.sortedWith(compareBy<NodeUi> {
@@ -363,7 +361,6 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setSortType(type: NodeSortType) {
-        // 注释已清理。
         viewModelScope.launch {
             settingsRepository.setNodeSortType(type)
         }
