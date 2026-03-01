@@ -771,7 +771,6 @@ class NodeLinkParser(private val gson: Gson) {
                 network = if (useQuic) "quic" else "h2",
                 path = path,
                 headers = headers,
-                extraHeaders = headers,
                 quic = useQuic,
                 quicCongestionControl = if (useQuic) congestionControl else null,
                 congestionControl = if (useQuic) null else congestionControl,

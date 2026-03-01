@@ -1,14 +1,16 @@
 package com.kunk.singbox.repository.config
 
+import com.kunk.singbox.model.DomainResolveConfig
 import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.RealityConfig
 import com.kunk.singbox.model.TlsConfig
-import com.kunk.singbox.model.UdpOverTcpConfig
 import com.kunk.singbox.model.TransportConfig
+import com.kunk.singbox.model.UdpOverTcpConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -173,7 +175,7 @@ class OutboundFixerTest {
         assertEquals("quic", fixed.network)
         assertEquals("/proxy", fixed.path)
         assertEquals("h.example.com", fixed.headers?.get("Host"))
-        assertEquals("h.example.com", fixed.extraHeaders?.get("Host"))
+        assertNull(fixed.extraHeaders)
         assertTrue(fixed.quic == true)
         assertEquals("bbr", fixed.quicCongestionControl)
         assertEquals(true, fixed.udpOverTcp?.enabled)
@@ -196,5 +198,40 @@ class OutboundFixerTest {
 
         assertEquals("h2", fixed.network)
         assertFalse(fixed.quic == true)
+        assertEquals("dns-bootstrap", fixed.domainResolver?.server)
+    }
+
+    @Test
+    fun fixNaiveShouldNotAddResolverWhenServerIsIpLiteral() {
+        val outbound = Outbound(
+            type = "naive",
+            tag = "naive-ip",
+            server = "1.1.1.1",
+            serverPort = 443,
+            username = "u",
+            password = "p",
+            tls = TlsConfig(enabled = true)
+        )
+
+        val fixed = OutboundFixer.fix(outbound)
+
+        assertNull(fixed.domainResolver)
+    }
+
+    @Test
+    fun fixNaiveShouldKeepExplicitResolver() {
+        val outbound = Outbound(
+            type = "naive",
+            tag = "naive-custom-resolver",
+            server = "naive.example.com",
+            serverPort = 443,
+            username = "u",
+            password = "p",
+            domainResolver = DomainResolveConfig(server = "dns-direct")
+        )
+
+        val fixed = OutboundFixer.fix(outbound)
+
+        assertEquals("dns-direct", fixed.domainResolver?.server)
     }
 }

@@ -311,35 +311,7 @@ class StartupManager(
         val configContent = patchConfig(rawConfigContent, settings)
         log("[parallelInit] patchConfig: ${SystemClock.elapsedRealtime() - stepStart}ms")
 
-        // Debug: dump XHTTP transport config
-        try {
-            val debugConfig = gson.fromJson(configContent, SingBoxConfig::class.java)
-            debugConfig.outbounds?.forEach { ob ->
-                if (ob.transport != null) {
-                    Log.w(TAG, "[DEBUG] Outbound '${ob.tag}' type=${ob.type} transport=${gson.toJson(ob.transport)}")
-                }
-                if (ob.type == "vless") {
-                    Log.w(
-                        TAG,
-                        "[DEBUG] VLESS outbound '${ob.tag}': server=${ob.server}:${ob.serverPort}, " +
-                            "flow=${ob.flow}, tls=${ob.tls != null}, packet_encoding=${ob.packetEncoding}, " +
-                            "transport_type=${ob.transport?.type}, transport_mode=${ob.transport?.mode}"
-                    )
-                }
-                if (ob.type == "naive") {
-                    Log.w(
-                        TAG,
-                        "[DEBUG] NAIVE outbound '${ob.tag}': server=${ob.server}:${ob.serverPort}, " +
-                            "quic=${ob.quic}, uot=${ob.udpOverTcp?.enabled}, " +
-                            "resolver=${ob.domainResolver?.server}, sni=${ob.tls?.serverName}, " +
-                            "insecure=${ob.tls?.insecure}, headers=${ob.extraHeaders}"
-                    )
-                    Log.w(TAG, "[DEBUG] NAIVE outbound raw=${gson.toJson(ob)}")
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "[DEBUG] Failed to dump config: ${e.message}")
-        }
+        dumpDebugOutbounds(configContent, settings.debugLoggingEnabled)
 
         val network = networkDeferred.await()
         val ruleSetReady = ruleSetDeferred.await()
@@ -353,6 +325,51 @@ class StartupManager(
             settings = settings,
             configContent = configContent,
             dnsPrewarmResult = dnsResult
+        )
+    }
+
+    private fun dumpDebugOutbounds(configContent: String, debugEnabled: Boolean) {
+        if (!debugEnabled) return
+
+        try {
+            val debugConfig = gson.fromJson(configContent, SingBoxConfig::class.java)
+            debugConfig.outbounds?.forEach { outbound ->
+                logTransportDebug(outbound)
+                logVlessDebug(outbound)
+                logNaiveDebug(outbound)
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "[DEBUG] Failed to dump config: ${e.message}")
+        }
+    }
+
+    private fun logTransportDebug(outbound: com.kunk.singbox.model.Outbound) {
+        if (outbound.transport == null) return
+        Log.d(
+            TAG,
+            "[DEBUG] Outbound '${outbound.tag}' type=${outbound.type} transport=${gson.toJson(outbound.transport)}"
+        )
+    }
+
+    private fun logVlessDebug(outbound: com.kunk.singbox.model.Outbound) {
+        if (outbound.type != "vless") return
+        Log.d(
+            TAG,
+            "[DEBUG] VLESS outbound '${outbound.tag}': server=${outbound.server}:${outbound.serverPort}, " +
+                "flow=${outbound.flow}, tls=${outbound.tls != null}, packet_encoding=${outbound.packetEncoding}, " +
+                "transport_type=${outbound.transport?.type}, transport_mode=${outbound.transport?.mode}"
+        )
+    }
+
+    private fun logNaiveDebug(outbound: com.kunk.singbox.model.Outbound) {
+        if (outbound.type != "naive") return
+        val host = outbound.headers?.get("Host") ?: outbound.extraHeaders?.get("Host")
+        Log.d(
+            TAG,
+            "[DEBUG] NAIVE outbound '${outbound.tag}': server=${outbound.server}:${outbound.serverPort}, " +
+                "network=${outbound.network}, quic=${outbound.quic}, uot=${outbound.udpOverTcp?.enabled}, " +
+                "resolver=${outbound.domainResolver?.server}, sni=${outbound.tls?.serverName}, " +
+                "insecure=${outbound.tls?.insecure}, host=$host"
         )
     }
 

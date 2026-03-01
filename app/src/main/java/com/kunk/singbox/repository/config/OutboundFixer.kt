@@ -4,7 +4,6 @@ import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
-import com.kunk.singbox.model.UdpOverTcpConfig
 import com.kunk.singbox.repository.SettingsRepository
 
 /**
@@ -413,10 +412,9 @@ object OutboundFixer {
                 extraHeaders = fixed.headers,
                 quic = fixed.network?.equals("quic", ignoreCase = true),
                 quicCongestionControl = fixed.congestionControl,
-                tls = fixed.tls?.copy(utls = null, alpn = null),
-                udpOverTcp = fixed.udpOverTcp ?: UdpOverTcpConfig(enabled = true),
-                domainResolver = fixed.domainResolver
-                    ?: com.kunk.singbox.model.DomainResolveConfig(server = "dns-bootstrap"),
+                tls = fixed.tls,
+                udpOverTcp = fixed.udpOverTcp,
+                domainResolver = resolveNaiveDomainResolver(fixed),
 
                 tcpKeepAlive = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
                 tcpKeepAliveInterval = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
@@ -525,11 +523,24 @@ object OutboundFixer {
             network = if (useQuic) "quic" else "h2",
             path = normalizedPath,
             headers = normalizedHeaders,
-            extraHeaders = normalizedHeaders,
+            extraHeaders = null,
             quic = useQuic,
             quicCongestionControl = outbound.quicCongestionControl ?: outbound.congestionControl,
-            tls = tlsUpdated
+            tls = tlsUpdated,
+            domainResolver = resolveNaiveDomainResolver(outbound)
         )
+    }
+
+    private fun resolveNaiveDomainResolver(outbound: Outbound): com.kunk.singbox.model.DomainResolveConfig? {
+        val existing = outbound.domainResolver
+        if (existing?.server.isNullOrBlank().not()) return existing
+
+        val serverHost = outbound.server?.trim().orEmpty()
+        if (serverHost.isBlank() || isIpLiteral(serverHost)) {
+            return existing
+        }
+
+        return com.kunk.singbox.model.DomainResolveConfig(server = "dns-bootstrap")
     }
 
     private fun applyNaiveRuntimeCompatibility(outbound: Outbound): Outbound {
