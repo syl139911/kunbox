@@ -197,7 +197,7 @@ fun DnsSettingsScreen(
 
             StandardCard {
                 SettingSwitchItem(
-                    title = "Fake DNS",
+                    title = stringResource(R.string.dns_settings_fake_dns),
                     subtitle = stringResource(R.string.dns_settings_fake_dns_subtitle),
                     checked = settings.fakeDnsEnabled,
                     onCheckedChange = { settingsViewModel.setFakeDnsEnabled(it) }

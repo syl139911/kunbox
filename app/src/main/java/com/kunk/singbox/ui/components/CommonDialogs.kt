@@ -1450,13 +1450,6 @@ private fun NodeSelectorItem(
 
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (node.regionFlag != null && !node.displayName.contains(node.regionFlag)) {
-                    Text(
-                        text = node.regionFlag,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(end = 6.dp)
-                    )
-                }
                 Text(
                     text = node.displayName,
                     style = MaterialTheme.typography.bodyMedium,

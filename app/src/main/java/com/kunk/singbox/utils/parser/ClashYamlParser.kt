@@ -137,6 +137,7 @@ class ClashYamlParser : SubscriptionParser {
             "hysteria" -> parseHysteria(proxyMap, name, server, port, globalFingerprint, globalTlsMinVersion)
             "tuic", "tuic-v5" -> parseTuic(proxyMap, name, server, port, globalFingerprint, globalTlsMinVersion)
             "anytls" -> parseAnyTLS(proxyMap, name, server, port, globalFingerprint, globalTlsMinVersion)
+            "naive" -> parseNaive(proxyMap, name, server, port, globalFingerprint, globalTlsMinVersion)
             "ssh" -> parseSSH(proxyMap, name, server, port)
             "wireguard" -> parseWireGuard(proxyMap, name, server, port)
             "http" -> parseHttp(proxyMap, name, server, port, globalFingerprint, globalTlsMinVersion)
@@ -802,6 +803,68 @@ class ClashYamlParser : SubscriptionParser {
             idleSessionCheckInterval = idleSessionCheckInterval,
             idleSessionTimeout = idleSessionTimeout,
             minIdleSession = minIdleSession,
+            tls = TlsConfig(
+                enabled = true,
+                serverName = sni,
+                insecure = insecure,
+                alpn = alpn,
+                minVersion = tlsMinVersion,
+                utls = fingerprint?.let { UtlsConfig(enabled = true, fingerprint = it) }
+            )
+        )
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun parseNaive(
+        map: Map<*, *>,
+        name: String,
+        server: String?,
+        port: Int?,
+        globalFingerprint: String? = null,
+        globalTlsMinVersion: String? = null
+    ): Outbound? {
+        if (server == null || port == null) return null
+
+        val username = asString(map["username"])
+        val password = asString(map["password"])
+        val host = asString(map["host"])
+            ?: asString((map["headers"] as? Map<*, *>)?.get("Host"))
+            ?: asString((map["headers"] as? Map<*, *>)?.get("host"))
+        val sni = asString(map["sni"]) ?: asString(map["servername"]) ?: host ?: server
+
+        val insecure = asBool(map["skip-cert-verify"]) == true ||
+            asBool(map["allow-insecure"]) == true ||
+            asBool(map["insecure"]) == true
+        val alpn = asStringList(map["alpn"])
+        val fingerprint = asString(map["client-fingerprint"]) ?: asString(map["fingerprint"]) ?: globalFingerprint
+        val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
+
+        val rawNetwork = asString(map["network"]) ?: asString(map["proto"]) ?: asString(map["type"])
+        val useQuic = rawNetwork.equals("quic", ignoreCase = true)
+        val pathRaw = asString(map["path"]) ?: asString(map["url"]) ?: "/"
+        val normalizedPath = if (pathRaw.startsWith("/")) pathRaw else "/$pathRaw"
+
+        val congestionControl = asString(map["congestion-control"]) ?: asString(map["cc"])
+        val uot = asBool(map["uot"]) == true ||
+            asBool(map["udp-over-tcp"]) == true ||
+            asBool(map["udp_over_tcp"]) == true
+
+        val headers = host?.takeIf { it.isNotBlank() }?.let { mapOf("Host" to it) }
+
+        return Outbound(
+            type = "naive",
+            tag = name,
+            server = server,
+            serverPort = port,
+            username = username,
+            password = password,
+            network = if (useQuic) "quic" else "h2",
+            path = normalizedPath,
+            headers = headers,
+            quic = useQuic,
+            quicCongestionControl = if (useQuic) congestionControl else null,
+            congestionControl = if (useQuic) null else congestionControl,
+            udpOverTcp = if (uot) com.kunk.singbox.model.UdpOverTcpConfig(enabled = true) else null,
             tls = TlsConfig(
                 enabled = true,
                 serverName = sni,

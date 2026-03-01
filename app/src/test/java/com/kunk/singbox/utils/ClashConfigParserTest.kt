@@ -124,6 +124,34 @@ class ClashConfigParserTest {
     }
 
     @Test
+    fun testParseNaiveProxy() {
+        val yaml = """
+            proxies:
+              - name: "🇹🇼 NA | 台湾 Native"
+                type: naive
+                server: native.5945946.xyz
+                port: 443
+                username: kziii
+                password: d63bddb3-4fb6-47d1-9360-c4ff2e8fdc9d
+        """.trimIndent()
+
+        val config = ClashConfigParser.parse(yaml)
+        assertNotNull(config)
+
+        val naive = config?.outbounds?.find { it.tag == "🇹🇼 NA | 台湾 Native" }
+        assertNotNull(naive)
+        assertEquals("naive", naive?.type)
+        assertEquals("native.5945946.xyz", naive?.server)
+        assertEquals(443, naive?.serverPort)
+        assertEquals("kziii", naive?.username)
+        assertEquals("d63bddb3-4fb6-47d1-9360-c4ff2e8fdc9d", naive?.password)
+        assertEquals("h2", naive?.network)
+        assertEquals("/", naive?.path)
+        assertEquals(true, naive?.tls?.enabled)
+        assertEquals("native.5945946.xyz", naive?.tls?.serverName)
+    }
+
+    @Test
     fun testParseShadowsocksWithShadowTLS() {
         val yaml = """
             proxies:

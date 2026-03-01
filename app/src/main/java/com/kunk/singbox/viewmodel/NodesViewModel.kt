@@ -95,10 +95,8 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (l == null || l <= 0) Long.MAX_VALUE else l
             })
-            NodeSortType.NAME -> filtered.sortedBy { it.name }
-            NodeSortType.REGION -> filtered.sortedWith(compareBy<NodeUi> {
-                getRegionWeight(it.regionFlag)
-            }.thenBy { it.name })
+            NodeSortType.NAME,
+            NodeSortType.REGION -> filtered.sortedBy { it.name }
             NodeSortType.CUSTOM -> {
                 val orderMap = customOrder.withIndex().associate { it.value to it.index }
                 filtered.sortedBy { orderMap[it.id] ?: Int.MAX_VALUE }
@@ -109,38 +107,6 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
-
-    private fun getRegionWeight(flag: String?): Int {
-        if (flag.isNullOrBlank()) return 9999
-        return when (flag) {
-            "CN" -> 0
-            "HK" -> 1
-            "MO" -> 2
-            "TW" -> 3
-            "JP" -> 4
-            "KR" -> 5
-            "SG" -> 6
-            "US" -> 7
-            "VN" -> 8
-            "TH" -> 9
-            "PH" -> 10
-            "MY" -> 11
-            "ID" -> 12
-            "IN" -> 13
-            "RU" -> 14
-            "TR" -> 15
-            "IT" -> 16
-            "DE" -> 17
-            "FR" -> 18
-            "NL" -> 19
-            "UK", "GB" -> 20
-            "AU" -> 21
-            "CA" -> 22
-            "BR" -> 23
-            "AR" -> 24
-            else -> 1000
-        }
-    }
 
     val filteredAllNodes: StateFlow<List<NodeUi>> = combine(
         configRepository.allNodes,
@@ -180,10 +146,8 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
                 val l = it.latencyMs
                 if (l == null || l <= 0) Long.MAX_VALUE else l
             })
-            NodeSortType.NAME -> filtered.sortedBy { it.name }
-            NodeSortType.REGION -> filtered.sortedWith(compareBy<NodeUi> {
-                getRegionWeight(it.regionFlag)
-            }.thenBy { it.name })
+            NodeSortType.NAME,
+            NodeSortType.REGION -> filtered.sortedBy { it.name }
             NodeSortType.CUSTOM -> {
 
                 filtered

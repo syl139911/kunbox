@@ -320,7 +320,11 @@ fun ImportProgressDialog(
                         ) {
                             if (state.profilesImported > 0) {
                                 Text(
-                                    text = stringResource(R.string.import_success) + ": ${state.profilesImported} profiles, ${state.nodesImported} nodes", // TODO: better string
+                                    text = stringResource(
+                                        R.string.import_success_detail,
+                                        state.profilesImported,
+                                        state.nodesImported
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -360,7 +364,11 @@ fun ImportProgressDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Success: ${state.profilesImported}\nFailed: ${state.profilesFailed}",
+                            text = stringResource(
+                                R.string.import_partial_detail,
+                                state.profilesImported,
+                                state.profilesFailed
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -387,7 +395,7 @@ fun ImportProgressDialog(
                                     }
                                     if (state.errors.size > 3) {
                                         Text(
-                                            text = "... and ${state.errors.size - 3} more errors",
+                                            text = stringResource(R.string.import_more_errors, state.errors.size - 3),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.error
                                         )

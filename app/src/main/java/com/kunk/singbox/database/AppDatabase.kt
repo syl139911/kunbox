@@ -30,7 +30,7 @@ import com.kunk.singbox.database.entity.SettingsEntity
         NodeLatencyEntity::class,
         SettingsEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -61,7 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .allowMainThreadQueries()
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
         }
 
@@ -107,6 +107,47 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE profiles ADD COLUMN dnsPreResolve INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE profiles ADD COLUMN dnsServer TEXT DEFAULT NULL")
+            }
+        }
+
+        /**
+         * v5: remove legacy nodes.regionFlag column to prevent schema mismatch crash after upgrade.
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS nodes_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        protocol TEXT NOT NULL,
+                        `group` TEXT NOT NULL,
+                        latencyMs INTEGER,
+                        isFavorite INTEGER NOT NULL,
+                        sourceProfileId TEXT NOT NULL,
+                        tags TEXT NOT NULL,
+                        trafficUsed INTEGER NOT NULL,
+                        sortOrder INTEGER NOT NULL,
+                        FOREIGN KEY(sourceProfileId) REFERENCES profiles(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT OR REPLACE INTO nodes_new (
+                        id, name, protocol, `group`, latencyMs, isFavorite, sourceProfileId, tags, trafficUsed, sortOrder
+                    )
+                    SELECT
+                        id, name, protocol, `group`, latencyMs, isFavorite, sourceProfileId, tags, trafficUsed, sortOrder
+                    FROM nodes
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE IF EXISTS nodes")
+                db.execSQL("ALTER TABLE nodes_new RENAME TO nodes")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_nodes_sourceProfileId ON nodes(sourceProfileId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_nodes_protocol ON nodes(protocol)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_nodes_group ON nodes(`group`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_nodes_isFavorite ON nodes(isFavorite)")
             }
         }
 

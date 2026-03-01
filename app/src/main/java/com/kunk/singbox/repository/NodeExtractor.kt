@@ -5,7 +5,6 @@ import com.kunk.singbox.R
 import com.kunk.singbox.model.NodeUi
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.SingBoxConfig
-import com.kunk.singbox.utils.RegionDetector
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -82,30 +81,6 @@ object NodeExtractor {
             group = "Default"
         }
 
-        var regionFlag = detectRegionFlag(outbound.tag)
-
-        if (regionFlag == "UNKNOWN" || regionFlag.isBlank()) {
-            val sni = outbound.tls?.serverName
-            if (!sni.isNullOrBlank()) {
-                val sniRegion = detectRegionFlag(sni)
-                if (sniRegion != "UNKNOWN" && sniRegion.isNotBlank()) regionFlag = sniRegion
-            }
-
-            if (regionFlag == "UNKNOWN" || regionFlag.isBlank()) {
-                val host = outbound.transport?.headers?.get("Host")
-                    ?: outbound.transport?.host?.firstOrNull()
-                if (!host.isNullOrBlank()) {
-                    val hostRegion = detectRegionFlag(host)
-                    if (hostRegion != "UNKNOWN" && hostRegion.isNotBlank()) regionFlag = hostRegion
-                }
-            }
-
-            if ((regionFlag == "UNKNOWN" || regionFlag.isBlank()) && !outbound.server.isNullOrBlank()) {
-                val serverRegion = detectRegionFlag(outbound.server)
-                if (serverRegion != "UNKNOWN" && serverRegion.isNotBlank()) regionFlag = serverRegion
-            }
-        }
-
         val id = stableNodeId(profileId, outbound.tag)
 
         return NodeUi(
@@ -113,7 +88,6 @@ object NodeExtractor {
             name = outbound.tag,
             protocol = outbound.type,
             group = group,
-            regionFlag = regionFlag,
             latencyMs = null,
             isFavorite = false,
             sourceProfileId = profileId,
@@ -135,10 +109,7 @@ object NodeExtractor {
         }
     }
 
-    fun detectRegionFlag(name: String): String = RegionDetector.detect(name)
-
     fun clearCache() {
         nodeIdCache.clear()
-        RegionDetector.clearCache()
     }
 }

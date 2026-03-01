@@ -568,6 +568,14 @@ class ConfigRepository(private val context: Context) {
         if (infos.isEmpty()) return
 
         if (VpnStateStore.getActive()) {
+            if (SingBoxService.instance == null) {
+                infos.forEach { info ->
+                    val latency = testNodeLatencyViaRunningService(info.outbound.tag)
+                    applyLatencyResult(info, latency, onNodeComplete)
+                }
+                return
+            }
+
             val tagToInfo = infos.associateBy { it.outbound.tag }
             val outbounds = infos.map { it.outbound }
             singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
@@ -1392,28 +1400,6 @@ class ConfigRepository(private val context: Context) {
             group = "Default"
         }
 
-        var regionFlag = detectRegionFlag(outbound.tag)
-        if (regionFlag == "UNKNOWN" || regionFlag.isBlank()) {
-            val sni = outbound.tls?.serverName
-            if (!sni.isNullOrBlank()) {
-                val sniRegion = detectRegionFlag(sni)
-                if (sniRegion != "UNKNOWN" && sniRegion.isNotBlank()) regionFlag = sniRegion
-            }
-            if ((regionFlag == "UNKNOWN" || regionFlag.isBlank())) {
-                val host = outbound.transport?.headers?.get("Host")
-                    ?: outbound.transport?.host?.firstOrNull()
-                if (!host.isNullOrBlank()) {
-                    val hostRegion = detectRegionFlag(host)
-                    if (hostRegion != "UNKNOWN" && hostRegion.isNotBlank()) regionFlag = hostRegion
-                }
-            }
-            if ((regionFlag == "UNKNOWN" || regionFlag.isBlank()) && !outbound.server.isNullOrBlank()) {
-                val serverRegion = detectRegionFlag(outbound.server)
-                if (serverRegion != "UNKNOWN" && serverRegion.isNotBlank()) regionFlag = serverRegion
-            }
-        }
-
-        val finalRegionFlag = regionFlag
         val id = stableNodeId(profileId, outbound.tag)
 
         return NodeUi(
@@ -1421,7 +1407,6 @@ class ConfigRepository(private val context: Context) {
             name = outbound.tag,
             protocol = outbound.type,
             group = group,
-            regionFlag = finalRegionFlag,
             latencyMs = null,
             isFavorite = false,
             sourceProfileId = profileId,
@@ -1434,14 +1419,6 @@ class ConfigRepository(private val context: Context) {
                 outbound.transport?.type?.let { add(it.uppercase()) }
             }
         )
-    }
-
-    private fun containsFlagEmoji(str: String): Boolean {
-        return com.kunk.singbox.utils.RegionDetector.containsFlagEmoji(str)
-    }
-
-    private fun detectRegionFlag(name: String): String {
-        return com.kunk.singbox.utils.RegionDetector.detect(name)
     }
 
     fun setActiveProfile(profileId: String, targetNodeId: String? = null) {
@@ -3729,7 +3706,6 @@ class ConfigRepository(private val context: Context) {
 
     fun cleanup() {
         scope.cancel()
-        com.kunk.singbox.utils.RegionDetector.clearCache()
         nodeIdCache.clear()
         configCache.clear()
         profileNodes.clear()

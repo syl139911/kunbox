@@ -149,6 +149,10 @@
     <string name="connection_settings_allow_lan_subtitle">开启后，局域网内的其他设备可以通过该端口使用代理</string>
     <string name="connection_settings_append_http_proxy">追加 HTTP 代理至 VPN</string>
     <string name="connection_settings_append_http_proxy_subtitle">将本地 HTTP 代理设置为系统代理 (Android 10+)</string>
+    <string name="connection_settings_latency_concurrency">延迟测试并发数</string>
+    <string name="connection_settings_latency_concurrency_subtitle">批量延迟测试的并发请求数 (默认: 10)</string>
+    <string name="connection_settings_latency_timeout">延迟超时时间 (ms)</string>
+    <string name="connection_settings_latency_timeout_subtitle">单次延迟测试的超时时间 (默认: 2000ms)</string>
 
     <!-- Routing Settings -->
     <string name="routing_settings_title">路由设置</string>
@@ -202,6 +206,7 @@
 
     <!-- DNS Settings -->
     <string name="dns_settings_title">DNS 设置</string>
+    <string name="dns_settings_fake_dns">Fake DNS</string>
     <string name="dns_settings_fake_dns_subtitle">返回虚假 IP 以加速域名解析</string>
     <string name="dns_settings_fake_ip_range">虚假 IP 段</string>
     <string name="dns_settings_strategy">解析策略</string>
@@ -229,6 +234,9 @@
     <string name="profiles_qrcode_subscription">扫码订阅</string>
     <string name="profiles_file_import">文件导入</string>
     <string name="profiles_clipboard_import">剪贴板导入</string>
+    <string name="rulesets_select_target">选择目标</string>
+    <string name="rulesets_tap_to_select">点击选择...</string>
+    <string name="rulesets_rule_set_tag">规则集标签</string>
     <string name="profiles_file_empty">文件内容为空</string>
     <string name="profiles_read_file_failed">读取文件失败: %s</string>
     <string name="profiles_clipboard_empty">剪贴板为空</string>
@@ -468,6 +476,11 @@
 
     <!-- Domain Rules -->
     <string name="domain_rules_title">域名分流</string>
+    <string name="domain_rules_placeholder">google.com / =exact.com / *keyword*</string>
+    <string name="domain_rules_detected_type">检测到的类型: %s</string>
+    <string name="domain_rules_type_exact">精准匹配</string>
+    <string name="domain_rules_type_keyword">关键字匹配</string>
+    <string name="domain_rules_type_suffix">后缀匹配 (包含子域名)</string>
     <string name="domain_rules_empty">暂无域名分流规则</string>
     <string name="domain_rules_add">添加规则</string>
     <string name="domain_rules_edit">编辑规则</string>
@@ -549,6 +562,10 @@
     <string name="import_partial_success">部分导入成功</string>
     <string name="import_failed">导入失败</string>
     <string name="import_settings_restored">设置已恢复</string>
+    <string name="import_success_detail">导入成功: %1$d 个配置, %2$d 个节点</string>
+    <string name="import_partial_detail">成功: %1$d
+失败: %2$d</string>
+    <string name="import_more_errors">… 另外还有 %d 个错误</string>
 
     <!-- App List -->
     <string name="app_list_loading">正在加载应用列表...</string>

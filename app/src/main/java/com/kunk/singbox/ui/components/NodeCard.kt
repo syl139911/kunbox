@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kunk.singbox.ui.theme.*
 
+@Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")
 @Composable
 fun NodeCard(
     name: String,
@@ -27,7 +28,6 @@ fun NodeCard(
     latency: Long? = null,
     isSelected: Boolean,
     isTesting: Boolean = false,
-    regionFlag: String? = null,
     trafficUsed: Long = 0,
     onClick: () -> Unit,
     onEdit: () -> Unit,
@@ -93,14 +93,6 @@ fun NodeCard(
 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-
-                        if (regionFlag != null && !name.contains(regionFlag)) {
-                            Text(
-                                text = regionFlag,
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                        }
                         Text(
                             text = name,
                             style = MaterialTheme.typography.titleMedium,

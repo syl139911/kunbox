@@ -943,7 +943,7 @@ fun RuleSetEditorDialog(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 StyledTextField(
-                    label = "Rule Set Tag",
+                    label = stringResource(R.string.rulesets_rule_set_tag),
                     value = tag,
                     onValueChange = { tag = it },
                     placeholder = "geoip-cn"

@@ -128,22 +128,22 @@ fun ConnectionSettingsScreen(
 
             StandardCard {
                 EditableTextItem(
-                    title = "Proxy Port",
-                    subtitle = "Local mixed proxy port (Mixed Port)",
+                    title = stringResource(R.string.connection_settings_proxy_port),
+                    subtitle = stringResource(R.string.connection_settings_proxy_port_subtitle),
                     value = settings.proxyPort.toString(),
                     onValueChange = {
                         it.toIntOrNull()?.let { port -> settingsViewModel.updateProxyPort(port) }
                     }
                 )
                 SettingSwitchItem(
-                    title = "Allow LAN Access",
-                    subtitle = "Allow devices in local network to use this proxy port",
+                    title = stringResource(R.string.connection_settings_allow_lan),
+                    subtitle = stringResource(R.string.connection_settings_allow_lan_subtitle),
                     checked = settings.allowLan,
                     onCheckedChange = { settingsViewModel.updateAllowLan(it) }
                 )
                 SettingSwitchItem(
-                    title = "Append HTTP Proxy to VPN",
-                    subtitle = "Set local HTTP proxy as system proxy (Android 10+)",
+                    title = stringResource(R.string.connection_settings_append_http_proxy),
+                    subtitle = stringResource(R.string.connection_settings_append_http_proxy_subtitle),
                     checked = settings.appendHttpProxy,
                     onCheckedChange = { settingsViewModel.updateAppendHttpProxy(it) }
                 )
@@ -153,16 +153,16 @@ fun ConnectionSettingsScreen(
 
             StandardCard {
                 EditableTextItem(
-                    title = "Latency Test Concurrency",
-                    subtitle = "Concurrent requests for batch latency testing (default: 10)",
+                    title = stringResource(R.string.connection_settings_latency_concurrency),
+                    subtitle = stringResource(R.string.connection_settings_latency_concurrency_subtitle),
                     value = settings.latencyTestConcurrency.toString(),
                     onValueChange = {
                         it.toIntOrNull()?.let { count -> settingsViewModel.updateLatencyTestConcurrency(count) }
                     }
                 )
                 EditableTextItem(
-                    title = "Latency Timeout (ms)",
-                    subtitle = "Timeout for single latency test (default: 2000ms)",
+                    title = stringResource(R.string.connection_settings_latency_timeout),
+                    subtitle = stringResource(R.string.connection_settings_latency_timeout_subtitle),
                     value = settings.latencyTestTimeout.toString(),
                     onValueChange = {
                         it.toIntOrNull()?.let { ms -> settingsViewModel.updateLatencyTestTimeout(ms) }

@@ -154,7 +154,7 @@ fun AppRuleEditorDialog(
                     RuleSetOutboundMode.NODE -> {
                         showNodeSelectionDialog = true
                     }
-                    RuleSetOutboundMode.PROFILE -> { targetSelectionTitle = "Select Profile"; targetOptions = profiles.map { it.name to it.id } }
+                    RuleSetOutboundMode.PROFILE -> { targetSelectionTitle = context.getString(R.string.rulesets_select_profile); targetOptions = profiles.map { it.name to it.id } }
                     else -> {}
                 }
                 if (selectedMode != RuleSetOutboundMode.NODE) {
@@ -178,7 +178,16 @@ fun AppRuleEditorDialog(
 
     if (showTargetSelectionDialog) {
         val currentRef = resolveNodeByStoredValue(outboundValue)?.let { toNodeRef(it) } ?: outboundValue
-        SingleSelectDialog(title = targetSelectionTitle, options = targetOptions.map { it.first }, selectedIndex = targetOptions.indexOfFirst { it.second == currentRef }.coerceAtLeast(0), onSelect = { index -> outboundValue = targetOptions[index].second; showTargetSelectionDialog = false }, onDismiss = { showTargetSelectionDialog = false })
+        SingleSelectDialog(
+            title = targetSelectionTitle,
+            options = targetOptions.map { it.first },
+            selectedIndex = targetOptions.indexOfFirst { it.second == currentRef }.coerceAtLeast(0),
+            onSelect = { index ->
+                outboundValue = targetOptions[index].second
+                showTargetSelectionDialog = false
+            },
+            onDismiss = { showTargetSelectionDialog = false }
+        )
     }
 
     AlertDialog(
@@ -199,19 +208,26 @@ fun AppRuleEditorDialog(
                         }
                         RuleSetOutboundMode.PROFILE -> profiles.find { it.id == outboundValue }?.name
                         else -> null
-                    } ?: "Tap to select..."
-                    ClickableDropdownField(label = "Select Target", value = targetName, onClick = {
-                        when (outboundMode) {
-                            RuleSetOutboundMode.NODE -> {
-                                showNodeSelectionDialog = true
+                    } ?: stringResource(R.string.rulesets_tap_to_select)
+                    ClickableDropdownField(
+                        label = stringResource(R.string.rulesets_select_target),
+                        value = targetName,
+                        onClick = {
+                            when (outboundMode) {
+                                RuleSetOutboundMode.NODE -> {
+                                    showNodeSelectionDialog = true
+                                }
+                                RuleSetOutboundMode.PROFILE -> {
+                                    targetSelectionTitle = context.getString(R.string.rulesets_select_profile)
+                                    targetOptions = profiles.map { it.name to it.id }
+                                }
+                                else -> {}
                             }
-                            RuleSetOutboundMode.PROFILE -> { targetSelectionTitle = context.getString(R.string.rulesets_select_profile); targetOptions = profiles.map { it.name to it.id } }
-                            else -> {}
+                            if (outboundMode != RuleSetOutboundMode.NODE) {
+                                showTargetSelectionDialog = true
+                            }
                         }
-                        if (outboundMode != RuleSetOutboundMode.NODE) {
-                            showTargetSelectionDialog = true
-                        }
-                    })
+                    )
                 }
             }
         },

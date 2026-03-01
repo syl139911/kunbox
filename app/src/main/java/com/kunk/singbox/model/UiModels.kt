@@ -98,7 +98,6 @@ data class NodeUi(
     @SerializedName("name") val name: String,
     @SerializedName("protocol") val protocol: String,
     @SerializedName("group") val group: String,
-    @SerializedName("regionFlag") val regionFlag: String? = null,
     @SerializedName("latencyMs") val latencyMs: Long? = null, // null means not tested
     @SerializedName("isFavorite") val isFavorite: Boolean = false,
     @SerializedName("sourceProfileId") val sourceProfileId: String,

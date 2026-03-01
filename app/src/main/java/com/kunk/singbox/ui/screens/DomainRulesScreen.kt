@@ -268,6 +268,7 @@ private fun DomainRuleEditorDialog(
     onDelete: (() -> Unit)? = null
 ) {
     var value by remember { mutableStateOf(initialRule?.value ?: "") }
+    val context = LocalContext.current
 
     fun generateRuleNameFromValue(raw: String): String {
         val first = raw
@@ -305,9 +306,9 @@ private fun DomainRuleEditorDialog(
     fun getSmartTypeHint(input: String): String {
         val trimmed = input.trim()
         return when {
-            trimmed.startsWith("=") -> "Exact match"
-            trimmed.contains("*") -> "Keyword match"
-            trimmed.isNotEmpty() -> "Suffix match (includes subdomains)"
+            trimmed.startsWith("=") -> context.getString(R.string.domain_rules_type_exact)
+            trimmed.contains("*") -> context.getString(R.string.domain_rules_type_keyword)
+            trimmed.isNotEmpty() -> context.getString(R.string.domain_rules_type_suffix)
             else -> ""
         }
     }
@@ -322,7 +323,6 @@ private fun DomainRuleEditorDialog(
 
     var targetSelectionTitle by remember { mutableStateOf("") }
     var targetOptions by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    val context = LocalContext.current
 
     val selectionNodes = nodesForSelection ?: nodes
 
@@ -430,13 +430,13 @@ private fun DomainRuleEditorDialog(
                     label = stringResource(R.string.custom_rules_content),
                     value = value,
                     onValueChange = { value = it },
-                    placeholder = "google.com / =exact.com / *keyword*"
+                    placeholder = stringResource(R.string.domain_rules_placeholder)
                 )
 
                 val smartHint = getSmartTypeHint(value)
                 if (smartHint.isNotEmpty()) {
                     Text(
-                        text = "Detected type: $smartHint",
+                        text = stringResource(R.string.domain_rules_detected_type, smartHint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -468,7 +468,7 @@ private fun DomainRuleEditorDialog(
                         }
                         RuleSetOutboundMode.PROFILE -> profiles.find { it.id == outboundValue }?.name
                         else -> null
-                    } ?: "Tap to select..."
+                    } ?: stringResource(R.string.rulesets_tap_to_select)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -496,7 +496,16 @@ private fun DomainRuleEditorDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(stringResource(R.string.app_rules_select_target), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(targetName, color = if (targetName == "Tap to select...") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary, fontWeight = if (targetName == "Tap to select...") FontWeight.Normal else FontWeight.SemiBold)
+                        val isTapToSelect = targetName == stringResource(R.string.rulesets_tap_to_select)
+                        Text(
+                            targetName,
+                            color = if (isTapToSelect) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            fontWeight = if (isTapToSelect) FontWeight.Normal else FontWeight.SemiBold
+                        )
                     }
                 }
 

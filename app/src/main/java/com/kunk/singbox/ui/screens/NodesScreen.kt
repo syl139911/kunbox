@@ -171,8 +171,7 @@ fun NodesScreen(
         val sortOptions = listOf(
             stringResource(R.string.nodes_sort_default) to NodeSortType.DEFAULT,
             stringResource(R.string.nodes_sort_latency) to NodeSortType.LATENCY,
-            stringResource(R.string.nodes_sort_name) to NodeSortType.NAME,
-            stringResource(R.string.nodes_sort_region) to NodeSortType.REGION
+            stringResource(R.string.nodes_sort_name) to NodeSortType.NAME
         )
 
         SingleSelectDialog(
@@ -542,7 +541,6 @@ fun NodesScreen(
                             latency = node.latencyMs,
                             isSelected = isSelected,
                             isTesting = isTestingNode,
-                            regionFlag = node.regionFlag,
                             trafficUsed = node.trafficUsed,
                             onClick = onNodeClick,
                             onEdit = onEdit,

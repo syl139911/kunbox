@@ -148,6 +148,10 @@
     <string name="connection_settings_allow_lan_subtitle">When enabled, other devices on LAN can use this proxy</string>
     <string name="connection_settings_append_http_proxy">Append HTTP Proxy to VPN</string>
     <string name="connection_settings_append_http_proxy_subtitle">Set local HTTP proxy as system proxy (Android 10+)</string>
+    <string name="connection_settings_latency_concurrency">Latency Test Concurrency</string>
+    <string name="connection_settings_latency_concurrency_subtitle">Concurrent requests for batch latency testing (default: 10)</string>
+    <string name="connection_settings_latency_timeout">Latency Timeout (ms)</string>
+    <string name="connection_settings_latency_timeout_subtitle">Timeout for single latency test (default: 2000ms)</string>
 
     <!-- Routing Settings -->
     <string name="routing_settings_title">Routing Settings</string>
@@ -199,6 +203,7 @@
 
     <!-- DNS Settings -->
     <string name="dns_settings_title">DNS Settings</string>
+    <string name="dns_settings_fake_dns">Fake DNS</string>
     <string name="dns_settings_fake_dns_subtitle">Return fake IP to speed up resolution</string>
     <string name="dns_settings_fake_ip_range">Fake IP Range</string>
     <string name="dns_settings_strategy">DNS Strategy</string>
@@ -456,6 +461,11 @@
 
     <!-- Domain Rules -->
     <string name="domain_rules_title">Domain Routing</string>
+    <string name="domain_rules_placeholder">google.com / =exact.com / *keyword*</string>
+    <string name="domain_rules_detected_type">Detected type: %s</string>
+    <string name="domain_rules_type_exact">Exact match</string>
+    <string name="domain_rules_type_keyword">Keyword match</string>
+    <string name="domain_rules_type_suffix">Suffix match (includes subdomains)</string>
     <string name="domain_rules_empty">No domain routing rules</string>
     <string name="domain_rules_add">Add Rule</string>
     <string name="domain_rules_edit">Edit Rule</string>
@@ -537,6 +547,9 @@
     <string name="import_partial_success">Partial Import Success</string>
     <string name="import_failed">Import Failed</string>
     <string name="import_settings_restored">Settings restored</string>
+    <string name="import_success_detail">Imported: %1$d profiles, %2$d nodes</string>
+    <string name="import_partial_detail">Success: %1$d\nFailed: %2$d</string>
+    <string name="import_more_errors">… and %d more errors</string>
 
     <!-- App List -->
     <string name="app_list_loading">Loading app list...</string>

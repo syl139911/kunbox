@@ -52,11 +52,11 @@ object FakeRepository {
         _activeProfileId.value = "p1"
 
         _nodes.value = listOf(
-            NodeUi("n1", "HK Node 01 [VLESS]", "vless", "HK", "HK", 45, true, "p1"),
-            NodeUi("n2", "HK Node 02 [Trojan]", "trojan", "HK", "HK", 52, false, "p1"),
-            NodeUi("n3", "US Node 01 [VMess]", "vmess", "US", "US", 180, false, "p2"),
-            NodeUi("n4", "JP Osaka [AnyTLS]", "anytls", "JP", "JP", 80, true, "p1"),
-            NodeUi("n5", "SG Main [Hysteria2]", "hysteria2", "SG", "SG", 60, false, "p1")
+            NodeUi("n1", "HK Node 01 [VLESS]", "vless", "HK", 45, true, "p1"),
+            NodeUi("n2", "HK Node 02 [Trojan]", "trojan", "HK", 52, false, "p1"),
+            NodeUi("n3", "US Node 01 [VMess]", "vmess", "US", 180, false, "p2"),
+            NodeUi("n4", "JP Osaka [AnyTLS]", "anytls", "JP", 80, true, "p1"),
+            NodeUi("n5", "SG Main [Hysteria2]", "hysteria2", "SG", 60, false, "p1")
         )
         _activeNodeId.value = "n1"
     }
@@ -123,19 +123,19 @@ object FakeRepository {
         _activeProfileId.value = profileId
         if (profileId == "p2") {
             _nodes.value = listOf(
-                NodeUi("n3", "US Node 01 [VMess]", "vmess", "US", "US", 180, false, "p2"),
-                NodeUi("n6", "US Node 02 [AnyTLS]", "anytls", "US", "US", 200, false, "p2"),
-                NodeUi("n7", "LA US Node", "vmess", "US", "US", 190, false, "p2")
+                NodeUi("n3", "US Node 01 [VMess]", "vmess", "US", 180, false, "p2"),
+                NodeUi("n6", "US Node 02 [AnyTLS]", "anytls", "US", 200, false, "p2"),
+                NodeUi("n7", "LA US Node", "vmess", "US", 190, false, "p2")
             )
             _activeNodeId.value = "n3"
             return
         }
 
         _nodes.value = listOf(
-            NodeUi("n1", "HK Node 01 [VLESS]", "vless", "HK", "HK", 45, true, "p1"),
-            NodeUi("n2", "HK Node 02 [Trojan]", "trojan", "HK", "HK", 52, false, "p1"),
-            NodeUi("n4", "JP Osaka [AnyTLS]", "anytls", "JP", "JP", 80, true, "p1"),
-            NodeUi("n5", "SG Main [Hysteria2]", "hysteria2", "SG", "SG", 60, false, "p1")
+            NodeUi("n1", "HK Node 01 [VLESS]", "vless", "HK", 45, true, "p1"),
+            NodeUi("n2", "HK Node 02 [Trojan]", "trojan", "HK", 52, false, "p1"),
+            NodeUi("n4", "JP Osaka [AnyTLS]", "anytls", "JP", 80, true, "p1"),
+            NodeUi("n5", "SG Main [Hysteria2]", "hysteria2", "SG", 60, false, "p1")
         )
         _activeNodeId.value = "n1"
     }
