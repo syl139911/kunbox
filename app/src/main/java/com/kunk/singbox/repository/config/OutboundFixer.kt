@@ -1,7 +1,9 @@
 ﻿package com.kunk.singbox.repository.config
 
+import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
+import com.kunk.singbox.model.TlsConfig
 import com.kunk.singbox.repository.SettingsRepository
 
 /**
@@ -256,6 +258,10 @@ object OutboundFixer {
             result = result.copy(packetEncoding = "xudp")
         }
 
+        if (result.type == "naive") {
+            result = fixNaive(result)
+        }
+
         val currentTls = result.tls
         if (currentTls != null && currentTls.alpn?.isEmpty() == true) {
             result = result.copy(tls = currentTls.copy(alpn = null))
@@ -268,7 +274,7 @@ object OutboundFixer {
      */
     @Suppress("LongMethod")
     fun buildForRuntime(context: android.content.Context, outbound: Outbound): Outbound {
-        val fixed = fix(outbound)
+        val fixed = applyNaiveRuntimeCompatibility(fix(outbound))
 
         val (tcpKeepAliveEnabled, tcpKeepAliveInterval, connectTimeout) = getTcpKeepAliveConfig(context)
 
@@ -396,6 +402,25 @@ object OutboundFixer {
                 connectTimeout = connectTimeout
             )
 
+            "naive" -> Outbound(
+                type = fixed.type,
+                tag = fixed.tag,
+                server = fixed.server,
+                serverPort = fixed.serverPort,
+                username = fixed.username,
+                password = fixed.password,
+                network = fixed.network,
+                path = fixed.path,
+                headers = fixed.headers,
+                tls = fixed.tls,
+                congestionControl = fixed.congestionControl,
+                udpOverTcp = fixed.udpOverTcp,
+
+                tcpKeepAlive = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
+                tcpKeepAliveInterval = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
+                connectTimeout = connectTimeout
+            )
+
             "anytls" -> Outbound(
                 type = fixed.type,
                 tag = fixed.tag,
@@ -462,6 +487,53 @@ object OutboundFixer {
 
             else -> fixed
         }
+    }
+
+    private fun fixNaive(outbound: Outbound): Outbound {
+        val normalizedNetwork = when (outbound.network?.trim()?.lowercase()) {
+            "", null -> "h2"
+            "http", "h2", "quic" -> outbound.network?.trim()?.lowercase()
+            else -> "h2"
+        }
+
+        val rawPath = outbound.path?.trim().orEmpty()
+        val normalizedPath = if (rawPath.isBlank()) {
+            "/"
+        } else if (rawPath.startsWith("/")) {
+            rawPath
+        } else {
+            "/$rawPath"
+        }
+
+        val host = outbound.headers?.get("Host")?.trim()
+        val tls = outbound.tls ?: TlsConfig(enabled = true)
+        val tlsEnabled = tls.enabled != false
+        val shouldSetSni = tlsEnabled &&
+            !host.isNullOrBlank() &&
+            !isIpLiteral(host) &&
+            (tls.serverName.isNullOrBlank() || isIpLiteral(tls.serverName ?: ""))
+
+        val normalizedHeaders = if (host.isNullOrBlank()) null else mapOf("Host" to host)
+        val tlsUpdated = if (shouldSetSni) tls.copy(serverName = host, enabled = true) else tls
+
+        return outbound.copy(
+            network = normalizedNetwork,
+            path = normalizedPath,
+            headers = normalizedHeaders,
+            tls = tlsUpdated
+        )
+    }
+
+    private fun applyNaiveRuntimeCompatibility(outbound: Outbound): Outbound {
+        if (outbound.type != "naive") return outbound
+
+        val network = outbound.network?.lowercase()
+        val hasQuic = network == "quic"
+        val quicSupported = LibboxCompat.isNaiveQuicSupported()
+        if (!hasQuic || quicSupported) return outbound
+
+        val tls = (outbound.tls ?: TlsConfig(enabled = true)).copy(alpn = listOf("h2"))
+        return outbound.copy(network = "h2", tls = tls)
     }
 
     private fun tuneMuxForVisionReality(outbound: Outbound): MultiplexConfig? {

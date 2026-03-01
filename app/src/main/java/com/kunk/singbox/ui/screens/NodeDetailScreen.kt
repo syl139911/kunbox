@@ -455,7 +455,68 @@ fun NodeDetailScreen(
                         )
                     }
 
-                    // 6. WireGuard
+                    // 6. Naive
+                    if (type == "naive") {
+                        EditableTextItem(
+                            title = "Username",
+                            value = outbound.username ?: "",
+                            icon = Icons.Rounded.Person,
+                            onValueChange = { editingOutbound = outbound.copy(username = if (it.isEmpty()) null else it) }
+                        )
+                        EditableTextItem(
+                            title = stringResource(R.string.node_detail_password),
+                            value = outbound.password ?: "",
+                            icon = Icons.Rounded.Password,
+                            onValueChange = { editingOutbound = outbound.copy(password = if (it.isEmpty()) null else it) }
+                        )
+                        EditableSelectionItem(
+                            title = stringResource(R.string.node_detail_transport_protocol),
+                            value = outbound.network ?: "h2",
+                            options = listOf("h2", "http", "quic"),
+                            icon = Icons.Rounded.SwapHoriz,
+                            onValueChange = { editingOutbound = outbound.copy(network = it) }
+                        )
+                        EditableTextItem(
+                            title = stringResource(R.string.node_detail_transport_path),
+                            value = outbound.path ?: "/",
+                            icon = Icons.Rounded.Route,
+                            onValueChange = { editingOutbound = outbound.copy(path = if (it.isEmpty()) "/" else it) }
+                        )
+                        EditableTextItem(
+                            title = "Host",
+                            value = outbound.headers?.get("Host") ?: "",
+                            icon = Icons.Rounded.Language,
+                            onValueChange = {
+                                val host = it.trim()
+                                val newHeaders = if (host.isBlank()) null else mapOf("Host" to host)
+                                editingOutbound = outbound.copy(headers = newHeaders)
+                            }
+                        )
+                        EditableSelectionItem(
+                            title = stringResource(R.string.node_detail_congestion_control),
+                            value = outbound.congestionControl ?: "",
+                            options = listOf("", "bbr", "cubic", "new_reno"),
+                            icon = Icons.Rounded.Speed,
+                            onValueChange = { editingOutbound = outbound.copy(congestionControl = it.ifEmpty { null }) }
+                        )
+                        val uot = outbound.udpOverTcp ?: UdpOverTcpConfig(enabled = false)
+                        SettingSwitchItem(
+                            title = "UDP over TCP",
+                            checked = uot.enabled == true,
+                            icon = Icons.Rounded.SwapHoriz,
+                            onCheckedChange = { enabled ->
+                                editingOutbound = outbound.copy(
+                                    udpOverTcp = if (enabled) {
+                                        uot.copy(enabled = true)
+                                    } else {
+                                        null
+                                    }
+                                )
+                            }
+                        )
+                    }
+
+                    // 7. WireGuard
                     if (type == "wireguard") {
                         val peer = outbound.peers?.firstOrNull() ?: WireGuardPeer()
 
@@ -1347,6 +1408,7 @@ private fun createEmptyOutbound(protocol: String): Outbound {
         "trojan" -> 443
         "hysteria2", "hysteria" -> 443
         "tuic" -> 443
+        "naive" -> 443
         "anytls" -> 443
         "ssh" -> 22
         "socks" -> 1080
@@ -1355,13 +1417,15 @@ private fun createEmptyOutbound(protocol: String): Outbound {
         else -> 443
     }
 
-    val needsTls = protocol in listOf("vless", "trojan", "hysteria2", "hysteria", "tuic", "anytls")
+    val needsTls = protocol in listOf("vless", "trojan", "hysteria2", "hysteria", "tuic", "naive", "anytls")
 
     return Outbound(
         type = protocol,
         tag = "New-${protocol.uppercase()}",
         server = "",
         serverPort = defaultPort,
+        network = if (protocol == "naive") "h2" else null,
+        path = if (protocol == "naive") "/" else null,
         tls = if (needsTls) TlsConfig(enabled = true) else null
     )
 }

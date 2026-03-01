@@ -10,7 +10,8 @@ data class ExportData(
     @SerializedName("version") val version: Int = 1,
     @SerializedName("exportTime") val exportTime: Long,
     @SerializedName("appVersion") val appVersion: String,
-    @SerializedName("settings") val settings: AppSettings, // 閹煎瓨姊婚弫·囨媼閸撗呮瀭
+    @SerializedName("settings") val settings: AppSettings, // AppSettings 导出数据
+    @SerializedName("profiles") val profiles: List<ProfileExportData> = emptyList(),
     @SerializedName("activeProfileId") val activeProfileId: String?,
     @SerializedName("activeNodeId") val activeNodeId: String?
 )
@@ -19,6 +20,7 @@ data class ExportData(
  */
 @Keep
 data class ProfileExportData(
+    @SerializedName("profile") val profile: ProfileUi,
     @SerializedName("config") val config: SingBoxConfig
 )
 
@@ -27,9 +29,9 @@ data class ProfileExportData(
 @Keep
 data class ImportOptions(
     val overwriteExisting: Boolean = true,
-    val importSettings: Boolean = true, // ·哄嫷鍨伴幆浣衡·鐢靛帶閸欏棛鎷嬮崜褏鏋?
-    val importProfiles: Boolean = true, // ·哄嫷鍨伴幆浣衡·鐢靛帶閸欏棝鏌婂鍥╂瀭
-    val importRules: Boolean = true // ·哄嫷鍨伴幆浣衡·鐢靛帶閸欏棛鎲撮崟顐㈢仧
+    val importSettings: Boolean = true, // 是否导入应用设置
+    val importProfiles: Boolean = true, // 是否导入配置与节点
+    val importRules: Boolean = true // 是否导入规则相关数据
 )
 
 /**

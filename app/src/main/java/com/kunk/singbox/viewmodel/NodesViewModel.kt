@@ -415,7 +415,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
             val supportedPrefixes = listOf(
                 "vmess://", "vless://", "ss://", "trojan://",
                 "hysteria2://", "hy2://", "hysteria://",
-                "tuic://", "anytls://", "wireguard://", "ssh://"
+                "tuic://", "anytls://", "naive://", "naive+https://", "wireguard://", "ssh://"
             )
 
             if (supportedPrefixes.none { trimmedContent.startsWith(it) }) {

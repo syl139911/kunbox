@@ -224,11 +224,11 @@ fun NodesScreen(
     if (showProtocolSelectDialog) {
         val protocolOptions = listOf(
             "VMess", "VLESS", "Trojan", "Shadowsocks", "Hysteria2", "Hysteria",
-            "TUIC", "WireGuard", "SSH", "AnyTLS", "SOCKS", "HTTP"
+            "TUIC", "Naive", "WireGuard", "SSH", "AnyTLS", "SOCKS", "HTTP"
         )
         val protocolValues = listOf(
             "vmess", "vless", "trojan", "shadowsocks", "hysteria2", "hysteria",
-            "tuic", "wireguard", "ssh", "anytls", "socks", "http"
+            "tuic", "naive", "wireguard", "ssh", "anytls", "socks", "http"
         )
         SingleSelectDialog(
             title = stringResource(R.string.nodes_select_protocol),

@@ -99,6 +99,19 @@ object LibboxCompat {
 
     fun hasKunBoxExtension(): Boolean = hasExtensionApi
 
+    fun isNaiveQuicSupported(): Boolean {
+        val versionText = getVersion()
+        val normalized = versionText.removePrefix("v")
+        val head = normalized.substringBefore('-')
+        val parts = head.split(".")
+        if (parts.size < 3) return true
+
+        val major = parts[0].toIntOrNull() ?: return true
+        val minor = parts[1].toIntOrNull() ?: return true
+
+        return major > 1 || (major == 1 && minor >= 13)
+    }
+
     fun printDiagnostics() {
         Log.i(TAG, "LibboxCompat: version=${getVersion()}, extensionVersion=${getExtensionVersion()}, hasResetAllConnections=$hasResetAllConnections, hasExtensionApi=$hasExtensionApi")
     }

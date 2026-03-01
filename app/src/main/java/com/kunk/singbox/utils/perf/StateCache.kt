@@ -10,6 +10,9 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object StateCache {
     private const val TAG = "StateCache"
+    private const val networkCacheTtlMs = 1_000L
+    private const val vpnStateCacheTtlMs = 500L
+    private const val settingsCacheTtlMs = 2_000L
 
     private val cachedNetwork = AtomicReference<NetworkCache?>(null)
 

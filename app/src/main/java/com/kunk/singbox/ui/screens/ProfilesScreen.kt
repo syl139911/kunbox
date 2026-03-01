@@ -232,7 +232,8 @@ fun ProfilesScreen(
                     it.startsWith("trojan://") || it.startsWith("hysteria://") ||
                     it.startsWith("hysteria2://") || it.startsWith("hy2://") ||
                     it.startsWith("tuic://") || it.startsWith("wireguard://") ||
-                    it.startsWith("ssh://") || it.startsWith("anytls://")
+                    it.startsWith("ssh://") || it.startsWith("anytls://") ||
+                    it.startsWith("naive://") || it.startsWith("naive+https://")
             }
 
             val isSubscriptionUrl = scannedContent.startsWith("http://") ||
@@ -948,7 +949,8 @@ private fun SubscriptionInputDialog(
                             it.startsWith("trojan://") || it.startsWith("hysteria://") ||
                             it.startsWith("hysteria2://") || it.startsWith("hy2://") ||
                             it.startsWith("tuic://") || it.startsWith("bean://") ||
-                            it.startsWith("wireguard://") || it.startsWith("ssh://")
+                            it.startsWith("wireguard://") || it.startsWith("ssh://") ||
+                            it.startsWith("naive://") || it.startsWith("naive+https://")
                     }
 
                     if (isNodeLink) {

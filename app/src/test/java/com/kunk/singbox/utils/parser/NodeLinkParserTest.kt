@@ -355,6 +355,41 @@ class NodeLinkParserTest {
         assertEquals("obfs-pass", outbound?.obfs?.password)
     }
 
+    // ==================== Naive ====================
+
+    @Test
+    fun testParseNaiveBasic() {
+        val link = "naive://user:pass@naive.example.com:443?network=h2&path=%2Fproxy&sni=naive.example.com#NaiveNode"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("naive", outbound?.type)
+        assertEquals("NaiveNode", outbound?.tag)
+        assertEquals("naive.example.com", outbound?.server)
+        assertEquals(443, outbound?.serverPort)
+        assertEquals("user", outbound?.username)
+        assertEquals("pass", outbound?.password)
+        assertEquals("h2", outbound?.network)
+        assertEquals("/proxy", outbound?.path)
+        assertNotNull(outbound?.tls)
+        assertEquals(true, outbound?.tls?.enabled)
+        assertEquals("naive.example.com", outbound?.tls?.serverName)
+    }
+
+    @Test
+    fun testParseNaivePlusHttpsScheme() {
+        val link = "naive+https://u:p@naive.example.com:443?path=%2Fabc#NaiveHttps"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("naive", outbound?.type)
+        assertEquals("NaiveHttps", outbound?.tag)
+        assertEquals("u", outbound?.username)
+        assertEquals("p", outbound?.password)
+        assertEquals("h2", outbound?.network)
+        assertEquals("/abc", outbound?.path)
+    }
+
     // ==================== TUIC ====================
 
     @Test

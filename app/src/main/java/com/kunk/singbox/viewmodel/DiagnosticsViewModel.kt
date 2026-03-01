@@ -14,6 +14,7 @@ import com.kunk.singbox.model.SingBoxConfig
 import com.kunk.singbox.repository.ConfigRepository
 import com.kunk.singbox.repository.ConfigRepository.ConfigGenerationResult
 import com.kunk.singbox.service.SingBoxService
+import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.utils.TcpPing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -382,7 +383,8 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
                 _resultMessage.value = "Cannot execute test: active configuration not loaded."
             } else {
                 val match = findMatch(config, testDomain)
-                _resultMessage.value = "Test Domain: $testDomain\n\nResult:\nRule: ${match.rule}\nOutbound: ${match.outbound}\n\nNote: This test simulates sing-box routing logic and does not represent actual traffic flow."
+                val naiveHints = buildNaiveDiagnostics(config)
+                _resultMessage.value = "Test Domain: $testDomain\n\nResult:\nRule: ${match.rule}\nOutbound: ${match.outbound}\n\n$naiveHints\n\nNote: This test simulates sing-box routing logic and does not represent actual traffic flow."
             }
             _isRoutingLoading.value = false
             _showResultDialog.value = true
@@ -479,6 +481,27 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     private data class MatchResult(val rule: String, val outbound: String)
+
+    private fun buildNaiveDiagnostics(config: SingBoxConfig): String {
+        val naiveOutbounds = config.outbounds.orEmpty().filter { it.type == "naive" }
+        if (naiveOutbounds.isEmpty()) return "Naive Diagnostics: no naive outbound in active config."
+
+        val quicSupported = LibboxCompat.isNaiveQuicSupported()
+        val details = naiveOutbounds.joinToString("\n") { outbound ->
+            val network = outbound.network ?: "h2"
+            val hasHost = !outbound.headers?.get("Host").isNullOrBlank()
+            val hasSni = !outbound.tls?.serverName.isNullOrBlank()
+            val usesQuic = network.equals("quic", ignoreCase = true)
+            val quicLine = if (usesQuic && !quicSupported) {
+                "quic requested but core may not support, runtime fallback to h2"
+            } else {
+                "network=$network"
+            }
+            "- ${outbound.tag}: $quicLine, host=$hasHost, sni=$hasSni"
+        }
+
+        return "Naive Diagnostics:\n$details"
+    }
 
     private fun findMatch(config: SingBoxConfig, domain: String): MatchResult {
         val rules = config.route?.rules ?: return MatchResult("Default (no rules)", config.route?.finalOutbound ?: "direct")

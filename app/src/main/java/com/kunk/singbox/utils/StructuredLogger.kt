@@ -20,9 +20,10 @@ object L {
         CONNECTION("CONN", "\uD83D\uDD17"),
         VPN("VPN", "\uD83D\uDEE1\uFE0F"),
         NETWORK("NET", "\uD83C\uDF10"),
-        ERROR("ERR", "\u274C"), // ·
+        CONFIG("CFG", "\u2699\uFE0F"),
+        ERROR("ERR", "\u274C"),
         DEBUG("DBG", "\uD83D\uDC1B"),
-        INFO("INFO", "\u2139\uFE0F") // ·斥晝娅㈢粭?
+        INFO("INFO", "\u2139\uFE0F")
     }
 
     /**
@@ -146,7 +147,7 @@ object L {
     }
 
     /**
-     * 閺夊牊鎸搁崵? 妫ｅ啯鏅?[CONN][I] HotSwitch: [Step 1/3] Calling wake()
+     * 步骤日志示例：[CONN][I] HotSwitch: [Step 1/3] Calling wake()
      */
     fun step(tag: String, current: Int, total: Int, message: String, category: Category = Category.CONNECTION) {
         log(category, tag, "[Step $current/$total] $message", Log.INFO)

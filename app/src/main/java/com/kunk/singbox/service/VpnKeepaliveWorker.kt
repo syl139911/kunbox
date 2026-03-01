@@ -31,7 +31,7 @@ class VpnKeepaliveWorker(
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresBatteryNotLow(true) // ·汇垻鏁婚崳娲礂閸涙澘鍠曢柡·╁劶缁诲秶鎮?
+                .setRequiresBatteryNotLow(true) // 避免低电量时触发恢复任务
                 .build()
 
             val workRequest = PeriodicWorkRequestBuilder<VpnKeepaliveWorker>(
@@ -44,6 +44,7 @@ class VpnKeepaliveWorker(
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
+                ExistingPeriodicWorkPolicy.REPLACE,
                 workRequest
             )
 

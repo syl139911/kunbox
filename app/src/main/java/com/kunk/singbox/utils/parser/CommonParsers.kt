@@ -82,6 +82,8 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
         "hy2://",
         "tuic://",
         "anytls://",
+        "naive://",
+        "naive+https://",
         "wireguard://",
         "ssh://",
         "socks5://",

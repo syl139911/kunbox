@@ -87,6 +87,7 @@ class NodeLinkParser(private val gson: Gson) {
             link.startsWith("hysteria2://") || link.startsWith("hy2://") -> parseHysteria2Link(link)
             link.startsWith("hysteria://") -> parseHysteriaLink(link)
             link.startsWith("anytls://") -> parseAnyTLSLink(link)
+            link.startsWith("naive://") || link.startsWith("naive+https://") -> parseNaiveLink(link)
             link.startsWith("tuic://") -> parseTuicLink(link)
             link.startsWith("https://") -> parseHttpLink(link, useTls = true)
             link.startsWith("http://") -> parseHttpLink(link, useTls = false)
@@ -702,6 +703,70 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse AnyTLS link", e)
+        }
+        return null
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun parseNaiveLink(link: String): Outbound? {
+        try {
+            val normalizedLink = link.replace("naive+https://", "naive://")
+            val uri = java.net.URI(sanitizeUri(normalizedLink))
+            val name = java.net.URLDecoder.decode(uri.fragment ?: "Naive Node", "UTF-8")
+            val server = uri.host ?: return null
+            val port = if (uri.port > 0) uri.port else 443
+
+            var username: String? = null
+            var password: String? = null
+            val userInfo = uri.userInfo
+            if (!userInfo.isNullOrBlank()) {
+                val parts = userInfo.split(":", limit = 2)
+                username = java.net.URLDecoder.decode(parts.getOrNull(0) ?: "", "UTF-8")
+                    .takeIf { it.isNotBlank() }
+                password = java.net.URLDecoder.decode(parts.getOrNull(1) ?: "", "UTF-8")
+                    .takeIf { it.isNotBlank() }
+            }
+
+            val params = parseQueryParams(uri.query)
+            val network = firstParam(params, "network")
+                ?: firstParam(params, "proto")
+                ?: firstParam(params, "type")
+                ?: "h2"
+            val path = firstParam(params, "path")
+                ?: firstParam(params, "url")
+                ?: "/"
+            val host = firstParam(params, "host")
+            val sni = firstParam(params, "sni") ?: host ?: server
+            val insecure = parseBooleanFlag(firstParam(params, "insecure", "allowInsecure")) == true
+            val alpn = firstParam(params, "alpn")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }
+            val fingerprint = firstParam(params, "fp")?.takeIf { it.isNotBlank() }
+            val congestionControl = firstParam(params, "congestion_control", "cc")
+            val enableUdpOverTcp = parseBooleanFlag(firstParam(params, "uot", "udp_over_tcp")) == true
+
+            val headers = host?.let { mapOf("Host" to it) }
+
+            return Outbound(
+                type = "naive",
+                tag = name,
+                server = server,
+                serverPort = port,
+                username = username,
+                password = password,
+                network = network,
+                path = path,
+                headers = headers,
+                congestionControl = congestionControl,
+                udpOverTcp = if (enableUdpOverTcp) com.kunk.singbox.model.UdpOverTcpConfig(enabled = true) else null,
+                tls = TlsConfig(
+                    enabled = true,
+                    serverName = sni,
+                    insecure = insecure,
+                    alpn = alpn,
+                    utls = fingerprint?.let { UtlsConfig(enabled = true, fingerprint = it) }
+                )
+            )
+        } catch (e: Exception) {
+            Log.e("NodeLinkParser", "Failed to parse Naive link", e)
         }
         return null
     }

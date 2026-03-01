@@ -16,6 +16,7 @@ object NodeLinkExporter {
             "hysteria2" -> generateHysteria2Link(outbound)
             "hysteria" -> generateHysteriaLink(outbound)
             "anytls" -> generateAnyTLSLink(outbound)
+            "naive" -> generateNaiveLink(outbound)
             "tuic" -> generateTuicLink(outbound)
             else -> null
         }?.takeIf { it.isNotBlank() }
@@ -231,6 +232,31 @@ object NodeLinkExporter {
 
         val queryPart = buildOptionalQuery(params)
         return "anytls://$password@$server:$port$queryPart#$name"
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun generateNaiveLink(outbound: Outbound): String {
+        val username = encodeUrlComponent(outbound.username ?: "")
+        val password = encodeUrlComponent(outbound.password ?: "")
+        val server = outbound.server?.let { formatServerHost(it) } ?: return ""
+        val port = outbound.serverPort ?: 443
+        val name = encodeUrlComponent(outbound.tag)
+
+        val params = mutableListOf<String>()
+        outbound.network?.let { params.add("network=${encodeUrlComponent(it)}") }
+        outbound.path?.let { params.add("path=${encodeUrlComponent(it)}") }
+        outbound.headers?.get("Host")?.let { params.add("host=${encodeUrlComponent(it)}") }
+        outbound.tls?.serverName?.let { params.add("sni=${encodeUrlComponent(it)}") }
+        if (outbound.tls?.insecure == true) params.add("insecure=1")
+        outbound.tls?.alpn?.let {
+            if (it.isNotEmpty()) params.add("alpn=${encodeUrlComponent(it.joinToString(","))}")
+        }
+        outbound.tls?.utls?.fingerprint?.let { params.add("fp=${encodeUrlComponent(it)}") }
+        outbound.congestionControl?.let { params.add("congestion_control=${encodeUrlComponent(it)}") }
+        if (outbound.udpOverTcp?.enabled == true) params.add("uot=1")
+
+        val queryPart = buildOptionalQuery(params)
+        return "naive://$username:$password@$server:$port$queryPart#$name"
     }
 
     private fun generateTuicLink(outbound: Outbound): String {
