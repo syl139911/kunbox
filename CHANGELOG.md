@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.11.1](https://github.com/roseforljh/KunBox/compare/v2.11.0...v2.11.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* Introduce `ConfigRepository` and related components for comprehensive SingBox configuration, profile, and node management. ([cca6db5](https://github.com/roseforljh/KunBox/commit/cca6db5c7e3bdf69c8877e6138a9c99db37aec1f))
+* 内核更新 ([a0ce160](https://github.com/roseforljh/KunBox/commit/a0ce160e60c3414755d64fedece23e614bd67bd1))
+* 应用官方最新规范 ([8c1610d](https://github.com/roseforljh/KunBox/commit/8c1610d65e24960e40d77498a80cb7503be5bb14))
+
 ## [2.11.0](https://github.com/roseforljh/KunBox/compare/v2.10.3...v2.11.0) (2026-03-01)
 
 
