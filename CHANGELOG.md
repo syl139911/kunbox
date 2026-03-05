@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.11.0](https://github.com/roseforljh/KunBox/compare/v2.10.3...v2.11.0) (2026-03-01)
+
+
+### Features
+
+* Implement initial SingBox client application with core VPN functionality, UI, and data management. ([1e6e439](https://github.com/roseforljh/KunBox/commit/1e6e4398d707d7b8a7db6231db6bafebefe3b25f))
+
+
+### Bug Fixes
+
+* Add node and profile management screens, view models, and Libbox compatibility layer with supporting utilities. ([5d7ff2b](https://github.com/roseforljh/KunBox/commit/5d7ff2b9c22c8f584f1e62e3109cca1e18514863))
+* Implement comprehensive node link parsing for various protocols, outbound configuration, startup management, and node detail display. ([4bb9174](https://github.com/roseforljh/KunBox/commit/4bb9174667519e00b3c4c7a497602b799c847151))
+* Implement comprehensive node management, configuration settings, and related UI screens with data persistence and parsing capabilities. ([f9cfeca](https://github.com/roseforljh/KunBox/commit/f9cfecadb3d1e6f21e751c2af353b87ef72be75b))
+* Implement core SingBox client functionality including VPN management, configuration, data persistence, and diagnostics. ([9e65bf4](https://github.com/roseforljh/KunBox/commit/9e65bf46f0f35dbebe32d7b16d684d0a13a5987d))
+* Implement initial MainActivity and SingBoxApp setup, including UI, lifecycle management, and core feature integrations. ([c9b09cd](https://github.com/roseforljh/KunBox/commit/c9b09cdbda5f01610d2cf34cf7162915684ea9ae))
+* Implement new screens for settings, traffic statistics, and routing configuration, supported by new UI components, data models, and localization. ([fd9f665](https://github.com/roseforljh/KunBox/commit/fd9f6652507fedd9951edd2d0a8a8711ef9cfe7f))
+* implement outbound configuration normalization and add domain rules screen. ([dbdcfb5](https://github.com/roseforljh/KunBox/commit/dbdcfb5249c8fe26b24c3f572c017f5ea66fc9c8))
+* implement the initial SingBox Android client with core functionalities, UI, and data management. ([d4f3703](https://github.com/roseforljh/KunBox/commit/d4f37037df3aab04e1038c0b96339e52095ce5c2))
+
 ## [2.10.3](https://github.com/roseforljh/KunBox/compare/v2.10.2...v2.10.3) (2026-02-23)
 
 
