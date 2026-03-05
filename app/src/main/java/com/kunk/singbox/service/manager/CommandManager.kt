@@ -562,8 +562,7 @@ class CommandManager(
                         BoxWrapperManager.getTrafficByOutbound()
                             .filterKeys { tag ->
                                 !tag.equals("direct", ignoreCase = true) &&
-                                    !tag.equals("block", ignoreCase = true) &&
-                                    !tag.equals("dns-out", ignoreCase = true)
+                                    !tag.equals("block", ignoreCase = true)
                             }
                     } catch (e: Exception) {
                         Log.w(TAG, "getTrafficByOutbound failed, fallback to activeNode", e)
@@ -749,7 +748,6 @@ class CommandManager(
 
             if (connection.closedAt > 0) continue
             val outbound = connection.outbound
-            if (outbound == "dns-out") continue
 
             if (newestConnection == null || connection.createdAt > newestConnection.createdAt) {
                 newestConnection = connection
@@ -761,7 +759,7 @@ class CommandManager(
             }
 
             var candidateTag: String? = outbound
-            if (candidateTag.isNullOrBlank() || candidateTag == "dns-out") {
+            if (candidateTag.isNullOrBlank()) {
                 candidateTag = null
             }
 
@@ -805,7 +803,7 @@ class CommandManager(
             if (chainIter != null) {
                 while (chainIter.hasNext()) {
                     val tag = chainIter.next()
-                    if (!tag.isNullOrBlank() && tag != "dns-out") {
+                    if (!tag.isNullOrBlank()) {
                         chainList.add(tag)
                     }
                 }

@@ -258,7 +258,6 @@ class ConfigRepository(private val context: Context) {
         return when (tag) {
             "direct" -> context.getString(R.string.outbound_tag_direct)
             "block" -> context.getString(R.string.outbound_tag_block)
-            "dns-out" -> "DNS"
             else -> {
                 lastTagToNodeName[tag]
                     ?: _allNodes.value.firstOrNull { it.name == tag }?.name
@@ -3242,20 +3241,29 @@ class ConfigRepository(private val context: Context) {
         val customDomainRules = buildCustomDomainRules(settings, selectorTag, outbounds, nodeTagResolver)
         val defaultRuleCatchAll = buildDefaultRules(settings, selectorTag)
         val hijackDnsRule = listOf(RouteRule(protocolRaw = listOf("dns"), action = "hijack-dns"))
+        val sniffRule = listOf(RouteRule(inbound = listOf("tun-in", "mixed-in"), action = "sniff"))
 
         val allRules = when (settings.routingMode) {
-            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + quicRule + icmpEchoRules
+            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + sniffRule + quicRule + icmpEchoRules
             RoutingMode.GLOBAL_DIRECT ->
-                hijackDnsRule + quicRule + icmpEchoRules + listOf(RouteRule(outbound = "direct"))
+                hijackDnsRule + sniffRule + quicRule + icmpEchoRules + listOf(RouteRule(outbound = "direct"))
             RoutingMode.RULE -> {
-                hijackDnsRule + quicRule + bypassLanRules + icmpEchoRules +
+                hijackDnsRule + sniffRule + quicRule + bypassLanRules + icmpEchoRules +
                     customDomainRules + appRoutingRules + customRuleSetRules + defaultRuleCatchAll
+            }
+        }
+
+        val normalizedRules = allRules.map { rule ->
+            if (!rule.outbound.isNullOrBlank() && rule.action.isNullOrBlank()) {
+                rule.copy(action = "route")
+            } else {
+                rule
             }
         }
 
         return RouteConfig(
             ruleSet = validRuleSets,
-            rules = allRules,
+            rules = normalizedRules,
             finalOutbound = selectorTag,
             findProcess = hasAppRouting,
             autoDetectInterface = true

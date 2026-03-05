@@ -94,7 +94,7 @@ class RouteGroupSelector(
             val candidates = selector.outbounds
                 .orEmpty()
                 .filter { it.isNotBlank() }
-                .filterNot { it.equals("direct", true) || it.equals("block", true) || it.equals("dns-out", true) }
+                .filterNot { it.equals("direct", true) || it.equals("block", true) }
 
             if (candidates.isEmpty()) continue
 
