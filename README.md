@@ -116,6 +116,7 @@ We've built a comprehensive protocol support network, compatible with most proxy
 | **WireGuard** | `WG` | `wireguard://` | Kernel-level VPN tunnel, Pre-shared Key (PSK) |
 | **SSH** | `SSH` | `ssh://` | Secure tunnel proxy, Private Key authentication |
 | **AnyTLS** | `AnyTLS` | `anytls://` | Universal TLS wrapper, Traffic obfuscation |
+| **Naive** | `Naive` | `naive+https://` | Native sing-box Naive protocol support |
 
 ### Subscription Ecosystem Support
 - **Sing-box JSON**: Native support with full features.

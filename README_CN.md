@@ -116,6 +116,7 @@
 | **WireGuard** | `WG` | `wireguard://` | 内核级 VPN 隧道, 预共享密钥 (PSK) |
 | **SSH** | `SSH` | `ssh://` | 安全隧道代理, Private Key 认证 |
 | **AnyTLS** | `AnyTLS` | `anytls://` | 通用 TLS 包装, 流量伪装 |
+| **Naive** | `Naive` | `naive+https://` | 原生 sing-box Naive 协议支持 |
 
 ### 订阅生态支持
 - **Sing-box JSON**: 原生支持，特性最全。
