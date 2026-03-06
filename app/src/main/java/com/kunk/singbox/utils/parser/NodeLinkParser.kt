@@ -625,14 +625,44 @@ class NodeLinkParser(private val gson: Gson) {
                 downMbps = params["down_mbps"]?.toIntOrNull() ?: params["down"]?.toIntOrNull() ?: 50,
                 tls = TlsConfig(
                     enabled = true,
-                    serverName = params["sni"] ?: server
+                    serverName = params["sni"] ?: server,
+                    insecure = parseBooleanQueryParam(
+                        params["insecure"] ?: params["allowInsecure"] ?: params["skip-cert-verify"]
+                    ),
+                    alpn = parseCsvQueryParam(params["alpn"])
                 ),
-                obfs = params["obfs"]?.let { ObfsConfig(type = it, password = params["obfs-password"]) }
+                obfs = params["obfs"]?.let { ObfsConfig(type = it, password = params["obfs-password"]) },
+                serverPorts = parseServerPorts(params["mport"])
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse Hy2 link", e)
         }
         return null
+    }
+
+    private fun parseBooleanQueryParam(value: String?): Boolean? {
+        return when (value?.trim()?.lowercase()) {
+            null, "" -> null
+            "1", "true", "yes", "on" -> true
+            "0", "false", "no", "off" -> false
+            else -> null
+        }
+    }
+
+    private fun parseCsvQueryParam(value: String?): List<String>? {
+        return value
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun parseServerPorts(value: String?): List<String>? {
+        return value
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.takeIf { it.isNotEmpty() }
     }
 
     private fun parseHysteriaLink(link: String): Outbound? {

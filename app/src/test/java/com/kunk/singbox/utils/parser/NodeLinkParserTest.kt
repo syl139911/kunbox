@@ -355,6 +355,18 @@ class NodeLinkParserTest {
         assertEquals("obfs-pass", outbound?.obfs?.password)
     }
 
+    @Test
+    fun testParseHysteria2WithTlsFlagsAndMport() {
+        val link = "hysteria2://password@hy2.example.com:443?sni=edge.example.com&insecure=1&alpn=h3,hysteria&mport=20000,20001#TlsFlagsNode"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("edge.example.com", outbound?.tls?.serverName)
+        assertEquals(true, outbound?.tls?.insecure)
+        assertEquals(listOf("h3", "hysteria"), outbound?.tls?.alpn)
+        assertEquals(listOf("20000", "20001"), outbound?.serverPorts)
+    }
+
     // ==================== Naive ====================
 
     @Test

@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -65,40 +66,54 @@ class SafeLatencyTester private constructor() {
 
         if (!isTestingActive.compareAndSet(false, true)) {
             Log.w(TAG, "Another test is in progress, waiting for cached results")
-            val reusedResults = waitForCachedResults(outbounds, URL_TEST_TIMEOUT_MS)
-            outbounds.forEach { outbound ->
-                val delay = reusedResults[outbound.tag]
-                onResult(outbound.tag, if (delay != null && delay > 0) delay.toLong() else -1L)
-            }
+            waitForCachedResults(outbounds, URL_TEST_TIMEOUT_MS, onResult)
             return
         }
 
         try {
             Log.i(TAG, "Starting URL test for ${outbounds.size} nodes via group API")
+            val requestedTags = outbounds.map { it.tag }.toSet()
+            val emittedTags = ConcurrentHashMap.newKeySet<String>()
+            val successCount = AtomicInteger(0)
 
-            val results = triggerGroupUrlTest(DEFAULT_GROUP_TAG)
+            val results = triggerGroupUrlTest(
+                groupTag = DEFAULT_GROUP_TAG,
+                expectedTags = requestedTags,
+                onProgress = { progressResults ->
+                    progressResults.forEach { (tag, delay) ->
+                        if (tag in requestedTags && delay > 0 && emittedTags.add(tag)) {
+                            onResult(tag, delay.toLong())
+                            successCount.incrementAndGet()
+                        }
+                    }
+                }
+            )
 
             if (results.isEmpty()) {
                 Log.w(TAG, "URL test returned no results, marking all as failed")
                 handleTestFailure()
-                outbounds.forEach { onResult(it.tag, -1L) }
+                outbounds.forEach { outbound ->
+                    if (emittedTags.add(outbound.tag)) {
+                        onResult(outbound.tag, -1L)
+                    }
+                }
                 return
             }
 
             consecutiveFailures.set(0)
 
-            var successCount = 0
             outbounds.forEach { outbound ->
+                if (!emittedTags.add(outbound.tag)) return@forEach
                 val delay = results[outbound.tag]
                 if (delay != null && delay > 0) {
                     onResult(outbound.tag, delay.toLong())
-                    successCount++
+                    successCount.incrementAndGet()
                 } else {
                     onResult(outbound.tag, -1L)
                 }
             }
 
-            Log.i(TAG, "URL test completed: $successCount/${outbounds.size} succeeded")
+            Log.i(TAG, "URL test completed: ${successCount.get()}/${outbounds.size} succeeded")
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -112,7 +127,11 @@ class SafeLatencyTester private constructor() {
 
     /**
      */
-    private suspend fun triggerGroupUrlTest(groupTag: String): Map<String, Int> {
+    private suspend fun triggerGroupUrlTest(
+        groupTag: String,
+        expectedTags: Set<String>,
+        onProgress: ((Map<String, Int>) -> Unit)? = null
+    ): Map<String, Int> {
         val service = SingBoxService.instance
         if (service == null) {
             Log.w(TAG, "SingBoxService not available")
@@ -121,7 +140,7 @@ class SafeLatencyTester private constructor() {
 
         return try {
             withTimeoutOrNull(URL_TEST_TIMEOUT_MS) {
-                service.urlTestGroup(groupTag, URL_TEST_TIMEOUT_MS)
+                service.urlTestGroup(groupTag, URL_TEST_TIMEOUT_MS, expectedTags, onProgress)
             } ?: run {
                 Log.w(TAG, "URL test timeout for group: $groupTag")
                 emptyMap()
@@ -134,24 +153,38 @@ class SafeLatencyTester private constructor() {
 
     private suspend fun waitForCachedResults(
         outbounds: List<Outbound>,
-        timeoutMs: Long
-    ): Map<String, Int> {
-        val service = SingBoxService.instance ?: return emptyMap()
+        timeoutMs: Long,
+        onResult: (tag: String, latency: Long) -> Unit
+    ) {
+        val service = SingBoxService.instance ?: return
         val deadline = System.currentTimeMillis() + timeoutMs
+        val emittedTags = mutableSetOf<String>()
         while (System.currentTimeMillis() < deadline) {
-            val result = mutableMapOf<String, Int>()
+            var hasAnyResult = false
             outbounds.forEach { outbound ->
                 val delay = service.getCachedUrlTestDelay(outbound.tag)
                 if (delay != null && delay > 0) {
-                    result[outbound.tag] = delay
+                    hasAnyResult = true
+                    if (emittedTags.add(outbound.tag)) {
+                        onResult(outbound.tag, delay.toLong())
+                    }
                 }
             }
-            if (result.isNotEmpty()) {
-                return result
+            if (emittedTags.size == outbounds.size) {
+                return
             }
-            delay(500)
+            if (hasAnyResult && emittedTags.isNotEmpty()) {
+                delay(120)
+            } else {
+                delay(100)
+            }
         }
-        return emptyMap()
+
+        outbounds.forEach { outbound ->
+            if (emittedTags.add(outbound.tag)) {
+                onResult(outbound.tag, -1L)
+            }
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ import com.kunk.singbox.repository.TrafficRepository
 import com.kunk.singbox.service.notification.VpnNotificationManager
 import io.nekohasekai.libbox.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.net.InetSocketAddress
@@ -353,23 +354,37 @@ class CommandManager(
      *
      */
     suspend fun urlTestGroup(groupTag: String, timeoutMs: Long = 10000L): Map<String, Int> {
+        return urlTestGroup(groupTag, timeoutMs, emptySet(), null)
+    }
+
+    suspend fun urlTestGroup(
+        groupTag: String,
+        timeoutMs: Long,
+        expectedTags: Set<String> = emptySet(),
+        onProgress: ((Map<String, Int>) -> Unit)? = null
+    ): Map<String, Int> {
 
         val client = commandClientGroup ?: commandClient ?: return emptyMap()
 
         return urlTestMutex.withLock {
+            val resultUpdates = Channel<Map<String, Int>>(Channel.CONFLATED)
             try {
                 pendingUrlTestGroupTag = groupTag
                 val latestGroupResults = AtomicReference<Map<String, Int>>(emptyMap())
                 urlTestCompletionCallback = { results ->
                     latestGroupResults.set(results)
+                    onProgress?.invoke(results)
+                    resultUpdates.trySend(results)
                 }
 
                 Log.i(TAG, "Triggering URL test for group: $groupTag")
                 client.urlTest(groupTag)
 
                 waitForStableUrlTestResults(
+                    resultUpdates = resultUpdates,
                     latestGroupResults = latestGroupResults,
-                    timeoutMs = timeoutMs
+                    timeoutMs = timeoutMs,
+                    expectedTags = expectedTags
                 )
 
                 val results = latestGroupResults.get().ifEmpty { urlTestResults.toMap() }
@@ -383,38 +398,52 @@ class CommandManager(
             } finally {
                 pendingUrlTestGroupTag = null
                 urlTestCompletionCallback = null
+                resultUpdates.close()
             }
         }
     }
 
     private suspend fun waitForStableUrlTestResults(
+        resultUpdates: Channel<Map<String, Int>>,
         latestGroupResults: AtomicReference<Map<String, Int>>,
-        timeoutMs: Long
+        timeoutMs: Long,
+        expectedTags: Set<String>
     ) {
-        val startTime = System.currentTimeMillis()
-        val pollInterval = 300L
-        var lastResultCount = -1
-        var stableCount = 0
+        val stableWindowMs = 120L
+        val startTime = SystemClock.elapsedRealtime()
+        val existingResults = latestGroupResults.get()
+        var latestResults = if (existingResults.isNotEmpty()) {
+            existingResults
+        } else {
+            withTimeoutOrNull(timeoutMs) {
+                resultUpdates.receiveCatching().getOrNull()
+            } ?: emptyMap()
+        }
 
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            delay(pollInterval)
-            val currentCount = latestGroupResults.get().size
-            if (currentCount <= 0) {
-                continue
-            }
+        if (latestResults.isEmpty()) return
 
-            stableCount = if (currentCount == lastResultCount) {
-                stableCount + 1
-            } else {
-                lastResultCount = currentCount
-                0
-            }
+        if (expectedTags.isNotEmpty() && expectedTags.all { latestResults.containsKey(it) }) {
+            latestGroupResults.set(latestResults)
+            Log.i(TAG, "URL test completed early with ${latestResults.size} results")
+            return
+        }
 
-            if (stableCount >= 2) {
-                Log.i(TAG, "URL test completed with $currentCount results")
+        while (true) {
+            val remainingMs = timeoutMs - (SystemClock.elapsedRealtime() - startTime)
+            if (remainingMs <= 0L) break
+
+            val nextResults = withTimeoutOrNull(minOf(stableWindowMs, remainingMs)) {
+                resultUpdates.receiveCatching().getOrNull()
+            } ?: break
+
+            latestResults = nextResults
+            if (expectedTags.isNotEmpty() && expectedTags.all { latestResults.containsKey(it) }) {
                 break
             }
         }
+
+        latestGroupResults.set(latestResults)
+        Log.i(TAG, "URL test completed with ${latestResults.size} results")
     }
 
     fun getCachedUrlTestDelay(tag: String): Int? {

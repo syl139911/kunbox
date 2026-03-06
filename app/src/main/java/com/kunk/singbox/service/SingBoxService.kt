@@ -737,6 +737,15 @@ class SingBoxService : VpnService() {
         return commandManager.urlTestGroup(groupTag, timeoutMs)
     }
 
+    suspend fun urlTestGroup(
+        groupTag: String,
+        timeoutMs: Long,
+        expectedTags: Set<String>,
+        onProgress: ((Map<String, Int>) -> Unit)? = null
+    ): Map<String, Int> {
+        return commandManager.urlTestGroup(groupTag, timeoutMs, expectedTags, onProgress)
+    }
+
     /**
      * 获取缓存的 URL 测试延迟
      * @param tag 节点标签

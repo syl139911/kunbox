@@ -584,15 +584,35 @@ object BoxWrapperManager {
     /**
      */
     @Suppress("UNUSED_PARAMETER")
-    fun urlTestBatch(
+    suspend fun urlTestBatch(
         outboundTags: List<String>,
         url: String,
         timeoutMs: Int,
         concurrency: Int
     ): Map<String, Int> {
+        val service = com.kunk.singbox.service.SingBoxService.instance
+        if (service == null) {
+            Log.w(TAG, "urlTestBatch: service not available")
+            return emptyMap()
+        }
 
-        Log.d(TAG, "urlTestBatch: sync method, returning empty map to trigger fallback")
-        return emptyMap()
+        return try {
+            val groupResults = service.urlTestGroup(groupTag = "PROXY", timeoutMs = timeoutMs.toLong())
+            if (groupResults.isEmpty()) {
+                Log.w(TAG, "urlTestBatch: group test returned no results")
+                emptyMap()
+            } else {
+                outboundTags.associateWith { tag -> groupResults[tag] ?: service.getCachedUrlTestDelay(tag) ?: -1 }
+                    .filterValues { it > 0 }
+            }
+        } catch (e: Exception) {
+            Log.e(
+                TAG,
+                "urlTestBatch failed: tags=${outboundTags.size}, timeoutMs=$timeoutMs, concurrency=$concurrency, url=$url",
+                e
+            )
+            emptyMap()
+        }
     }
 
     /**

@@ -724,48 +724,86 @@ class ConfigRepository(private val context: Context) {
 
     private suspend fun testRegularOutboundsLatency(
         infos: List<NodeTestInfo>,
+        concurrency: Int,
         onNodeComplete: ((nodeId: String, latencyMs: Long) -> Unit)?
     ) {
-        if (infos.isEmpty()) return
+        coroutineScope {
+            if (infos.isEmpty()) return@coroutineScope
 
-        if (VpnStateStore.getActive()) {
-            if (SingBoxService.instance == null) {
-                infos.forEach { info ->
-                    val latency = testNodeLatencyViaRunningService(info.outbound.tag)
+            if (VpnStateStore.getActive()) {
+                if (SingBoxService.instance == null) {
+                    val semaphore = Semaphore(concurrency)
+                    infos.map { info ->
+                        async {
+                            semaphore.withPermit {
+                                val latency = testNodeLatencyViaRunningService(info.outbound.tag)
+                                applyLatencyResult(info, latency, onNodeComplete)
+                            }
+                        }
+                    }.awaitAll()
+                    return@coroutineScope
+                }
+
+                val tagToInfo = infos.associateBy { it.outbound.tag }
+                val outbounds = infos.map { it.outbound }
+                singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
+                    val info = tagToInfo[tag] ?: return@testOutboundsLatency
                     applyLatencyResult(info, latency, onNodeComplete)
                 }
-                return
+                return@coroutineScope
             }
 
-            val tagToInfo = infos.associateBy { it.outbound.tag }
-            val outbounds = infos.map { it.outbound }
-            singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
-                val info = tagToInfo[tag] ?: return@testOutboundsLatency
-                applyLatencyResult(info, latency, onNodeComplete)
+            val preparedInfoPairs = infos.map { info ->
+                info to prepareOfflineProbeOutbound(info.outbound)
             }
-            return
-        }
+            val infoByTag = preparedInfoPairs.associate { (info, outbound) -> outbound.tag to Pair(info, outbound) }
+            val initialResults = ConcurrentHashMap<String, Long>()
 
-        infos.forEach { info ->
-            val probeOutbound = prepareOfflineProbeOutbound(info.outbound)
-            val latency = singBoxCore.testOutboundLatency(probeOutbound)
-            val finalLatency = if (latency > 0) {
-                latency
-            } else {
-                val fallback = ipv6TcpLatencyFallback(probeOutbound)
-                if (fallback > 0) fallback else resolveIpv6OnlyStatus(probeOutbound, latency)
+            singBoxCore.testOutboundsLatency(preparedInfoPairs.map { it.second }) { tag, latency ->
+                initialResults[tag] = latency
+                if (latency > 0L) {
+                    val pair = infoByTag[tag] ?: return@testOutboundsLatency
+                    applyLatencyResult(pair.first, latency, onNodeComplete)
+                }
             }
-            applyLatencyResult(info, finalLatency, onNodeComplete)
+
+            val fallbackSemaphore = Semaphore(concurrency)
+            preparedInfoPairs.map { (info, probeOutbound) ->
+                async {
+                    fallbackSemaphore.withPermit {
+                        val latency = initialResults[probeOutbound.tag] ?: -1L
+                        if (latency > 0L) return@withPermit
+
+                        val finalLatency = if (latency > 0L) {
+                            latency
+                        } else {
+                            val fallback = ipv6TcpLatencyFallback(probeOutbound)
+                            if (fallback > 0L) fallback else resolveIpv6OnlyStatus(probeOutbound, latency)
+                        }
+                        applyLatencyResult(info, finalLatency, onNodeComplete)
+                    }
+                }
+            }.awaitAll()
         }
     }
 
     private suspend fun testTcpFallbackOutboundsLatency(
         infos: List<NodeTestInfo>,
+        concurrency: Int,
         onNodeComplete: ((nodeId: String, latencyMs: Long) -> Unit)?
     ) {
-        infos.forEach { info ->
-            val latency = tcpLatencyFallback(info.outbound)
-            applyLatencyResult(info, latency, onNodeComplete)
+        coroutineScope {
+            if (infos.isEmpty()) return@coroutineScope
+
+            val semaphore = Semaphore(concurrency)
+            infos.map { info ->
+                async {
+                    semaphore.withPermit {
+                        val latency = tcpLatencyFallback(info.outbound)
+                        applyLatencyResult(info, latency, onNodeComplete)
+                    }
+                }
+            }.awaitAll()
         }
     }
 
@@ -2196,8 +2234,20 @@ class ConfigRepository(private val context: Context) {
             LatencyProbePolicy.shouldUseTcpFallback(it.outbound)
         }
 
-        testRegularOutboundsLatency(regularInfos, onNodeComplete)
-        testTcpFallbackOutboundsLatency(tcpFallbackInfos, onNodeComplete)
+        val settings = settingsRepository.settings.first()
+        val concurrency = settings.latencyTestConcurrency.coerceIn(1, 20)
+
+        coroutineScope {
+            val regularJob = async {
+                testRegularOutboundsLatency(regularInfos, concurrency, onNodeComplete)
+            }
+            val tcpFallbackJob = async {
+                testTcpFallbackOutboundsLatency(tcpFallbackInfos, concurrency, onNodeComplete)
+            }
+
+            regularJob.await()
+            tcpFallbackJob.await()
+        }
 
         saveProfiles()
     }

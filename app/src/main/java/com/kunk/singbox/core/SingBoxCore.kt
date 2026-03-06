@@ -572,11 +572,18 @@ class SingBoxCore private constructor(private val context: Context) {
                     address = "119.29.29.29",
                     detour = "direct",
                     strategy = "prefer_ipv4"
+                ),
+                com.kunk.singbox.model.DnsServer(
+                    tag = "dns-bootstrap",
+                    address = "223.5.5.5",
+                    detour = "direct",
+                    strategy = "prefer_ipv4"
                 )
             ),
             rules = listOf(
                 com.kunk.singbox.model.DnsRule(queryType = listOf("A"), server = "dns-direct-v4"),
-                com.kunk.singbox.model.DnsRule(queryType = listOf("AAAA"), server = "dns-direct-v6")
+                com.kunk.singbox.model.DnsRule(queryType = listOf("AAAA"), server = "dns-direct-v6"),
+                com.kunk.singbox.model.DnsRule(outboundRaw = listOf("any"), server = "dns-bootstrap")
             ),
             finalServer = "dns-backup",
             strategy = "prefer_ipv4"
