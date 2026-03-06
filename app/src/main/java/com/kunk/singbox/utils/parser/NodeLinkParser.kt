@@ -746,18 +746,14 @@ class NodeLinkParser(private val gson: Gson) {
                 ?: firstParam(params, "proto")
                 ?: firstParam(params, "type")
                 ?: "h2"
-            val path = firstParam(params, "path")
-                ?: firstParam(params, "url")
-                ?: "/"
-            val host = firstParam(params, "host")
-            val sni = firstParam(params, "sni") ?: host ?: server
+            val sni = firstParam(params, "sni") ?: server
             val insecure = parseBooleanFlag(firstParam(params, "insecure", "allowInsecure")) == true
             val alpn = firstParam(params, "alpn")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }
             val fingerprint = firstParam(params, "fp")?.takeIf { it.isNotBlank() }
             val congestionControl = firstParam(params, "congestion_control", "cc")
             val enableUdpOverTcp = parseBooleanFlag(firstParam(params, "uot", "udp_over_tcp")) == true
-
-            val headers = host?.let { mapOf("Host" to it) }
+            val insecureConcurrency = firstParam(params, "insecure_concurrency")?.toIntOrNull()
+            val extraHeaders = parseNaiveExtraHeaders(params)
 
             val useQuic = network.equals("quic", ignoreCase = true)
 
@@ -769,8 +765,8 @@ class NodeLinkParser(private val gson: Gson) {
                 username = username,
                 password = password,
                 network = if (useQuic) "quic" else "h2",
-                path = path,
-                headers = headers,
+                insecureConcurrency = insecureConcurrency,
+                extraHeaders = extraHeaders,
                 quic = useQuic,
                 quicCongestionControl = if (useQuic) congestionControl else null,
                 congestionControl = if (useQuic) null else congestionControl,
@@ -787,6 +783,31 @@ class NodeLinkParser(private val gson: Gson) {
             Log.e("NodeLinkParser", "Failed to parse Naive link", e)
         }
         return null
+    }
+
+    private fun parseNaiveExtraHeaders(params: Map<String, String>): Map<String, String>? {
+        val normalized = linkedMapOf<String, String>()
+        params.forEach { (key, rawValue) ->
+            if (!key.equals("extra_headers", ignoreCase = true)) return@forEach
+            rawValue
+                .replace("\r\n", "\n")
+                .split("\n", ";")
+                .asSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .forEach { line ->
+                    val separatorIndex = line.indexOf(':')
+                    if (separatorIndex <= 0) return@forEach
+
+                    val headerName = line.substring(0, separatorIndex).trim()
+                    val headerValue = line.substring(separatorIndex + 1).trim()
+                    if (headerName.isNotEmpty() && headerValue.isNotEmpty()) {
+                        normalized[headerName] = headerValue
+                    }
+                }
+        }
+
+        return normalized.ifEmpty { null }
     }
 
     private fun parseTuicLink(link: String): Outbound? {

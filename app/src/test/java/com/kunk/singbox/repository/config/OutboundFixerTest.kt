@@ -163,8 +163,8 @@ class OutboundFixerTest {
             username = "u",
             password = "p",
             network = "quic",
-            path = "proxy",
-            headers = mapOf("Host" to "h.example.com"),
+            insecureConcurrency = 2,
+            extraHeaders = mapOf("Host" to "h.example.com", "User-Agent" to "naive"),
             congestionControl = "bbr",
             udpOverTcp = UdpOverTcpConfig(enabled = true),
             tls = TlsConfig(enabled = true)
@@ -173,9 +173,11 @@ class OutboundFixerTest {
         val fixed = OutboundFixer.fix(outbound)
 
         assertEquals("quic", fixed.network)
-        assertEquals("/proxy", fixed.path)
-        assertEquals("h.example.com", fixed.headers?.get("Host"))
-        assertNull(fixed.extraHeaders)
+        assertNull(fixed.path)
+        assertNull(fixed.headers)
+        assertEquals(2, fixed.insecureConcurrency)
+        assertEquals("h.example.com", fixed.extraHeaders?.get("Host"))
+        assertEquals("naive", fixed.extraHeaders?.get("User-Agent"))
         assertTrue(fixed.quic == true)
         assertEquals("bbr", fixed.quicCongestionControl)
         assertEquals(true, fixed.udpOverTcp?.enabled)
@@ -190,7 +192,6 @@ class OutboundFixerTest {
             serverPort = 443,
             username = "u",
             password = "p",
-            path = "/",
             tls = TlsConfig(enabled = true)
         )
 

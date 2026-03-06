@@ -75,13 +75,15 @@ object NetworkClient {
     fun createClientWithTimeout(
         connectTimeoutSeconds: Long,
         readTimeoutSeconds: Long,
-        writeTimeoutSeconds: Long = readTimeoutSeconds
+        writeTimeoutSeconds: Long = readTimeoutSeconds,
+        callTimeoutSeconds: Long? = null
     ): OkHttpClient {
-        return newBuilder()
+        val builder = newBuilder()
             .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
             .writeTimeout(writeTimeoutSeconds, TimeUnit.SECONDS)
-            .build()
+        callTimeoutSeconds?.let { builder.callTimeout(it, TimeUnit.SECONDS) }
+        return builder.build()
     }
 
     /**
@@ -89,9 +91,10 @@ object NetworkClient {
     fun createClientWithoutRetry(
         connectTimeoutSeconds: Long,
         readTimeoutSeconds: Long,
-        writeTimeoutSeconds: Long = readTimeoutSeconds
+        writeTimeoutSeconds: Long = readTimeoutSeconds,
+        callTimeoutSeconds: Long? = null
     ): OkHttpClient {
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
             .writeTimeout(writeTimeoutSeconds, TimeUnit.SECONDS)
@@ -100,7 +103,8 @@ object NetworkClient {
             .retryOnConnectionFailure(false)
             .followRedirects(true)
             .followSslRedirects(true)
-            .build()
+        callTimeoutSeconds?.let { builder.callTimeout(it, TimeUnit.SECONDS) }
+        return builder.build()
     }
 
     /**
@@ -109,14 +113,15 @@ object NetworkClient {
         proxyPort: Int,
         connectTimeoutSeconds: Long,
         readTimeoutSeconds: Long,
-        writeTimeoutSeconds: Long = readTimeoutSeconds
+        writeTimeoutSeconds: Long = readTimeoutSeconds,
+        callTimeoutSeconds: Long? = null
     ): OkHttpClient {
         val proxy = java.net.Proxy(
             java.net.Proxy.Type.HTTP,
             java.net.InetSocketAddress("127.0.0.1", proxyPort)
         )
 
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .proxy(proxy)
             .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
@@ -126,7 +131,8 @@ object NetworkClient {
             .retryOnConnectionFailure(false)
             .followRedirects(true)
             .followSslRedirects(true)
-            .build()
+        callTimeoutSeconds?.let { builder.callTimeout(it, TimeUnit.SECONDS) }
+        return builder.build()
     }
 
     /**

@@ -91,6 +91,7 @@ import com.kunk.singbox.model.TransportConfig
 import com.kunk.singbox.model.UdpOverTcpConfig
 import com.kunk.singbox.model.WireGuardPeer
 import com.kunk.singbox.repository.ConfigRepository
+import com.kunk.singbox.ui.components.EditableMultilineTextItem
 import com.kunk.singbox.ui.components.EditableSelectionItem
 import com.kunk.singbox.ui.components.EditableTextItem
 import com.kunk.singbox.ui.components.SelectProfileDialog
@@ -471,25 +472,33 @@ fun NodeDetailScreen(
                         )
                         EditableSelectionItem(
                             title = stringResource(R.string.node_detail_transport_protocol),
-                            value = outbound.network ?: "h2",
-                            options = listOf("h2", "http", "quic"),
+                            value = if (outbound.quic == true || outbound.network == "quic") "quic" else "h2",
+                            options = listOf("h2", "quic"),
                             icon = Icons.Rounded.SwapHoriz,
-                            onValueChange = { editingOutbound = outbound.copy(network = it) }
+                            onValueChange = {
+                                val useQuic = it == "quic"
+                                editingOutbound = outbound.copy(
+                                    network = if (useQuic) "quic" else "h2",
+                                    quic = useQuic
+                                )
+                            }
                         )
                         EditableTextItem(
-                            title = stringResource(R.string.node_detail_transport_path),
-                            value = outbound.path ?: "/",
-                            icon = Icons.Rounded.Route,
-                            onValueChange = { editingOutbound = outbound.copy(path = if (it.isEmpty()) "/" else it) }
+                            title = stringResource(R.string.node_detail_insecure_concurrency),
+                            value = outbound.insecureConcurrency?.toString() ?: "",
+                            icon = Icons.Rounded.Numbers,
+                            onValueChange = {
+                                editingOutbound = outbound.copy(insecureConcurrency = it.toIntOrNull())
+                            }
                         )
-                        EditableTextItem(
-                            title = stringResource(R.string.node_detail_host),
-                            value = outbound.headers?.get("Host") ?: "",
+                        EditableMultilineTextItem(
+                            title = stringResource(R.string.node_detail_extra_headers),
+                            value = formatHeaderLines(outbound.extraHeaders),
+                            subtitle = stringResource(R.string.node_detail_extra_headers_hint),
+                            placeholder = "User-Agent: naive\nX-Trace: demo",
                             icon = Icons.Rounded.Language,
                             onValueChange = {
-                                val host = it.trim()
-                                val newHeaders = if (host.isBlank()) null else mapOf("Host" to host)
-                                editingOutbound = outbound.copy(headers = newHeaders)
+                                editingOutbound = outbound.copy(extraHeaders = parseHeaderLines(it))
                             }
                         )
                         EditableSelectionItem(
@@ -1427,7 +1436,34 @@ private fun createEmptyOutbound(protocol: String): Outbound {
         server = "",
         serverPort = defaultPort,
         network = if (protocol == "naive") "h2" else null,
-        path = if (protocol == "naive") "/" else null,
+        quic = if (protocol == "naive") false else null,
         tls = if (needsTls) TlsConfig(enabled = true) else null
     )
+}
+
+private fun formatHeaderLines(headers: Map<String, String>?): String {
+    return headers
+        ?.entries
+        ?.sortedBy { it.key.lowercase() }
+        ?.joinToString("\n") { (key, value) -> "$key: $value" }
+        .orEmpty()
+}
+
+private fun parseHeaderLines(text: String): Map<String, String>? {
+    val parsed = linkedMapOf<String, String>()
+    text.lineSequence()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .forEach { line ->
+            val separatorIndex = line.indexOf(':')
+            if (separatorIndex <= 0) return@forEach
+
+            val key = line.substring(0, separatorIndex).trim()
+            val value = line.substring(separatorIndex + 1).trim()
+            if (key.isNotEmpty() && value.isNotEmpty()) {
+                parsed[key] = value
+            }
+        }
+
+    return parsed.ifEmpty { null }
 }

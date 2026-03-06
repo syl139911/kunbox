@@ -191,6 +191,7 @@ data class Outbound(
     @SerializedName("congestion_control") val congestionControl: String? = null,
     @SerializedName("quic") val quic: Boolean? = null,
     @SerializedName("quic_congestion_control") val quicCongestionControl: String? = null,
+    @SerializedName("insecure_concurrency") val insecureConcurrency: Int? = null,
     @SerializedName("extra_headers") val extraHeaders: Map<String, String>? = null,
     @SerializedName("udp_relay_mode") val udpRelayMode: String? = null,
     @SerializedName("zero_rtt_handshake") val zeroRttHandshake: Boolean? = null,

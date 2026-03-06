@@ -340,6 +340,9 @@
     <string name="node_detail_zero_rtt">Zero RTT</string>
     <string name="node_detail_disable_sni">Disable SNI</string>
     <string name="node_detail_host">Host</string>
+    <string name="node_detail_insecure_concurrency">Insecure Concurrency</string>
+    <string name="node_detail_extra_headers">Extra Headers</string>
+    <string name="node_detail_extra_headers_hint">One header per line, format: Key: Value</string>
     <string name="node_detail_peer_public_key">Peer Public Key</string>
     <string name="node_detail_pre_shared_key">Pre-Shared Key</string>
     <string name="node_detail_local_address">Local Address (CIDR)</string>

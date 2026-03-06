@@ -355,6 +355,9 @@
     <string name="node_detail_zero_rtt">Zero RTT</string>
     <string name="node_detail_disable_sni">禁用 SNI</string>
     <string name="node_detail_host">Host</string>
+    <string name="node_detail_insecure_concurrency">不安全并发</string>
+    <string name="node_detail_extra_headers">额外请求头</string>
+    <string name="node_detail_extra_headers_hint">每行一个请求头，格式：Key: Value</string>
     <string name="node_detail_peer_public_key">对端公钥</string>
     <string name="node_detail_pre_shared_key">预共享密钥</string>
     <string name="node_detail_local_address">本地地址 (CIDR)</string>

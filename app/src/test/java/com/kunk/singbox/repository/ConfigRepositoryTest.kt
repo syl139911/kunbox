@@ -1,7 +1,12 @@
 package com.kunk.singbox.repository
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 
 class ConfigRepositoryTest {
 
@@ -71,5 +76,119 @@ class ConfigRepositoryTest {
         val duration = System.nanoTime() - startTime
 
         assertTrue(duration < 100_000_000L)
+    }
+
+    @Test
+    fun testExtractSubscriptionUrlFromHtml() {
+        val html = """
+            <html>
+            <body>
+              <input
+                type="text"
+                value="https://conf1.example.com/token-123"
+                readonly
+                id="sub_url"
+                class="link-input">
+            </body>
+            </html>
+        """.trimIndent()
+
+        val actual = ConfigRepository.extractSubscriptionUrlFromHtml(html)
+
+        assertEquals("https://conf1.example.com/token-123", actual)
+    }
+
+    @Test
+    fun testLooksLikeHtmlSubscriptionPageByContentType() {
+        val result = ConfigRepository.looksLikeHtmlSubscriptionPage(
+            contentType = "text/html; charset=utf-8",
+            body = "mixed-port: 7890"
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun testLooksLikeHtmlSubscriptionPageByBodyPrefix() {
+        val result = ConfigRepository.looksLikeHtmlSubscriptionPage(
+            contentType = null,
+            body = "<!DOCTYPE html><html><body>订阅信息</body></html>"
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun testExtractSubscriptionHost() {
+        val host = ConfigRepository.extractSubscriptionHost(
+            "https://1.811200.xyz/api/v1/client/subscribe?token=abc"
+        )
+
+        assertEquals("1.811200.xyz", host)
+    }
+
+    @Test
+    fun testPrioritizeUserAgentsWithPreferredValue() {
+        val prioritized = ConfigRepository.prioritizeUserAgents("sing-box/1.13.1")
+
+        assertEquals("sing-box/1.13.1", prioritized.first())
+        assertEquals(prioritized.size, prioritized.distinct().size)
+        assertTrue(prioritized.contains("ClashMeta/1.18.0"))
+    }
+
+    @Test
+    fun testPrioritizeUserAgentsWithoutPreferredValue() {
+        val prioritized = ConfigRepository.prioritizeUserAgents(null)
+
+        assertEquals("ClashMeta/1.18.0", prioritized.first())
+        assertTrue(prioritized.contains("sing-box/1.13.1"))
+    }
+
+    @Test
+    fun testFilterCircuitBrokenUserAgents() {
+        val result = ConfigRepository.filterCircuitBrokenUserAgents(
+            userAgents = listOf("ClashMeta/1.18.0", "Clash/1.18.0", "sing-box/1.13.1"),
+            circuitBrokenUserAgents = setOf("ClashMeta/1.18.0", "Clash/1.18.0")
+        )
+
+        assertEquals(listOf("sing-box/1.13.1"), result)
+    }
+
+    @Test
+    fun testFilterCircuitBrokenUserAgentsFallsBackWhenAllBlocked() {
+        val original = listOf("ClashMeta/1.18.0", "Clash/1.18.0")
+        val result = ConfigRepository.filterCircuitBrokenUserAgents(
+            userAgents = original,
+            circuitBrokenUserAgents = original.toSet()
+        )
+
+        assertEquals(original, result)
+    }
+
+    @Test
+    fun testShouldRecordSubscriptionNetworkFailureForConnectException() {
+        assertTrue(
+            ConfigRepository.shouldRecordSubscriptionNetworkFailure(
+                ConnectException("failed to connect")
+            )
+        )
+    }
+
+    @Test
+    fun testShouldRecordSubscriptionNetworkFailureForTimeoutException() {
+        assertTrue(
+            ConfigRepository.shouldRecordSubscriptionNetworkFailure(
+                SocketTimeoutException("timeout")
+            )
+        )
+    }
+
+    @Test
+    fun testShouldRecordSubscriptionNetworkFailureForParseError() {
+        val result = ConfigRepository.shouldRecordSubscriptionNetworkFailure(
+            IllegalArgumentException("parse failed")
+        )
+
+        assertTrue(!result)
     }
 }

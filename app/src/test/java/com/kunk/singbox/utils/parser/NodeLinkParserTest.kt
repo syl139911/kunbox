@@ -359,7 +359,7 @@ class NodeLinkParserTest {
 
     @Test
     fun testParseNaiveBasic() {
-        val link = "naive://user:pass@naive.example.com:443?network=h2&path=%2Fproxy&sni=naive.example.com#NaiveNode"
+        val link = "naive://user:pass@naive.example.com:443?network=h2&insecure_concurrency=2&extra_headers=User-Agent%3A%20naive%0AX-Test%3A%20demo&sni=naive.example.com#NaiveNode"
         val outbound = parser.parse(link)
 
         assertNotNull(outbound)
@@ -370,7 +370,11 @@ class NodeLinkParserTest {
         assertEquals("user", outbound?.username)
         assertEquals("pass", outbound?.password)
         assertEquals("h2", outbound?.network)
-        assertEquals("/proxy", outbound?.path)
+        assertEquals(2, outbound?.insecureConcurrency)
+        assertEquals("naive", outbound?.extraHeaders?.get("User-Agent"))
+        assertEquals("demo", outbound?.extraHeaders?.get("X-Test"))
+        assertNull(outbound?.path)
+        assertNull(outbound?.headers)
         assertNotNull(outbound?.tls)
         assertEquals(true, outbound?.tls?.enabled)
         assertEquals("naive.example.com", outbound?.tls?.serverName)
@@ -378,7 +382,7 @@ class NodeLinkParserTest {
 
     @Test
     fun testParseNaivePlusHttpsScheme() {
-        val link = "naive+https://u:p@naive.example.com:443?path=%2Fabc#NaiveHttps"
+        val link = "naive+https://u:p@naive.example.com:443?extra_headers=User-Agent%3A%20naive#NaiveHttps"
         val outbound = parser.parse(link)
 
         assertNotNull(outbound)
@@ -387,12 +391,12 @@ class NodeLinkParserTest {
         assertEquals("u", outbound?.username)
         assertEquals("p", outbound?.password)
         assertEquals("h2", outbound?.network)
-        assertEquals("/abc", outbound?.path)
+        assertEquals("naive", outbound?.extraHeaders?.get("User-Agent"))
     }
 
     @Test
     fun testParseNaivePlusHttpsWithTrailingComma() {
-        val link = "naive+https://u:p@naive.example.com:443?path=%2Fabc#NaiveHttps,"
+        val link = "naive+https://u:p@naive.example.com:443?insecure_concurrency=4#NaiveHttps,"
         val outbound = parser.parse(link)
 
         assertNotNull(outbound)
@@ -400,7 +404,7 @@ class NodeLinkParserTest {
         assertEquals("NaiveHttps", outbound?.tag)
         assertEquals("u", outbound?.username)
         assertEquals("p", outbound?.password)
-        assertEquals("/abc", outbound?.path)
+        assertEquals(4, outbound?.insecureConcurrency)
     }
 
     // ==================== TUIC ====================

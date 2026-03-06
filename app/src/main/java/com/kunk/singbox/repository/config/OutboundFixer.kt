@@ -409,7 +409,8 @@ object OutboundFixer {
                 serverPort = fixed.serverPort,
                 username = fixed.username,
                 password = fixed.password,
-                extraHeaders = fixed.headers,
+                insecureConcurrency = fixed.insecureConcurrency,
+                extraHeaders = fixed.extraHeaders,
                 quic = fixed.network?.equals("quic", ignoreCase = true),
                 quicCongestionControl = fixed.congestionControl,
                 tls = fixed.tls,
@@ -494,36 +495,38 @@ object OutboundFixer {
         val preferredNetwork = outbound.network?.trim()?.lowercase()
         val normalizedNetwork = when (preferredNetwork) {
             "", null -> "h2"
-            "http", "h2", "quic" -> preferredNetwork
+            "h2", "quic" -> preferredNetwork
             else -> "h2"
         }
         val useQuic = normalizedNetwork == "quic" || outbound.quic == true
 
-        val rawPath = outbound.path?.trim().orEmpty()
-        val normalizedPath = if (rawPath.isBlank()) {
-            "/"
-        } else if (rawPath.startsWith("/")) {
-            rawPath
-        } else {
-            "/$rawPath"
-        }
+        val normalizedHeaders = buildMap {
+            outbound.extraHeaders
+                ?.asSequence()
+                ?.map { (key, value) -> key.trim() to value.trim() }
+                ?.filter { (key, value) -> key.isNotEmpty() && value.isNotEmpty() }
+                ?.forEach { (key, value) -> put(key, value) }
 
-        val host = (outbound.headers?.get("Host") ?: outbound.extraHeaders?.get("Host"))?.trim()
+            val host = outbound.headers?.get("Host")?.trim()
+            if (!host.isNullOrEmpty() && !containsKey("Host")) {
+                put("Host", host)
+            }
+        }.ifEmpty { null }
+
+        val host = normalizedHeaders?.get("Host")?.trim()
         val tls = outbound.tls ?: TlsConfig(enabled = true)
         val tlsEnabled = tls.enabled != false
         val shouldSetSni = tlsEnabled &&
             !host.isNullOrBlank() &&
             !isIpLiteral(host) &&
             (tls.serverName.isNullOrBlank() || isIpLiteral(tls.serverName ?: ""))
-
-        val normalizedHeaders = if (host.isNullOrBlank()) null else mapOf("Host" to host)
         val tlsUpdated = if (shouldSetSni) tls.copy(serverName = host, enabled = true) else tls
 
         return outbound.copy(
             network = if (useQuic) "quic" else "h2",
-            path = normalizedPath,
-            headers = normalizedHeaders,
-            extraHeaders = null,
+            path = null,
+            headers = null,
+            extraHeaders = normalizedHeaders,
             quic = useQuic,
             quicCongestionControl = outbound.quicCongestionControl ?: outbound.congestionControl,
             tls = tlsUpdated,

@@ -243,16 +243,21 @@ object NodeLinkExporter {
         val name = encodeUrlComponent(outbound.tag)
 
         val params = mutableListOf<String>()
-        outbound.network?.let { params.add("network=${encodeUrlComponent(it)}") }
-        outbound.path?.let { params.add("path=${encodeUrlComponent(it)}") }
-        outbound.headers?.get("Host")?.let { params.add("host=${encodeUrlComponent(it)}") }
+        params.add("network=${encodeUrlComponent(if (outbound.quic == true || outbound.network == "quic") "quic" else "h2")}")
         outbound.tls?.serverName?.let { params.add("sni=${encodeUrlComponent(it)}") }
         if (outbound.tls?.insecure == true) params.add("insecure=1")
         outbound.tls?.alpn?.let {
             if (it.isNotEmpty()) params.add("alpn=${encodeUrlComponent(it.joinToString(","))}")
         }
         outbound.tls?.utls?.fingerprint?.let { params.add("fp=${encodeUrlComponent(it)}") }
-        outbound.congestionControl?.let { params.add("congestion_control=${encodeUrlComponent(it)}") }
+        outbound.insecureConcurrency?.let { params.add("insecure_concurrency=$it") }
+        outbound.extraHeaders
+            ?.takeIf { it.isNotEmpty() }
+            ?.entries
+            ?.joinToString("\n") { (key, value) -> "$key: $value" }
+            ?.let { params.add("extra_headers=${encodeUrlComponent(it)}") }
+        (outbound.quicCongestionControl ?: outbound.congestionControl)
+            ?.let { params.add("congestion_control=${encodeUrlComponent(it)}") }
         if (outbound.udpOverTcp?.enabled == true) params.add("uot=1")
 
         val queryPart = buildOptionalQuery(params)

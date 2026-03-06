@@ -31,9 +31,12 @@ import com.kunk.singbox.database.entity.ProfileEntity
 import com.kunk.singbox.database.entity.ActiveStateEntity
 import com.kunk.singbox.database.entity.NodeLatencyEntity
 import java.io.File
+import java.net.ConnectException
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
+import java.net.URI
+import java.net.SocketTimeoutException
 import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -59,9 +62,21 @@ class ConfigRepository(private val context: Context) {
         val profileId: String
     )
 
+    private data class SubscriptionAttemptContext(
+        val host: String,
+        val userAgent: String,
+        val isRemembered: Boolean
+    )
+
     companion object {
         private const val TAG = "ConfigRepository"
         private const val PARALLEL_CONCURRENCY = 8
+        private const val SUBSCRIPTION_CONNECT_TIMEOUT_SECONDS = 5L
+        private const val SUBSCRIPTION_READ_TIMEOUT_SECONDS = 8L
+        private const val SUBSCRIPTION_WRITE_TIMEOUT_SECONDS = 8L
+        private const val SUBSCRIPTION_CALL_TIMEOUT_SECONDS = 10L
+        private const val SUBSCRIPTION_FAILURE_THRESHOLD = 1
+        private const val SUBSCRIPTION_CIRCUIT_BREAKER_WINDOW_MS = 10 * 60 * 1000L
         private val REGEX_TRAFFIC = Regex("([\\d.]+)\\s*([KMGTPE]?)B?")
         private val REGEX_KV_PAIRS =
             Regex("(?i)\\b(upload|download|total|expire)\\b\\s*[:=]\\s*\"?([^,;\\s\\n\\r}]+)\"?")
@@ -100,14 +115,80 @@ class ConfigRepository(private val context: Context) {
                 return id
             }
         }
+        private val REGEX_HTML_SUBSCRIPTION_INPUT = Regex(
+            """<input[^>]+id=["']sub_url["'][^>]*>""",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        )
+        private val REGEX_HTML_INPUT_VALUE = Regex(
+            """value=["']([^"']+)["']""",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        )
+
         private val USER_AGENTS = listOf(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "ClashMeta/1.18.0",
-            "sing-box/1.13.0", // Sing-box
             "Clash.Meta/1.18.0",
             "Clash/1.18.0",
-            "SFA/1.13.0"
+            "sing-box/1.13.1",
+            "sing-box/1.13.0",
+            "SFA/1.13.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
+
+        internal fun extractSubscriptionUrlFromHtml(html: String): String? {
+            return REGEX_HTML_SUBSCRIPTION_INPUT.find(html)
+                ?.value
+                ?.let { inputTag -> REGEX_HTML_INPUT_VALUE.find(inputTag)?.groupValues?.getOrNull(1) }
+                ?.trim()
+                ?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+        }
+
+        internal fun looksLikeHtmlSubscriptionPage(contentType: String?, body: String): Boolean {
+            val normalizedContentType = contentType.orEmpty().lowercase()
+            if ("text/html" in normalizedContentType) {
+                return true
+            }
+            val trimmed = body.trimStart()
+            return trimmed.startsWith("<!DOCTYPE html>", ignoreCase = true) ||
+                trimmed.startsWith("<html", ignoreCase = true)
+        }
+
+        internal fun extractSubscriptionHost(url: String): String? {
+            return runCatching { URI(url).host?.lowercase() }.getOrNull()
+        }
+
+        internal fun prioritizeUserAgents(preferredUserAgent: String?): List<String> {
+            if (preferredUserAgent.isNullOrBlank()) return USER_AGENTS
+            return buildList {
+                add(preferredUserAgent)
+                USER_AGENTS.forEach { userAgent ->
+                    if (!userAgent.equals(preferredUserAgent, ignoreCase = true)) {
+                        add(userAgent)
+                    }
+                }
+            }
+        }
+
+        internal fun filterCircuitBrokenUserAgents(
+            userAgents: List<String>,
+            circuitBrokenUserAgents: Set<String>
+        ): List<String> {
+            if (circuitBrokenUserAgents.isEmpty()) return userAgents
+            val available = userAgents.filterNot { userAgent ->
+                circuitBrokenUserAgents.any { blocked ->
+                    blocked.equals(userAgent, ignoreCase = true)
+                }
+            }
+            return if (available.isNotEmpty()) available else userAgents
+        }
+
+        internal fun shouldRecordSubscriptionNetworkFailure(exception: Exception): Boolean {
+            if (exception is ConnectException || exception is SocketTimeoutException) {
+                return true
+            }
+            val message = exception.message.orEmpty().lowercase()
+            return "failed to connect" in message || "timeout" in message
+        }
 
         @Volatile
         private var instance: ConfigRepository? = null
@@ -185,6 +266,15 @@ class ConfigRepository(private val context: Context) {
         )
     }
 
+    private fun getSubscriptionClient(): OkHttpClient {
+        return NetworkClient.createClientWithoutRetry(
+            connectTimeoutSeconds = SUBSCRIPTION_CONNECT_TIMEOUT_SECONDS,
+            readTimeoutSeconds = SUBSCRIPTION_READ_TIMEOUT_SECONDS,
+            writeTimeoutSeconds = SUBSCRIPTION_WRITE_TIMEOUT_SECONDS,
+            callTimeoutSeconds = SUBSCRIPTION_CALL_TIMEOUT_SECONDS
+        )
+    }
+
     private fun getProxyClient(): okhttp3.OkHttpClient? {
         val settings = cachedSettings ?: AppSettings()
         if (!com.kunk.singbox.ipc.VpnStateStore.getActive() || settings.proxyPort <= 0) {
@@ -197,6 +287,72 @@ class ConfigRepository(private val context: Context) {
             readTimeoutSeconds = timeout,
             writeTimeoutSeconds = timeout
         )
+    }
+
+    private fun getSubscriptionProxyClient(): OkHttpClient? {
+        val settings = cachedSettings ?: AppSettings()
+        if (!VpnStateStore.getActive() || settings.proxyPort <= 0) {
+            return null
+        }
+        return NetworkClient.createClientWithProxy(
+            proxyPort = settings.proxyPort,
+            connectTimeoutSeconds = SUBSCRIPTION_CONNECT_TIMEOUT_SECONDS,
+            readTimeoutSeconds = SUBSCRIPTION_READ_TIMEOUT_SECONDS,
+            writeTimeoutSeconds = SUBSCRIPTION_WRITE_TIMEOUT_SECONDS,
+            callTimeoutSeconds = SUBSCRIPTION_CALL_TIMEOUT_SECONDS
+        )
+    }
+
+    private fun getRememberedSubscriptionUserAgent(url: String): String? {
+        val host = extractSubscriptionHost(url) ?: return null
+        return subscriptionUaMemoryMmkv.decodeString(host, null)
+    }
+
+    private fun rememberSuccessfulSubscriptionUserAgent(url: String, userAgent: String) {
+        val host = extractSubscriptionHost(url) ?: return
+        subscriptionUaMemoryMmkv.encode(host, userAgent)
+    }
+
+    private fun buildSubscriptionUaHealthKey(host: String, userAgent: String, suffix: String): String {
+        return "$host|$userAgent|$suffix"
+    }
+
+    private fun getCircuitBrokenUserAgents(host: String, nowMs: Long = System.currentTimeMillis()): Set<String> {
+        return USER_AGENTS.filter { userAgent ->
+            val blockedUntilKey = buildSubscriptionUaHealthKey(host, userAgent, "blocked_until")
+            subscriptionUaHealthMmkv.decodeLong(blockedUntilKey, 0L) > nowMs
+        }.toSet()
+    }
+
+    private fun clearSubscriptionUserAgentFailure(host: String, userAgent: String) {
+        val failureCountKey = buildSubscriptionUaHealthKey(host, userAgent, "fail_count")
+        val blockedUntilKey = buildSubscriptionUaHealthKey(host, userAgent, "blocked_until")
+        subscriptionUaHealthMmkv.removeValueForKey(failureCountKey)
+        subscriptionUaHealthMmkv.removeValueForKey(blockedUntilKey)
+    }
+
+    private fun recordSubscriptionUserAgentFailure(
+        host: String,
+        userAgent: String,
+        nowMs: Long = System.currentTimeMillis()
+    ) {
+        val failureCountKey = buildSubscriptionUaHealthKey(host, userAgent, "fail_count")
+        val blockedUntilKey = buildSubscriptionUaHealthKey(host, userAgent, "blocked_until")
+        val nextFailureCount = subscriptionUaHealthMmkv.decodeInt(failureCountKey, 0) + 1
+        subscriptionUaHealthMmkv.encode(failureCountKey, nextFailureCount)
+        if (nextFailureCount >= SUBSCRIPTION_FAILURE_THRESHOLD) {
+            subscriptionUaHealthMmkv.encode(
+                blockedUntilKey,
+                nowMs + SUBSCRIPTION_CIRCUIT_BREAKER_WINDOW_MS
+            )
+        }
+    }
+
+    private fun buildSubscriptionUserAgents(url: String): List<String> {
+        val prioritized = prioritizeUserAgents(getRememberedSubscriptionUserAgent(url))
+        val host = extractSubscriptionHost(url) ?: return prioritized
+        val circuitBrokenUserAgents = getCircuitBrokenUserAgents(host)
+        return filterCircuitBrokenUserAgents(prioritized, circuitBrokenUserAgents)
     }
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -250,6 +406,12 @@ class ConfigRepository(private val context: Context) {
     private val profileLastSelectedNode = ConcurrentHashMap<String, String>()
     private val profileNodeMemoryMmkv: MMKV by lazy {
         MMKV.mmkvWithID("profile_node_memory", MMKV.SINGLE_PROCESS_MODE)
+    }
+    private val subscriptionUaMemoryMmkv: MMKV by lazy {
+        MMKV.mmkvWithID("subscription_ua_memory", MMKV.SINGLE_PROCESS_MODE)
+    }
+    private val subscriptionUaHealthMmkv: MMKV by lazy {
+        MMKV.mmkvWithID("subscription_ua_health", MMKV.SINGLE_PROCESS_MODE)
     }
 
     fun resolveNodeNameFromOutboundTag(tag: String?): String? {
@@ -932,66 +1094,188 @@ class ConfigRepository(private val context: Context) {
         )
     }
 
+    private fun logHtmlSubscriptionPage(userAgent: String, responseBody: String) {
+        val extractedUrl = extractSubscriptionUrlFromHtml(responseBody)
+        if (!extractedUrl.isNullOrBlank()) {
+            Log.i(
+                TAG,
+                "Subscription endpoint returned HTML info page with UA '$userAgent', " +
+                    "embedded subscription URL: $extractedUrl"
+            )
+        } else {
+            Log.w(TAG, "Subscription endpoint returned HTML info page with UA '$userAgent'")
+        }
+    }
+
+    private fun parseSubscriptionResponse(
+        userAgent: String,
+        contentType: String?,
+        responseBody: String,
+        subscriptionUserInfoHeader: String?
+    ): FetchResult? {
+        if (looksLikeHtmlSubscriptionPage(contentType, responseBody)) {
+            logHtmlSubscriptionPage(userAgent, responseBody)
+            return null
+        }
+
+        val config = subscriptionManager.parse(responseBody)
+        if (config == null || config.outbounds.isNullOrEmpty()) {
+            Log.w(TAG, "Failed to parse subscription response with UA '$userAgent'")
+            return null
+        }
+
+        val headerUserInfo = parseSubscriptionUserInfo(subscriptionUserInfoHeader, responseBody)
+        val outboundUserInfo = parseUserInfoFromOutbounds(config.outbounds)
+        val userInfo = mergeUserInfo(headerUserInfo, outboundUserInfo)
+        return FetchResult(config, userInfo)
+    }
+
+    private fun buildSubscriptionRequest(url: String, userAgent: String): Request {
+        return Request.Builder()
+            .url(url)
+            .header("User-Agent", userAgent)
+            .header("Accept", "application/yaml,text/yaml,text/plain,application/json,*/*")
+            .build()
+    }
+
+    private fun logSubscriptionAttempt(
+        level: Int,
+        message: String,
+        context: SubscriptionAttemptContext,
+        costMs: Long,
+        extra: String? = null
+    ) {
+        val logMessage = buildString {
+            append(message)
+            append(": host=")
+            append(context.host)
+            append(", ua='")
+            append(context.userAgent)
+            append("', cached=")
+            append(context.isRemembered)
+            append(", cost=")
+            append(costMs)
+            append("ms")
+            if (!extra.isNullOrBlank()) {
+                append(", ")
+                append(extra)
+            }
+        }
+        when (level) {
+            Log.INFO -> Log.i(TAG, logMessage)
+            Log.WARN -> Log.w(TAG, logMessage)
+            else -> Log.d(TAG, logMessage)
+        }
+    }
+
+    private fun logSubscriptionParseResult(
+        fetchResult: FetchResult?,
+        contentType: String?,
+        context: SubscriptionAttemptContext,
+        costMs: Long
+    ) {
+        val message = if (fetchResult != null) {
+            "Subscription request succeeded"
+        } else {
+            "Subscription response unusable"
+        }
+        val level = if (fetchResult != null) Log.INFO else Log.WARN
+        logSubscriptionAttempt(
+            level = level,
+            message = message,
+            context = context,
+            costMs = costMs,
+            extra = "contentType='$contentType'"
+        )
+    }
+
+    private fun executeSubscriptionAttempt(
+        client: OkHttpClient,
+        url: String,
+        context: SubscriptionAttemptContext,
+        onProgress: (String) -> Unit
+    ): FetchResult? {
+        val startedAt = System.currentTimeMillis()
+        val request = buildSubscriptionRequest(url, context.userAgent)
+
+        client.newCall(request).execute().use { response ->
+            val costMs = System.currentTimeMillis() - startedAt
+            if (!response.isSuccessful) {
+                logSubscriptionAttempt(
+                    level = Log.WARN,
+                    message = "Subscription request failed",
+                    context = context,
+                    costMs = costMs,
+                    extra = "code=${response.code}"
+                )
+                throw Exception("HTTP ${response.code}: ${response.message}")
+            }
+
+            val responseBody = response.body?.string()
+            if (responseBody.isNullOrBlank()) {
+                logSubscriptionAttempt(
+                    level = Log.WARN,
+                    message = "Empty subscription response",
+                    context = context,
+                    costMs = costMs
+                )
+                throw Exception("Subscription response body is empty")
+            }
+
+            onProgress("Parsing subscription response...")
+
+            val contentType = response.header("Content-Type")
+            val fetchResult = parseSubscriptionResponse(
+                userAgent = context.userAgent,
+                contentType = contentType,
+                responseBody = responseBody,
+                subscriptionUserInfoHeader = response.header("Subscription-Userinfo")
+            )
+            logSubscriptionParseResult(fetchResult, contentType, context, costMs)
+            return fetchResult
+        }
+    }
+
     private fun fetchAndParseSubscription(
         url: String,
         onProgress: (String) -> Unit = {}
     ): FetchResult? {
         var lastError: Exception? = null
+        val host = extractSubscriptionHost(url) ?: "unknown"
+        val rememberedUserAgent = getRememberedSubscriptionUserAgent(url)
+        val userAgents = buildSubscriptionUserAgents(url)
+        val client = getSubscriptionProxyClient() ?: getSubscriptionClient()
 
-        for ((index, userAgent) in USER_AGENTS.withIndex()) {
+        for ((index, userAgent) in userAgents.withIndex()) {
             try {
-                onProgress("Trying subscription request with User-Agent (${index + 1}/${USER_AGENTS.size})...")
-
-                val request = Request.Builder()
-                    .url(url)
-                    .header("User-Agent", userAgent)
-                    .header("Accept", "application/yaml,text/yaml,text/plain,application/json,*/*")
-                    .build()
-
-                var parsedConfig: SingBoxConfig? = null
-                var userInfo: SubscriptionUserInfo? = null
-
-                NetworkClient.client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        Log.w(TAG, "Subscription request failed with UA '$userAgent': HTTP ${response.code}")
-                        if (index == USER_AGENTS.lastIndex) {
-                            throw Exception("HTTP ${response.code}: ${response.message}")
-                        }
-                        return@use
-                    }
-
-                    val responseBody = response.body?.string()
-                    if (responseBody.isNullOrBlank()) {
-                        Log.w(TAG, "Empty subscription response with UA '$userAgent'")
-                        if (index == USER_AGENTS.lastIndex) {
-                            throw Exception("Subscription response body is empty")
-                        }
-                        return@use
-                    }
-
-                    onProgress("Parsing subscription response...")
-
-                    val config = subscriptionManager.parse(responseBody)
-                    if (config != null && !config.outbounds.isNullOrEmpty()) {
-                        val headerUserInfo = parseSubscriptionUserInfo(
-                            response.header("Subscription-Userinfo"),
-                            responseBody
-                        )
-                        val outboundUserInfo = parseUserInfoFromOutbounds(config.outbounds)
-                        userInfo = mergeUserInfo(headerUserInfo, outboundUserInfo)
-                        parsedConfig = config
-                    } else {
-                        Log.w(TAG, "Failed to parse subscription response with UA '$userAgent'")
-                    }
-                }
-
-                if (parsedConfig != null) {
-                    return FetchResult(parsedConfig!!, userInfo)
+                onProgress("Trying subscription request with User-Agent (${index + 1}/${userAgents.size})...")
+                val attemptContext = SubscriptionAttemptContext(
+                    host = host,
+                    userAgent = userAgent,
+                    isRemembered = rememberedUserAgent.equals(userAgent, ignoreCase = true)
+                )
+                val fetchResult = executeSubscriptionAttempt(
+                    client = client,
+                    url = url,
+                    context = attemptContext,
+                    onProgress = onProgress
+                )
+                if (fetchResult != null) {
+                    rememberSuccessfulSubscriptionUserAgent(url, userAgent)
+                    clearSubscriptionUserAgentFailure(host, userAgent)
+                    return fetchResult
                 }
             } catch (e: Exception) {
                 lastError = e
-                Log.w(TAG, "Subscription fetch error with UA '$userAgent': ${e.message}")
-                if (index == USER_AGENTS.lastIndex) {
+                if (shouldRecordSubscriptionNetworkFailure(e)) {
+                    recordSubscriptionUserAgentFailure(host, userAgent)
+                }
+                Log.w(
+                    TAG,
+                    "Subscription fetch error: host=$host, ua='$userAgent', " +
+                        "cached=${rememberedUserAgent.equals(userAgent, ignoreCase = true)}, error=${e.message}"
+                )
+                if (index == userAgents.lastIndex) {
                     throw e
                 }
             }

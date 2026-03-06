@@ -42,6 +42,43 @@ fun EditableTextItem(
 }
 
 @Composable
+fun EditableMultilineTextItem(
+    title: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    icon: ImageVector? = null,
+    subtitle: String? = null,
+    placeholder: String = ""
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        InputDialog(
+            title = stringResource(R.string.common_edit_title, title),
+            initialValue = value,
+            placeholder = placeholder,
+            confirmText = stringResource(R.string.common_ok),
+            singleLine = false,
+            minLines = 4,
+            maxLines = 8,
+            onConfirm = {
+                onValueChange(it)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false }
+        )
+    }
+
+    SettingItem(
+        title = title,
+        value = value,
+        subtitle = subtitle,
+        icon = icon,
+        onClick = { showDialog = true }
+    )
+}
+
+@Composable
 fun EditableSelectionItem(
     title: String,
     value: String,
