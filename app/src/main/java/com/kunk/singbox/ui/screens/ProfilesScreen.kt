@@ -343,15 +343,14 @@ fun ProfilesScreen(
             onConfirm = { name ->
                 if (name.contains("://")) {
                     Toast.makeText(context, nameInvalidMsg, Toast.LENGTH_SHORT).show()
-                    return@InputDialog
-                }
-
-                val content = clipboardManager.getText()?.text ?: ""
-                if (content.isNotBlank()) {
-                    viewModel.importFromContent(if (name.isBlank()) defaultClipboardName else name, content)
-                    showClipboardInput = false
                 } else {
-                    Toast.makeText(context, clipboardEmptyMsg, Toast.LENGTH_SHORT).show()
+                    val content = clipboardManager.getText()?.text ?: ""
+                    if (content.isNotBlank()) {
+                        viewModel.importFromContent(if (name.isBlank()) defaultClipboardName else name, content)
+                        showClipboardInput = false
+                    } else {
+                        Toast.makeText(context, clipboardEmptyMsg, Toast.LENGTH_SHORT).show()
+                    }
                 }
             },
             onDismiss = { showClipboardInput = false }
@@ -369,7 +368,7 @@ fun ProfilesScreen(
     }
 
     if (editingProfile != null) {
-        val profile = editingProfile!!
+        val profile = checkNotNull(editingProfile)
         SubscriptionInputDialog(
             initialName = profile.name,
             initialUrl = profile.url ?: "",

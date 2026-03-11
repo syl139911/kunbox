@@ -44,7 +44,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -113,6 +115,79 @@ class ConfigRepository(private val context: Context) {
                 }
                 nodeIdCache[key] = id
                 return id
+            }
+        }
+
+        internal fun buildBootstrapDnsRules(
+            serverAddresses: List<String>,
+            bootstrapV4Tag: String,
+            bootstrapV6Tag: String,
+            bootstrapTag: String
+        ): List<DnsRule> {
+            val bootstrapDomains = serverAddresses
+                .mapNotNull { extractHostFromAddress(it) }
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !isIpAddressValue(it) && !it.equals("local", ignoreCase = true) }
+                .distinct()
+
+            if (bootstrapDomains.isEmpty()) {
+                return emptyList()
+            }
+
+            return listOf(
+                DnsRule(
+                    domain = bootstrapDomains,
+                    queryType = listOf("A"),
+                    action = "route",
+                    server = bootstrapV4Tag
+                ),
+                DnsRule(
+                    domain = bootstrapDomains,
+                    queryType = listOf("AAAA"),
+                    action = "route",
+                    server = bootstrapV6Tag
+                ),
+                DnsRule(
+                    domain = bootstrapDomains,
+                    action = "route",
+                    server = bootstrapTag
+                )
+            )
+        }
+
+        internal fun isIpAddressValue(address: String?): Boolean {
+            if (address.isNullOrBlank()) return false
+            return (address.count { it == '.' } == 3 &&
+                address.all { it.isDigit() || it == '.' }) ||
+                address.contains(":")
+        }
+
+        @Suppress("ReturnCount")
+        internal fun extractHostFromAddress(address: String): String? {
+            val trimmed = address.trim()
+            if (trimmed.isEmpty()) return null
+
+            extractHostByUri(trimmed)?.let { return it }
+            extractHostByUri("dns://$trimmed")?.let { return it }
+
+            if (trimmed.startsWith("[") && trimmed.contains("]")) {
+                return trimmed.substringAfter('[').substringBefore(']')
+            }
+
+            val colonCount = trimmed.count { it == ':' }
+            if (colonCount == 1 && !trimmed.contains('/')) {
+                return trimmed.substringBefore(':').takeIf { it.isNotBlank() }
+            }
+
+            return trimmed
+        }
+
+        private fun extractHostByUri(address: String): String? {
+            return try {
+                val uri = URI(address)
+                uri.host
+            } catch (_: Exception) {
+                null
             }
         }
         private val REGEX_HTML_SUBSCRIPTION_INPUT = Regex(
@@ -395,6 +470,7 @@ class ConfigRepository(private val context: Context) {
     private val savedNodeLatencies = ConcurrentHashMap<String, Long>()
     @Volatile private var saveProfilesJob: kotlinx.coroutines.Job? = null
     private val saveDebounceMs = 300L
+    private val saveProfilesMutex = Mutex()
 
     private val allNodesUiActiveCount = AtomicInteger(0)
     @Volatile private var allNodesLoadedForUi: Boolean = false
@@ -496,51 +572,82 @@ class ConfigRepository(private val context: Context) {
 
     private fun saveProfilesImmediate() {
         saveProfilesJob?.cancel()
-        scope.launch {
+        saveProfilesJob = scope.launch {
             saveProfilesInternal()
         }
     }
 
-    private fun saveProfilesInternal() {
-        try {
-            val startTime = System.currentTimeMillis()
-            val profiles = _profiles.value
-            val activeProfileId = _activeProfileId.value
-            val activeNodeId = _activeNodeId.value
-            val latencies = mutableMapOf<String, Long>()
-            profileNodes.values.flatten().forEach { node ->
-                node.latencyMs?.let { latencies[node.id] = it }
-            }
+    private suspend fun saveProfilesInternal() {
+        saveProfilesMutex.withLock {
             try {
-                activeStateDao.saveSync(ActiveStateEntity(
-                    id = 1,
-                    activeProfileId = activeProfileId,
-                    activeNodeId = activeNodeId
-                ))
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to save active state synchronously", e)
-            }
-            scope.launch {
-                try {
-                    val entities = profiles.mapIndexed { index, profile ->
-                        ProfileEntity.fromUiModel(profile, sortOrder = index)
-                    }
-                    profileDao.insertAll(entities)
-                    if (latencies.isNotEmpty()) {
-                        val latencyEntities = latencies.map { (nodeId, latency) ->
-                            NodeLatencyEntity(nodeId = nodeId, latencyMs = latency)
-                        }
-                        nodeLatencyDao.insertAll(latencyEntities)
-                    }
-
-                    val elapsed = System.currentTimeMillis() - startTime
-                    Log.d(TAG, "Saved ${profiles.size} profiles to Room in ${elapsed}ms")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to save profiles to Room", e)
+                val startTime = System.currentTimeMillis()
+                val profiles = _profiles.value
+                val activeProfileId = _activeProfileId.value
+                val activeNodeId = _activeNodeId.value
+                val latencies = mutableMapOf<String, Long>()
+                profileNodes.values.flatten().forEach { node ->
+                    node.latencyMs?.let { latencies[node.id] = it }
                 }
+                try {
+                    activeStateDao.saveSync(ActiveStateEntity(
+                        id = 1,
+                        activeProfileId = activeProfileId,
+                        activeNodeId = activeNodeId
+                    ))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to save active state synchronously", e)
+                }
+
+                val entities = profiles.mapIndexed { index, profile ->
+                    ProfileEntity.fromUiModel(profile, sortOrder = index)
+                }
+                profileDao.insertAll(entities)
+                if (latencies.isNotEmpty()) {
+                    val latencyEntities = latencies.map { (nodeId, latency) ->
+                        NodeLatencyEntity(nodeId = nodeId, latencyMs = latency)
+                    }
+                    nodeLatencyDao.insertAll(latencyEntities)
+                }
+
+                val elapsed = System.currentTimeMillis() - startTime
+                Log.d(TAG, "Saved ${profiles.size} profiles to Room in ${elapsed}ms")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save profiles", e)
             }
+        }
+    }
+
+    private fun writeConfigFileOrThrow(profileId: String, config: SingBoxConfig) {
+        val configFile = File(configDir, "$profileId.json")
+        try {
+            configFile.writeText(gson.toJson(config))
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to save profiles", e)
+            Log.e(TAG, "Failed to write config file for profile: $profileId", e)
+            throw IllegalStateException("Failed to write config for profile $profileId", e)
+        }
+    }
+
+    private suspend fun preResolveDomainsForProfileBestEffort(
+        profileId: String,
+        config: SingBoxConfig,
+        dnsServer: String?
+    ) {
+        runCatching {
+            preResolveDomainsForProfile(profileId, config, dnsServer)
+        }.onFailure { e ->
+            Log.w(TAG, "DNS pre-resolve failed for profile $profileId", e)
+        }
+    }
+
+    private fun rollbackTransientProfileFile(profileId: String) {
+        if (_profiles.value.any { it.id == profileId }) {
+            return
+        }
+        removeCachedConfig(profileId)
+        profileNodes.remove(profileId)
+        val configFile = File(configDir, "$profileId.json")
+        if (configFile.exists() && !configFile.delete()) {
+            Log.w(TAG, "Failed to delete transient profile config: ${configFile.absolutePath}")
         }
     }
 
@@ -722,6 +829,7 @@ class ConfigRepository(private val context: Context) {
         }
     }
 
+    @Suppress("CognitiveComplexMethod")
     private suspend fun testRegularOutboundsLatency(
         infos: List<NodeTestInfo>,
         concurrency: Int,
@@ -1331,6 +1439,7 @@ class ConfigRepository(private val context: Context) {
         dnsServer: String? = null,
         onProgress: (String) -> Unit = {}
     ): Result<ProfileUi> = withContext(Dispatchers.IO) {
+        var profileId: String? = null
         try {
             onProgress("Fetching subscription content...")
             val fetchResult = try {
@@ -1349,15 +1458,14 @@ class ConfigRepository(private val context: Context) {
 
             onProgress(context.getString(R.string.profiles_extracting_nodes, 0, 0))
 
-            val profileId = UUID.randomUUID().toString()
+            profileId = UUID.randomUUID().toString()
             val deduplicatedConfig = deduplicateTags(config)
             val nodes = extractNodesFromConfig(deduplicatedConfig, profileId, onProgress)
 
             if (nodes.isEmpty()) {
                 return@withContext Result.failure(Exception(context.getString(R.string.nodes_no_valid_found)))
             }
-            val configFile = File(configDir, "$profileId.json")
-            configFile.writeText(gson.toJson(deduplicatedConfig))
+            writeConfigFileOrThrow(profileId, deduplicatedConfig)
             val profile = ProfileUi(
                 id = profileId,
                 name = name,
@@ -1386,13 +1494,14 @@ class ConfigRepository(private val context: Context) {
             }
             if (dnsPreResolve) {
                 onProgress("Pre-resolving domains for imported profile...")
-                preResolveDomainsForProfile(profileId, deduplicatedConfig, dnsServer)
+                preResolveDomainsForProfileBestEffort(profileId, deduplicatedConfig, dnsServer)
             }
 
             onProgress(context.getString(R.string.profiles_import_success, nodes.size.toString()))
 
             Result.success(profile)
         } catch (e: Exception) {
+            profileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Subscription import failed", e)
             val msg = when (e) {
                 is java.net.SocketTimeoutException -> "Connection timeout, please check your network"
@@ -1410,6 +1519,7 @@ class ConfigRepository(private val context: Context) {
         profileType: ProfileType = ProfileType.Imported,
         onProgress: (String) -> Unit = {}
     ): Result<ProfileUi> = withContext(Dispatchers.IO) {
+        var profileId: String? = null
         try {
             onProgress(context.getString(R.string.common_loading))
 
@@ -1419,7 +1529,7 @@ class ConfigRepository(private val context: Context) {
 
             onProgress(context.getString(R.string.profiles_extracting_nodes, 0, 0))
 
-            val profileId = UUID.randomUUID().toString()
+            profileId = UUID.randomUUID().toString()
             val deduplicatedConfig = deduplicateTags(config)
             val nodes = extractNodesFromConfig(deduplicatedConfig, profileId, onProgress)
 
@@ -1427,8 +1537,7 @@ class ConfigRepository(private val context: Context) {
                 return@withContext Result.failure(Exception(context.getString(R.string.nodes_no_valid_found)))
             }
 
-            val configFile = File(configDir, "$profileId.json")
-            configFile.writeText(gson.toJson(deduplicatedConfig))
+            writeConfigFileOrThrow(profileId, deduplicatedConfig)
 
             val profile = ProfileUi(
                 id = profileId,
@@ -1455,7 +1564,8 @@ class ConfigRepository(private val context: Context) {
 
             Result.success(profile)
         } catch (e: Exception) {
-            e.printStackTrace()
+            profileId?.let { rollbackTransientProfileFile(it) }
+            Log.e(TAG, "Failed to import profile from content", e)
             Result.failure(e)
         }
     }
@@ -1618,7 +1728,7 @@ class ConfigRepository(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Failed to parse subscription response as node links", e)
         }
 
         return null
@@ -2010,7 +2120,10 @@ class ConfigRepository(private val context: Context) {
         removeCachedConfig(profileId)
         profileNodes.remove(profileId)
         updateAllNodesAndGroups()
-        File(configDir, "$profileId.json").delete()
+        val configFile = File(configDir, "$profileId.json")
+        if (configFile.exists() && !configFile.delete()) {
+            Log.w(TAG, "Failed to delete profile config file: ${configFile.absolutePath}")
+        }
         scope.launch {
             try {
                 profileDao.deleteById(profileId)
@@ -2032,8 +2145,12 @@ class ConfigRepository(private val context: Context) {
         saveProfiles()
     }
 
-    fun importProfileDirectly(profile: ProfileUi, config: SingBoxConfig) {
+    suspend fun importProfileDirectly(profile: ProfileUi, config: SingBoxConfig) {
         val deduplicatedConfig = deduplicateTags(config)
+        val sortOrder = (profileDao.getMaxSortOrder() ?: -1) + 1
+        val entity = ProfileEntity.fromUiModel(profile, sortOrder = sortOrder)
+
+        profileDao.insert(entity)
         cacheConfig(profile.id, deduplicatedConfig)
         val nodes = extractNodesFromConfigSync(deduplicatedConfig, profile.id)
         profileNodes[profile.id] = nodes
@@ -2042,15 +2159,6 @@ class ConfigRepository(private val context: Context) {
             filtered + profile
         }
         updateAllNodesAndGroups()
-        scope.launch {
-            try {
-                val sortOrder = profileDao.getMaxSortOrder() ?: 0
-                val entity = ProfileEntity.fromUiModel(profile, sortOrder = sortOrder + 1)
-                profileDao.insert(entity)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to save imported profile to Room", e)
-            }
-        }
         if (_activeProfileId.value == null) {
             setActiveProfile(profile.id)
         }
@@ -2343,8 +2451,7 @@ class ConfigRepository(private val context: Context) {
             val newNodeNames = newNodes.map { it.name }.toSet()
             val addedNodes = newNodeNames - oldNodeNames
             val removedNodes = oldNodeNames - newNodeNames
-            val configFile = File(configDir, "${profile.id}.json")
-            configFile.writeText(gson.toJson(deduplicatedConfig))
+            writeConfigFileOrThrow(profile.id, deduplicatedConfig)
 
             cacheConfig(profile.id, deduplicatedConfig)
             profileNodes[profile.id] = newNodes
@@ -2368,7 +2475,7 @@ class ConfigRepository(private val context: Context) {
 
             saveProfiles()
             if (profile.dnsPreResolve) {
-                preResolveDomainsForProfile(profile.id, deduplicatedConfig, profile.dnsServer)
+                preResolveDomainsForProfileBestEffort(profile.id, deduplicatedConfig, profile.dnsServer)
             }
             if (addedNodes.isNotEmpty() || removedNodes.isNotEmpty()) {
                 SubscriptionUpdateResult.SuccessWithChanges(
@@ -2893,19 +3000,6 @@ class ConfigRepository(private val context: Context) {
             )
         )
 
-        dnsRules.add(
-            dnsRouteTo(
-                bootstrapV4Tag,
-                DnsRule(outboundRaw = listOf("any"), queryType = listOf("A"))
-            )
-        )
-        dnsRules.add(
-            dnsRouteTo(
-                bootstrapV6Tag,
-                DnsRule(outboundRaw = listOf("any"), queryType = listOf("AAAA"))
-            )
-        )
-        dnsRules.add(dnsRouteTo("dns-bootstrap", DnsRule(outboundRaw = listOf("any"))))
         val localDnsAddr = settings.localDns.takeIf { it.isNotBlank() } ?: "https://dns.alidns.com/dns-query"
         val localResolver = if (localDnsAddr == "local" || isIpAddress(localDnsAddr)) null else "dns-bootstrap"
         dnsServers.add(
@@ -2930,6 +3024,18 @@ class ConfigRepository(private val context: Context) {
                 detour = "PROXY",
                 strategy = mapDnsStrategy(settings.remoteDnsStrategy),
                 addressResolver = remoteResolver
+            )
+        )
+
+        dnsRules.addAll(
+            buildBootstrapDnsRules(
+                serverAddresses = listOfNotNull(
+                    localDnsAddr.takeIf { localResolver != null },
+                    remoteDnsAddr.takeIf { remoteResolver != null }
+                ),
+                bootstrapV4Tag = bootstrapV4Tag,
+                bootstrapV6Tag = bootstrapV6Tag,
+                bootstrapTag = "dns-bootstrap"
             )
         )
 
@@ -3561,7 +3667,8 @@ class ConfigRepository(private val context: Context) {
         selectorTag: String,
         outbounds: List<Outbound>,
         nodeTagResolver: (String?) -> String?,
-        validRuleSets: List<RuleSetConfig>
+        validRuleSets: List<RuleSetConfig>,
+        bootstrapStrategy: String = "prefer_ipv4"
     ): RouteConfig {
         val hasAppRouting = settings.appRules.any { it.enabled } || settings.appGroups.any { it.enabled }
 
@@ -3600,7 +3707,11 @@ class ConfigRepository(private val context: Context) {
             rules = normalizedRules,
             finalOutbound = selectorTag,
             findProcess = hasAppRouting,
-            autoDetectInterface = true
+            autoDetectInterface = true,
+            defaultDomainResolver = DomainResolveConfig(
+                server = "dns-bootstrap",
+                strategy = bootstrapStrategy
+            )
         )
     }
 
@@ -3655,6 +3766,7 @@ class ConfigRepository(private val context: Context) {
         targetProfileId: String? = null,
         newProfileName: String? = null
     ) {
+        var createdProfileId: String? = null
         try {
             val profileId: String
             val existingConfig: SingBoxConfig?
@@ -3672,12 +3784,14 @@ class ConfigRepository(private val context: Context) {
                         profileId = UUID.randomUUID().toString()
                         existingConfig = null
                         finalProfileName = "Manual"
+                        createdProfileId = profileId
                     }
                 }
                 newProfileName != null -> {
                     profileId = UUID.randomUUID().toString()
                     existingConfig = null
                     finalProfileName = newProfileName
+                    createdProfileId = profileId
                 }
                 else -> {
                     val manualProfileName = "Manual"
@@ -3688,6 +3802,7 @@ class ConfigRepository(private val context: Context) {
                     } else {
                         profileId = UUID.randomUUID().toString()
                         existingConfig = null
+                        createdProfileId = profileId
                     }
                     finalProfileName = manualProfileName
                 }
@@ -3712,8 +3827,7 @@ class ConfigRepository(private val context: Context) {
             }
             val newConfig = deduplicateTags(SingBoxConfig(outbounds = newOutbounds))
 
-            val configFile = File(configDir, "$profileId.json")
-            configFile.writeText(gson.toJson(newConfig))
+            writeConfigFileOrThrow(profileId, newConfig)
 
             cacheConfig(profileId, newConfig)
 
@@ -3751,6 +3865,7 @@ class ConfigRepository(private val context: Context) {
                 Log.i(TAG, "Created node: $finalTag in profile $profileId")
             }
         } catch (e: Exception) {
+            createdProfileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to create node", e)
         }
     }
@@ -3762,12 +3877,7 @@ class ConfigRepository(private val context: Context) {
         val newOutbounds = config.outbounds?.filter { it.tag != node.name }
         val newConfig = config.copy(outbounds = newOutbounds)
         cacheConfig(profileId, newConfig)
-        try {
-            val configFile = File(configDir, "$profileId.json")
-            configFile.writeText(gson.toJson(newConfig))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        writeConfigFileOrThrow(profileId, newConfig)
         scope.launch {
             val newNodes = extractNodesFromConfig(newConfig, profileId)
             profileNodes[profileId] = newNodes
@@ -3788,6 +3898,7 @@ class ConfigRepository(private val context: Context) {
         targetProfileId: String? = null,
         newProfileName: String? = null
     ): Result<NodeUi> = withContext(Dispatchers.IO) {
+        var createdProfileId: String? = null
         try {
             val outbound = parseNodeLink(link.trim())
                 ?: return@withContext Result.failure(Exception("Failed to parse node link"))
@@ -3809,6 +3920,7 @@ class ConfigRepository(private val context: Context) {
                     profileId = UUID.randomUUID().toString()
                     existingConfig = null
                     isNewProfile = true
+                    createdProfileId = profileId
                 }
                 else -> {
                     val manualProfileName = "Manual"
@@ -3820,6 +3932,7 @@ class ConfigRepository(private val context: Context) {
                         profileId = UUID.randomUUID().toString()
                         existingConfig = null
                         isNewProfile = true
+                        createdProfileId = profileId
                     }
                 }
             }
@@ -3846,8 +3959,7 @@ class ConfigRepository(private val context: Context) {
             }
             val newConfig = deduplicateTags(SingBoxConfig(outbounds = newOutbounds))
 
-            val configFile = File(configDir, "$profileId.json")
-            configFile.writeText(gson.toJson(newConfig))
+            writeConfigFileOrThrow(profileId, newConfig)
 
             cacheConfig(profileId, newConfig)
             val nodes = extractNodesFromConfig(newConfig, profileId)
@@ -3885,6 +3997,7 @@ class ConfigRepository(private val context: Context) {
 
             Result.success(addedNode ?: nodes.last())
         } catch (e: Exception) {
+            createdProfileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to add single node", e)
             Result.failure(Exception(context.getString(R.string.nodes_add_failed) + ": ${e.message}"))
         }
@@ -3900,12 +4013,7 @@ class ConfigRepository(private val context: Context) {
         var newConfig = config.copy(outbounds = newOutbounds)
         newConfig = deduplicateTags(newConfig)
         cacheConfig(profileId, newConfig)
-        try {
-            val configFile = File(configDir, "$profileId.json")
-            configFile.writeText(gson.toJson(newConfig))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        writeConfigFileOrThrow(profileId, newConfig)
 
         val oldNodes = profileNodes[profileId] ?: _nodes.value
         val latencyById = oldNodes.associate { it.id to it.latencyMs }
@@ -3944,12 +4052,7 @@ class ConfigRepository(private val context: Context) {
         var newConfig = config.copy(outbounds = newOutbounds)
         newConfig = deduplicateTags(newConfig)
         cacheConfig(profileId, newConfig)
-        try {
-            val configFile = File(configDir, "$profileId.json")
-            configFile.writeText(gson.toJson(newConfig))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        writeConfigFileOrThrow(profileId, newConfig)
         val oldNodes = profileNodes[profileId] ?: _nodes.value
         val latencyById = oldNodes.associate { it.id to it.latencyMs }
         val updatedNodeId = stableNodeId(profileId, newOutbound.tag)
@@ -4051,16 +4154,10 @@ class ConfigRepository(private val context: Context) {
     }
 
     private fun isIpAddress(address: String?): Boolean {
-        if (address.isNullOrBlank()) return false
-        return (address.count { it == '.' } == 3 && address.all { it.isDigit() || it == '.' }) || address.contains(":")
+        return isIpAddressValue(address)
     }
 
     private fun extractHost(url: String): String {
-        return try {
-            val uri = java.net.URI(url)
-            uri.host ?: url
-        } catch (e: Exception) {
-            url
-        }
+        return extractHostFromAddress(url) ?: url
     }
 }

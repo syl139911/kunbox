@@ -335,6 +335,26 @@ class NodeLinkParserTest {
     }
 
     @Test
+    fun testParseHysteria2WithoutBandwidthKeepsNull() {
+        val link = "hysteria2://password@hy2.example.com:443?sni=hy2.example.com#NoBandwidthNode"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals(null, outbound?.upMbps)
+        assertEquals(null, outbound?.downMbps)
+    }
+
+    @Test
+    fun testParseHysteria2WithExportedBandwidthParamNames() {
+        val link = "hysteria2://password@hy2.example.com:443?upmbps=80&downmbps=160#ExportedBandwidthNode"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals(80, outbound?.upMbps)
+        assertEquals(160, outbound?.downMbps)
+    }
+
+    @Test
     fun testParseHy2ShortScheme() {
         val link = "hy2://password@hy2.example.com:443#ShortScheme"
         val outbound = parser.parse(link)
@@ -357,7 +377,8 @@ class NodeLinkParserTest {
 
     @Test
     fun testParseHysteria2WithTlsFlagsAndMport() {
-        val link = "hysteria2://password@hy2.example.com:443?sni=edge.example.com&insecure=1&alpn=h3,hysteria&mport=20000,20001#TlsFlagsNode"
+        val link = "hysteria2://password@hy2.example.com:443" +
+            "?sni=edge.example.com&insecure=1&alpn=h3,hysteria&mport=20000,20001#TlsFlagsNode"
         val outbound = parser.parse(link)
 
         assertNotNull(outbound)
@@ -371,7 +392,10 @@ class NodeLinkParserTest {
 
     @Test
     fun testParseNaiveBasic() {
-        val link = "naive://user:pass@naive.example.com:443?network=h2&insecure_concurrency=2&extra_headers=User-Agent%3A%20naive%0AX-Test%3A%20demo&sni=naive.example.com#NaiveNode"
+        val link = "naive://user:pass@naive.example.com:443" +
+            "?network=h2&insecure_concurrency=2" +
+            "&extra_headers=User-Agent%3A%20naive%0AX-Test%3A%20demo" +
+            "&sni=naive.example.com#NaiveNode"
         val outbound = parser.parse(link)
 
         assertNotNull(outbound)

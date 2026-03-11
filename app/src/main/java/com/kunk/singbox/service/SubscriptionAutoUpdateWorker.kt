@@ -1,9 +1,10 @@
-﻿package com.kunk.singbox.service
+package com.kunk.singbox.service
 
 import android.content.Context
 import android.util.Log
 import androidx.work.*
 import com.kunk.singbox.model.ProfileType
+import com.kunk.singbox.model.SubscriptionUpdateResult
 import com.kunk.singbox.repository.ConfigRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -46,6 +47,7 @@ class SubscriptionAutoUpdateWorker(
                 intervalMinutes.toLong(),
                 TimeUnit.MINUTES
             )
+                .addTag(TAG)
                 .setConstraints(constraints)
                 .setInputData(inputData)
                 .setBackoffCriteria(
@@ -97,6 +99,7 @@ class SubscriptionAutoUpdateWorker(
         }
     }
 
+    @Suppress("CognitiveComplexMethod")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val profileId = inputData.getString("profile_id")
 
@@ -124,9 +127,23 @@ class SubscriptionAutoUpdateWorker(
                 return@withContext Result.success()
             }
 
-            val result = configRepository.updateProfile(profileId)
+            when (val result = configRepository.updateProfile(profileId)) {
+                is SubscriptionUpdateResult.SuccessNoChanges,
+                is SubscriptionUpdateResult.SuccessWithChanges -> Result.success()
 
-            Result.success()
+                is SubscriptionUpdateResult.Failed -> {
+                    Log.w(
+                        TAG,
+                        "Auto-update failed for profile: $profileId, " +
+                            "profile=${result.profileName}, error=${result.error}"
+                    )
+                    if (runAttemptCount < 3) {
+                        Result.retry()
+                    } else {
+                        Result.failure()
+                    }
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Auto-update failed for profile: $profileId", e)
 

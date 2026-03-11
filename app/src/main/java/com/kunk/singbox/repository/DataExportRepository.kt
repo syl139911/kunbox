@@ -183,7 +183,9 @@ class DataExportRepository(private val context: Context) {
         try {
             val validateResult = validateImportData(jsonData)
             if (validateResult.isFailure) {
-                return@withContext Result.failure(validateResult.exceptionOrNull()!!)
+                val error = validateResult.exceptionOrNull()
+                    ?: Exception(context.getString(R.string.import_failed))
+                return@withContext Result.failure(error)
             }
             val exportData = validateResult.getOrThrow()
 
@@ -366,26 +368,36 @@ class DataExportRepository(private val context: Context) {
         val existingById = existingProfiles.find { it.id == profile.id }
         val existingByName = existingProfiles.find { it.name == profile.name }
 
-        if (existingById != null || existingByName != null) {
-            if (!overwrite) {
-                throw Exception("Profile already exists")
-            }
-            val existingId = existingById?.id ?: existingByName?.id
-            if (existingId != null) {
-                configRepository.deleteProfile(existingId)
-            }
+        if (!overwrite && (existingById != null || existingByName != null)) {
+            throw Exception("Profile already exists")
         }
 
         val configFile = File(configDir, "${profile.id}.json")
-        configFile.writeText(gson.toJson(config))
+        try {
+            configFile.writeText(gson.toJson(config))
 
-        val newProfile = profile.copy(
-            id = profile.id,
-            lastUpdated = System.currentTimeMillis(),
-            updateStatus = UpdateStatus.Idle
-        )
+            val newProfile = profile.copy(
+                id = profile.id,
+                lastUpdated = System.currentTimeMillis(),
+                updateStatus = UpdateStatus.Idle
+            )
 
-        configRepository.importProfileDirectly(newProfile, config)
+            configRepository.importProfileDirectly(newProfile, config)
+        } catch (e: Exception) {
+            if (configFile.exists() && !configFile.delete()) {
+                Log.w(TAG, "Failed to delete orphaned imported config: ${configFile.absolutePath}")
+            }
+            throw e
+        }
+
+        if (overwrite) {
+            val oldProfileId = existingByName
+                ?.takeIf { existingById == null && it.id != profile.id }
+                ?.id
+            if (oldProfileId != null) {
+                configRepository.deleteProfile(oldProfileId)
+            }
+        }
 
         val nodeCount = config.outbounds?.count { outbound ->
             outbound.type in listOf(

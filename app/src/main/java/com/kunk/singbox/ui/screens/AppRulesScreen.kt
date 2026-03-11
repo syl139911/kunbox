@@ -107,13 +107,14 @@ fun AppRulesScreen(
         )
     }
 
-    if (showDeleteConfirm != null) {
+    val ruleToDelete = showDeleteConfirm
+    if (ruleToDelete != null) {
         ConfirmDialog(
             title = stringResource(R.string.app_rules_delete_title),
-            message = stringResource(R.string.app_rules_delete_confirm, showDeleteConfirm?.appName ?: ""),
+            message = stringResource(R.string.app_rules_delete_confirm, ruleToDelete.appName),
             confirmText = stringResource(R.string.common_delete),
             onConfirm = {
-                settingsViewModel.deleteAppRule(showDeleteConfirm!!.id)
+                settingsViewModel.deleteAppRule(ruleToDelete.id)
                 showDeleteConfirm = null
             },
             onDismiss = { showDeleteConfirm = null }

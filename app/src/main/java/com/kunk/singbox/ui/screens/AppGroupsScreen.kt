@@ -93,13 +93,18 @@ fun AppGroupsScreen(
         )
     }
 
-    if (showDeleteConfirm != null) {
+    val groupToDelete = showDeleteConfirm
+    if (groupToDelete != null) {
         ConfirmDialog(
             title = stringResource(R.string.app_groups_delete_title),
-            message = stringResource(R.string.app_groups_delete_confirm, showDeleteConfirm?.name ?: "", showDeleteConfirm?.apps?.size ?: 0),
+            message = stringResource(
+                R.string.app_groups_delete_confirm,
+                groupToDelete.name,
+                groupToDelete.apps.size
+            ),
             confirmText = stringResource(R.string.common_delete),
             onConfirm = {
-                settingsViewModel.deleteAppGroup(showDeleteConfirm!!.id)
+                settingsViewModel.deleteAppGroup(groupToDelete.id)
                 showDeleteConfirm = null
             },
             onDismiss = { showDeleteConfirm = null }

@@ -197,15 +197,16 @@ fun RuleSetsScreen(
     }
 
     if (editingRuleSet != null) {
+        val currentRuleSet = checkNotNull(editingRuleSet)
         RuleSetEditorDialog(
-            initialRuleSet = editingRuleSet,
+            initialRuleSet = currentRuleSet,
             onDismiss = { editingRuleSet = null },
             onConfirm = { ruleSet ->
                 settingsViewModel.updateRuleSet(ruleSet)
                 editingRuleSet = null
             },
             onDelete = {
-                settingsViewModel.deleteRuleSet(editingRuleSet!!.id)
+                settingsViewModel.deleteRuleSet(currentRuleSet.id)
                 editingRuleSet = null
             }
         )
@@ -243,15 +244,19 @@ fun RuleSetsScreen(
 
     // Outbound Mode Dialog
     if (showOutboundModeDialog && outboundEditingRuleSet != null) {
+        val currentRuleSet = checkNotNull(outboundEditingRuleSet)
         val options = RuleSetOutboundMode.entries.map { stringResource(it.displayNameRes) }
-        val currentMode = outboundEditingRuleSet!!.outboundMode ?: RuleSetOutboundMode.DIRECT
+        val currentMode = currentRuleSet.outboundMode ?: RuleSetOutboundMode.DIRECT
         SingleSelectDialog(
             title = stringResource(R.string.rulesets_select_outbound),
             options = options,
             selectedIndex = RuleSetOutboundMode.entries.indexOf(currentMode),
             onSelect = { index ->
                 val selectedMode = RuleSetOutboundMode.entries[index]
-                val updatedRuleSet = outboundEditingRuleSet!!.copy(outboundMode = selectedMode, outboundValue = null)
+                val updatedRuleSet = currentRuleSet.copy(
+                    outboundMode = selectedMode,
+                    outboundValue = null
+                )
 
                 if (selectedMode == RuleSetOutboundMode.NODE ||
                     selectedMode == RuleSetOutboundMode.PROFILE
@@ -287,7 +292,8 @@ fun RuleSetsScreen(
 
     // Target Selection Dialog
     if (showTargetSelectionDialog && outboundEditingRuleSet != null) {
-        val currentValue = outboundEditingRuleSet!!.outboundValue
+        val currentRuleSet = checkNotNull(outboundEditingRuleSet)
+        val currentValue = currentRuleSet.outboundValue
         val currentRef = resolveNodeByStoredValue(currentValue)?.let { toNodeRef(it) } ?: currentValue
         SingleSelectDialog(
             title = targetSelectionTitle,
@@ -295,7 +301,7 @@ fun RuleSetsScreen(
             selectedIndex = targetOptions.indexOfFirst { it.second == currentRef },
             onSelect = { index ->
                 val selectedValue = targetOptions[index].second
-                val updatedRuleSet = outboundEditingRuleSet!!.copy(outboundValue = selectedValue)
+                val updatedRuleSet = currentRuleSet.copy(outboundValue = selectedValue)
                 settingsViewModel.updateRuleSet(updatedRuleSet)
                 showTargetSelectionDialog = false
                 outboundEditingRuleSet = null
@@ -308,7 +314,8 @@ fun RuleSetsScreen(
     }
 
     if (showNodeSelectionDialog && outboundEditingRuleSet != null) {
-        val currentValue = outboundEditingRuleSet!!.outboundValue
+        val currentRuleSet = checkNotNull(outboundEditingRuleSet)
+        val currentValue = currentRuleSet.outboundValue
         val currentRef = resolveNodeByStoredValue(currentValue)?.let { toNodeRef(it) } ?: currentValue
         ProfileNodeSelectDialog(
             title = stringResource(R.string.rulesets_select_node),
@@ -316,7 +323,7 @@ fun RuleSetsScreen(
             nodesForSelection = selectionNodes,
             selectedNodeRef = currentRef,
             onSelect = { ref ->
-                val updatedRuleSet = outboundEditingRuleSet!!.copy(outboundValue = ref)
+                val updatedRuleSet = currentRuleSet.copy(outboundValue = ref)
                 settingsViewModel.updateRuleSet(updatedRuleSet)
             },
             onDismiss = {
@@ -328,6 +335,7 @@ fun RuleSetsScreen(
 
     // Inbound Dialog
     if (showInboundDialog && outboundEditingRuleSet != null) {
+        val currentRuleSet = checkNotNull(outboundEditingRuleSet)
         AlertDialog(
             onDismissRequest = {
                 showInboundDialog = false
@@ -343,19 +351,22 @@ fun RuleSetsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    val currentInbounds = (outboundEditingRuleSet!!.inbounds ?: emptyList()).toMutableList()
+                                    val ruleSet = outboundEditingRuleSet ?: currentRuleSet
+                                    val currentInbounds = (ruleSet.inbounds ?: emptyList()).toMutableList()
                                     if (currentInbounds.contains(inbound)) {
                                         currentInbounds.remove(inbound)
                                     } else {
                                         currentInbounds.add(inbound)
                                     }
-                                    outboundEditingRuleSet = outboundEditingRuleSet!!.copy(inbounds = currentInbounds)
+                                    outboundEditingRuleSet = ruleSet.copy(inbounds = currentInbounds)
                                 }
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val ruleSet = outboundEditingRuleSet ?: currentRuleSet
+                            val inboundList = ruleSet.inbounds ?: emptyList()
                             Checkbox(
-                                checked = (outboundEditingRuleSet!!.inbounds ?: emptyList()).contains(inbound),
+                                checked = inboundList.contains(inbound),
                                 onCheckedChange = null
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -367,7 +378,8 @@ fun RuleSetsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        settingsViewModel.updateRuleSet(outboundEditingRuleSet!!)
+                        val ruleSet = outboundEditingRuleSet ?: currentRuleSet
+                        settingsViewModel.updateRuleSet(ruleSet)
                         showInboundDialog = false
                         outboundEditingRuleSet = null
                     }
@@ -571,8 +583,7 @@ fun RuleSetsScreen(
                                             }
                                         },
                                         onDragEnd = {
-                                            if (draggingItemIndex != null) {
-                                                val startIdx = draggingItemIndex!!
+                                            draggingItemIndex?.let { startIdx ->
                                                 val dist = kotlin.math.round(draggingItemOffset / itemHeightPx).toInt()
                                                 val endIdx = (startIdx + dist).coerceIn(0, ruleSets.lastIndex)
 

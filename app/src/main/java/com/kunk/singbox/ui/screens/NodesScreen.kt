@@ -243,10 +243,11 @@ fun NodesScreen(
     }
 
     if (exportLink != null) {
+        val exportValue = checkNotNull(exportLink)
         val copiedMsg = stringResource(R.string.nodes_copied_to_clipboard)
         InputDialog(
             title = stringResource(R.string.nodes_export_link),
-            initialValue = exportLink!!,
+            initialValue = exportValue,
             confirmText = stringResource(R.string.common_copy),
             onConfirm = {
                 clipboardManager.setText(AnnotatedString(it))

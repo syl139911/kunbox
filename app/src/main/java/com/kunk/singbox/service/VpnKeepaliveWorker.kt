@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.service
+package com.kunk.singbox.service
 
 import android.app.ActivityManager
 import android.content.Context
@@ -69,6 +69,7 @@ class VpnKeepaliveWorker(
         }
     }
 
+    @Suppress("NestedBlockDepth", "ReturnCount")
     override suspend fun doWork(): Result {
         return try {
 
@@ -85,8 +86,14 @@ class VpnKeepaliveWorker(
 
             if (!bgProcessAlive) {
                 Log.w(TAG, "Detected background process died unexpectedly, attempting recovery...")
-                attemptVpnRecovery(currentMode)
-            } else {
+                val recovered = attemptVpnRecovery(currentMode)
+                if (!recovered) {
+                    return if (runAttemptCount < 3) {
+                        Result.retry()
+                    } else {
+                        Result.failure()
+                    }
+                }
             }
 
             Result.success()
@@ -104,8 +111,8 @@ class VpnKeepaliveWorker(
     /**
      *
      */
-    private suspend fun attemptVpnRecovery(mode: VpnStateStore.CoreMode) {
-        try {
+    private suspend fun attemptVpnRecovery(mode: VpnStateStore.CoreMode): Boolean {
+        return try {
             Log.i(TAG, "Attempting to recover VPN service (mode: $mode)...")
 
             val settingsRepo = SettingsRepository.getInstance(applicationContext)
@@ -115,38 +122,37 @@ class VpnKeepaliveWorker(
                 VpnStateStore.CoreMode.VPN -> {
                     Intent(applicationContext, SingBoxService::class.java).apply {
                         action = SingBoxService.ACTION_START
-                        putExtra(SingBoxService.EXTRA_CONFIG_PATH,
-                            applicationContext.filesDir.resolve("config.json").absolutePath)
+                        putExtra(
+                            SingBoxService.EXTRA_CONFIG_PATH,
+                            applicationContext.filesDir.resolve("config.json").absolutePath
+                        )
                     }
                 }
                 VpnStateStore.CoreMode.PROXY -> {
                     Intent(applicationContext, ProxyOnlyService::class.java).apply {
                         action = ProxyOnlyService.ACTION_START
-                        putExtra(ProxyOnlyService.EXTRA_CONFIG_PATH,
-                            applicationContext.filesDir.resolve("config.json").absolutePath)
+                        putExtra(
+                            ProxyOnlyService.EXTRA_CONFIG_PATH,
+                            applicationContext.filesDir.resolve("config.json").absolutePath
+                        )
                     }
                 }
                 else -> {
                     Log.w(TAG, "Unknown mode: $mode, skip recovery")
-                    return
+                    return false
                 }
             }
 
-            try {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    applicationContext.startForegroundService(intent)
-                } else {
-                    applicationContext.startService(intent)
-                }
-                Log.i(TAG, "VPN service recovery triggered successfully")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to start VPN service during recovery", e)
-
-                VpnStateStore.setMode(VpnStateStore.CoreMode.NONE)
-                VpnTileService.persistVpnState(applicationContext, false)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                applicationContext.startForegroundService(intent)
+            } else {
+                applicationContext.startService(intent)
             }
+            Log.i(TAG, "VPN service recovery triggered successfully")
+            true
         } catch (e: Exception) {
             Log.e(TAG, "VPN recovery failed", e)
+            false
         }
     }
 }

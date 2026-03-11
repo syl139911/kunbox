@@ -274,7 +274,7 @@ class VpnTileService : TileService() {
 
         serviceScope.launch(Dispatchers.IO) {
             try {
-                VpnServiceManager.stopVpn(this@VpnTileService)
+                VpnServiceManager.stopVpn(this@VpnTileService).getOrThrow()
 
                 withContext(Dispatchers.Main) {
 
@@ -333,7 +333,7 @@ class VpnTileService : TileService() {
 
                 if (configResult != null) {
 
-                    VpnServiceManager.startVpn(this@VpnTileService, settings.tunEnabled)
+                    VpnServiceManager.startVpn(this@VpnTileService, settings.tunEnabled).getOrThrow()
                 } else {
                     handleStartFailure(getString(R.string.dashboard_config_generation_failed))
                 }

@@ -53,15 +53,16 @@ fun CustomRulesScreen(
     }
 
     if (editingRule != null) {
+        val currentRule = checkNotNull(editingRule)
         CustomRuleEditorDialog(
-            initialRule = editingRule,
+            initialRule = currentRule,
             onDismiss = { editingRule = null },
             onConfirm = { rule ->
                 settingsViewModel.updateCustomRule(rule)
                 editingRule = null
             },
             onDelete = {
-                settingsViewModel.deleteCustomRule(editingRule!!.id)
+                settingsViewModel.deleteCustomRule(currentRule.id)
                 editingRule = null
             }
         )

@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.repository.subscription
+package com.kunk.singbox.repository.subscription
 
 import android.util.Log
 import com.kunk.singbox.model.SingBoxConfig
@@ -90,9 +90,13 @@ class SubscriptionFetcher(
                     }
                 }
 
-                if (parsedConfig != null) {
-                    Log.i(TAG, "Successfully parsed subscription with UA '$userAgent', got ${parsedConfig!!.outbounds?.size ?: 0} outbounds")
-                    return FetchResult(parsedConfig!!, userInfo)
+                parsedConfig?.let { config ->
+                    Log.i(
+                        TAG,
+                        "Successfully parsed subscription with UA '$userAgent', " +
+                            "got ${config.outbounds?.size ?: 0} outbounds"
+                    )
+                    return FetchResult(config, userInfo)
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Error with UA '$userAgent': ${e.message}")

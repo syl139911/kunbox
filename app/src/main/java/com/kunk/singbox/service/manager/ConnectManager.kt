@@ -98,7 +98,7 @@ class ConnectManager(
                     network: Network,
                     caps: NetworkCapabilities
                 ) {
-                    handleCapabilitiesChanged(network)
+                    handleCapabilitiesChanged(network, caps)
                 }
             }
 
@@ -321,7 +321,18 @@ class ConnectManager(
         return false
     }
 
-    private fun handleCapabilitiesChanged(network: Network) {
+    private fun handleCapabilitiesChanged(
+        network: Network,
+        caps: NetworkCapabilities
+    ) {
+        if (!isValidPhysicalNetwork(caps)) {
+            Log.i(TAG, "Network capabilities no longer valid: $network")
+            if (lastKnownNetwork == network) {
+                handleNetworkLost(network)
+            }
+            return
+        }
+
         setUnderlyingNetworksFn?.invoke(arrayOf(network))
 
         if (lastKnownNetwork != network) {

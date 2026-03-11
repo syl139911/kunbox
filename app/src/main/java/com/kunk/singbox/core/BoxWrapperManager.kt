@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.core
+package com.kunk.singbox.core
 
 import android.util.Log
 import io.nekohasekai.libbox.CommandServer
@@ -608,7 +608,8 @@ object BoxWrapperManager {
         } catch (e: Exception) {
             Log.e(
                 TAG,
-                "urlTestBatch failed: tags=${outboundTags.size}, timeoutMs=$timeoutMs, concurrency=$concurrency, url=$url",
+                "urlTestBatch failed: tags=${outboundTags.size}, " +
+                    "timeoutMs=$timeoutMs, concurrency=$concurrency, url=$url",
                 e
             )
             emptyMap()

@@ -180,6 +180,10 @@ class StartupManager(
                 )
             } ?: log("[STEP] DNS prewarm: skipped")
 
+            if (!initResult.ruleSetReady) {
+                throw IllegalStateException("Required rule sets are not ready")
+            }
+
             if (initResult.network == null) {
                 throw IllegalStateException("No usable physical network before VPN start")
             }

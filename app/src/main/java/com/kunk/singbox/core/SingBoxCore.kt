@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.core
+package com.kunk.singbox.core
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -315,8 +315,11 @@ class SingBoxCore private constructor(private val context: Context) {
                         com.kunk.singbox.model.RouteRule(inbound = listOf("test-in"), outbound = outbound.tag)
                     ),
                     finalOutbound = "direct",
-
-                    autoDetectInterface = true
+                    autoDetectInterface = true,
+                    defaultDomainResolver = com.kunk.singbox.model.DomainResolveConfig(
+                        server = "dns-direct-v4",
+                        strategy = "prefer_ipv4"
+                    )
                 ),
 
                 experimental = com.kunk.singbox.model.ExperimentalConfig(
@@ -488,6 +491,7 @@ class SingBoxCore private constructor(private val context: Context) {
         val fixedOutbounds = batchOutbounds.map { OutboundFixer.buildForRuntime(context, it) }
         val config = buildBatchTestConfig(fixedOutbounds, ports)
         val configJson = gson.toJson(config)
+        val batchTestDbPath = config.experimental?.cacheFile?.path
 
         var commandServer: CommandServer? = null
         try {
@@ -516,6 +520,11 @@ class SingBoxCore private constructor(private val context: Context) {
         } finally {
             runCatching { commandServer?.closeService() }
             runCatching { commandServer?.close() }
+            batchTestDbPath?.let { path ->
+                runCatching { File(path).delete() }
+                runCatching { File("$path-shm").delete() }
+                runCatching { File("$path-wal").delete() }
+            }
         }
     }
 
@@ -616,7 +625,11 @@ class SingBoxCore private constructor(private val context: Context) {
                     com.kunk.singbox.model.RouteRule(protocolRaw = listOf("dns"), outbound = "direct")
                 ) + rules,
                 finalOutbound = "direct",
-                autoDetectInterface = true
+                autoDetectInterface = true,
+                defaultDomainResolver = com.kunk.singbox.model.DomainResolveConfig(
+                    server = "dns-bootstrap",
+                    strategy = "prefer_ipv4"
+                )
             ),
             experimental = com.kunk.singbox.model.ExperimentalConfig(
                 cacheFile = com.kunk.singbox.model.CacheFileConfig(
@@ -649,7 +662,7 @@ class SingBoxCore private constructor(private val context: Context) {
             return false
         }
 
-        val portsToCheck = ports.take(minOf(3, ports.size))
+        val portsToCheck = ports
         var allPortsReady = false
         for (attempt in 1..5) {
             allPortsReady = portsToCheck.all { port ->
@@ -666,7 +679,10 @@ class SingBoxCore private constructor(private val context: Context) {
             if (allPortsReady) break
             if (attempt < 5) delay(50)
         }
-        if (!allPortsReady) delay(100)
+        if (!allPortsReady) {
+            Log.e(TAG, "Batch test: not all ports are ready after retries")
+            return false
+        }
         return true
     }
 

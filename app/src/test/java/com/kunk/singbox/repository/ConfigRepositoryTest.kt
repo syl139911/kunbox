@@ -3,6 +3,7 @@ package com.kunk.singbox.repository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.ConnectException
@@ -190,5 +191,71 @@ class ConfigRepositoryTest {
         )
 
         assertTrue(!result)
+    }
+
+    @Test
+    fun testBuildBootstrapDnsRulesOnlyTargetsResolverDomains() {
+        val rules = ConfigRepository.buildBootstrapDnsRules(
+            serverAddresses = listOf(
+                "https://dns.google/dns-query",
+                "https://dns.alidns.com/dns-query",
+                "https://1.1.1.1/dns-query",
+                "119.29.29.29",
+                "local"
+            ),
+            bootstrapV4Tag = "dns-bootstrap-v4",
+            bootstrapV6Tag = "dns-bootstrap-v6",
+            bootstrapTag = "dns-bootstrap"
+        )
+
+        assertEquals(3, rules.size)
+        assertEquals(listOf("dns.google", "dns.alidns.com"), rules[0].domain)
+        assertEquals(listOf("A"), rules[0].queryType)
+        assertEquals("dns-bootstrap-v4", rules[0].server)
+        assertNull(rules[0].outboundRaw)
+
+        assertEquals(listOf("dns.google", "dns.alidns.com"), rules[1].domain)
+        assertEquals(listOf("AAAA"), rules[1].queryType)
+        assertEquals("dns-bootstrap-v6", rules[1].server)
+        assertNull(rules[1].outboundRaw)
+
+        assertEquals(listOf("dns.google", "dns.alidns.com"), rules[2].domain)
+        assertEquals("dns-bootstrap", rules[2].server)
+        assertNull(rules[2].outboundRaw)
+    }
+
+    @Test
+    fun testBuildBootstrapDnsRulesSkipsIpAndLocalAddresses() {
+        val rules = ConfigRepository.buildBootstrapDnsRules(
+            serverAddresses = listOf(
+                "local",
+                "223.5.5.5",
+                "https://1.1.1.1/dns-query",
+                "https://[2606:4700:4700::1111]/dns-query"
+            ),
+            bootstrapV4Tag = "dns-bootstrap-v4",
+            bootstrapV6Tag = "dns-bootstrap-v6",
+            bootstrapTag = "dns-bootstrap"
+        )
+
+        assertTrue(rules.isEmpty())
+    }
+
+    @Test
+    fun testBuildBootstrapDnsRulesStripsPortFromBareHostAddress() {
+        val rules = ConfigRepository.buildBootstrapDnsRules(
+            serverAddresses = listOf(
+                "dns.google:853",
+                "dns.alidns.com:443"
+            ),
+            bootstrapV4Tag = "dns-bootstrap-v4",
+            bootstrapV6Tag = "dns-bootstrap-v6",
+            bootstrapTag = "dns-bootstrap"
+        )
+
+        assertEquals(3, rules.size)
+        assertEquals(listOf("dns.google", "dns.alidns.com"), rules[0].domain)
+        assertEquals(listOf("dns.google", "dns.alidns.com"), rules[1].domain)
+        assertEquals(listOf("dns.google", "dns.alidns.com"), rules[2].domain)
     }
 }

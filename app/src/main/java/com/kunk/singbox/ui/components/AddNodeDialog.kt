@@ -180,7 +180,8 @@ fun AddNodeDialog(
                     val target = if (isCreatingNew) {
                         AddNodeTarget.NewProfile(newProfileName.trim())
                     } else {
-                        AddNodeTarget.ExistingProfile(selectedProfileId!!)
+                        val profileId = selectedProfileId ?: return@TextButton
+                        AddNodeTarget.ExistingProfile(profileId)
                     }
                     onConfirm(nodeLink.trim(), target)
                 },

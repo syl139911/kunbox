@@ -133,6 +133,7 @@ class TrafficRepository private constructor(private val context: Context) {
             } else {
                 tmpFile.copyTo(statsFile, overwrite = true)
                 tmpFile.delete()
+                lastSaveTime = now
             }
 
             val dailyJson = gson.toJson(dailyRecords)
@@ -330,20 +331,25 @@ class TrafficRepository private constructor(private val context: Context) {
 
     private fun getAllTimeTraffic(): TrafficSummary {
         val aggregated = mutableMapOf<String, NodeTrafficStats>()
-
-        trafficMap.forEach { (nodeId, stats) ->
-            aggregated[nodeId] = NodeTrafficStats(
-                nodeId, stats.upload, stats.download, stats.lastUpdated, stats.nodeName
-            )
-        }
-
         dailyRecords.values.forEach { record ->
             record.nodeStats.forEach { (nodeId, stats) ->
-                if (!aggregated.containsKey(nodeId)) {
-                    aggregated[nodeId] = NodeTrafficStats(
-                        nodeId, stats.upload, stats.download, stats.lastUpdated, stats.nodeName
-                    )
+                val existing = aggregated.getOrPut(nodeId) { NodeTrafficStats(nodeId) }
+                existing.upload += stats.upload
+                existing.download += stats.download
+                if (stats.lastUpdated > existing.lastUpdated) {
+                    existing.lastUpdated = stats.lastUpdated
                 }
+                if (existing.nodeName.isNullOrBlank() && !stats.nodeName.isNullOrBlank()) {
+                    existing.nodeName = stats.nodeName
+                }
+            }
+        }
+
+        if (aggregated.isEmpty()) {
+            trafficMap.forEach { (nodeId, stats) ->
+                aggregated[nodeId] = NodeTrafficStats(
+                    nodeId, stats.upload, stats.download, stats.lastUpdated, stats.nodeName
+                )
             }
         }
 

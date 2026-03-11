@@ -124,7 +124,12 @@ class RuleSetAutoUpdateWorker(
                 }
             }
 
-            Result.success()
+            when {
+                failCount == 0 -> Result.success()
+                successCount > 0 -> Result.success()
+                runAttemptCount < 3 -> Result.retry()
+                else -> Result.failure()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Auto-update failed", e)
 

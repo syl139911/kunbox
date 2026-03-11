@@ -69,8 +69,8 @@ object VpnServiceManager {
     /**
      *
      */
-    fun toggleVpn(context: Context) {
-        if (isRunning(context)) {
+    fun toggleVpn(context: Context): Result<Unit> {
+        return if (isRunning(context)) {
             stopVpn(context)
         } else {
             startVpn(context)
@@ -80,15 +80,15 @@ object VpnServiceManager {
     /**
      *
      */
-    fun startVpn(context: Context) {
+    fun startVpn(context: Context): Result<Unit> {
         val tunEnabled = isTunEnabled(context)
-        startVpn(context, tunEnabled)
+        return startVpn(context, tunEnabled)
     }
 
     /**
      *
      */
-    fun startVpn(context: Context, tunMode: Boolean) {
+    fun startVpn(context: Context, tunMode: Boolean): Result<Unit> {
         Log.d(TAG, "startVpn: tunMode=$tunMode")
 
         val serviceClass = if (tunMode) {
@@ -105,24 +105,24 @@ object VpnServiceManager {
             }
         }
 
-        try {
+        return runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
                 context.startService(intent)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start VPN service", e)
+            Unit
         }
+            .onFailure { Log.e(TAG, "Failed to start VPN service", it) }
     }
 
     /**
      *
      */
-    fun stopVpn(context: Context) {
+    fun stopVpn(context: Context): Result<Unit> {
         Log.d(TAG, "stopVpn")
 
-        try {
+        return runCatching {
             val mode = VpnStateStore.getMode()
             val stopTun = when (mode) {
                 VpnStateStore.CoreMode.VPN -> true
@@ -140,9 +140,9 @@ object VpnServiceManager {
                 }
             }
             context.startService(intent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to stop VPN service", e)
+            Unit
         }
+            .onFailure { Log.e(TAG, "Failed to stop VPN service", it) }
     }
 
     /**

@@ -29,11 +29,19 @@ class RuleSetUpdateWorker(
                 Result.success()
             } else {
                 Log.w(TAG, "Rule set update finished with some failures")
-                Result.success()
+                if (runAttemptCount < 3) {
+                    Result.retry()
+                } else {
+                    Result.failure()
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error updating rule sets", e)
-            Result.success()
+            if (runAttemptCount < 3) {
+                Result.retry()
+            } else {
+                Result.failure()
+            }
         }
     }
 }

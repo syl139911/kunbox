@@ -238,18 +238,12 @@ object OutboundFixer {
         }
 
         if (result.type == "hysteria" || result.type == "hysteria2") {
-            val up = result.upMbps
-            val down = result.downMbps
-            val defaultMbps = 50
-
             val cleanedServerPorts = result.serverPorts
                 ?.filter { it.isNotBlank() }
                 ?.map { convertPortRangeFormat(it) }
                 ?.takeIf { it.isNotEmpty() }
             val cleanedHopInterval = result.hopInterval?.takeIf { it.isNotBlank() }
             result = result.copy(
-                upMbps = up ?: defaultMbps,
-                downMbps = down ?: defaultMbps,
                 serverPorts = cleanedServerPorts,
                 hopInterval = cleanedHopInterval
             )

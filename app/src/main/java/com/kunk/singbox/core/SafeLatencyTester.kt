@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.core
+package com.kunk.singbox.core
 
 import android.util.Log
 import com.kunk.singbox.model.Outbound
@@ -49,7 +49,7 @@ class SafeLatencyTester private constructor() {
     /**
      *
      */
-    @Suppress("UNUSED_PARAMETER", "CyclomaticComplexMethod", "CognitiveComplexMethod")
+    @Suppress("UNUSED_PARAMETER", "CyclomaticComplexMethod", "CognitiveComplexMethod", "LongMethod", "NestedBlockDepth")
     suspend fun testOutboundsLatencySafe(
         outbounds: List<Outbound>,
         targetUrl: String,
@@ -151,6 +151,7 @@ class SafeLatencyTester private constructor() {
         }
     }
 
+    @Suppress("CognitiveComplexMethod", "NestedBlockDepth")
     private suspend fun waitForCachedResults(
         outbounds: List<Outbound>,
         timeoutMs: Long,

@@ -2,6 +2,7 @@
 
 import com.kunk.singbox.R
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kunk.singbox.ipc.VpnStateStore
@@ -27,6 +28,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class NodesViewModel(application: Application) : AndroidViewModel(application) {
+    companion object {
+        private const val TAG = "NodesViewModel"
+    }
 
     private val configRepository = ConfigRepository.getInstance(application)
     private val settingsRepository = SettingsRepository.getInstance(application)
@@ -302,7 +306,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 emitToast(summary)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed during batch latency test", e)
             } finally {
                 _isTesting.value = false
                 _testingNodeIds.value = emptySet()

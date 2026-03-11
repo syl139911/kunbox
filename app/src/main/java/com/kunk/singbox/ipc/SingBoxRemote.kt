@@ -86,6 +86,9 @@ object SingBoxRemote {
     @Volatile
     private var pendingLifecycleRetry: Runnable? = null
 
+    @Volatile
+    private var pendingReconnect: Runnable? = null
+
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private val callback = object : ISingBoxServiceCallback.Stub() {
@@ -117,19 +120,13 @@ object SingBoxRemote {
     /**
      */
     private fun syncStateFromStore() {
-        val isActive = VpnStateStore.getActive()
+        val state = resolvePersistedState(hasVpnTransport = false)
         val storedLabel = VpnStateStore.getActiveLabel()
         val storedError = VpnStateStore.getLastError()
         val storedManuallyStopped = VpnStateStore.isManuallyStopped()
 
-        val newState = if (isActive) {
-            ServiceState.RUNNING
-        } else {
-            ServiceState.STOPPED
-        }
-
-        Log.i(TAG, "syncStateFromStore: isActive=$isActive, label=$storedLabel")
-        updateState(newState, storedLabel, storedError, storedManuallyStopped)
+        Log.i(TAG, "syncStateFromStore: state=$state, label=$storedLabel")
+        updateState(state, storedLabel, storedError, storedManuallyStopped)
     }
 
     private val deathRecipient = object : IBinder.DeathRecipient {
@@ -154,6 +151,28 @@ object SingBoxRemote {
     private fun clearPendingLifecycleRetry() {
         pendingLifecycleRetry?.let { mainHandler.removeCallbacks(it) }
         pendingLifecycleRetry = null
+    }
+
+    private fun clearPendingReconnect() {
+        pendingReconnect?.let { mainHandler.removeCallbacks(it) }
+        pendingReconnect = null
+    }
+
+    private fun resolvePersistedState(hasVpnTransport: Boolean): ServiceState {
+        val pending = VpnStateStore.getPending()
+        val isActive = VpnStateStore.getActive()
+        val mode = VpnStateStore.getMode()
+
+        return when (pending) {
+            "starting" -> ServiceState.STARTING
+            "stopping" -> ServiceState.STOPPING
+            else -> when {
+                isActive -> ServiceState.RUNNING
+                mode == VpnStateStore.CoreMode.PROXY -> ServiceState.RUNNING
+                hasVpnTransport -> ServiceState.RUNNING
+                else -> ServiceState.STOPPED
+            }
+        }
     }
 
     private fun tryNotifyLifecycle(version: Long, pending: Boolean): Boolean {
@@ -251,6 +270,7 @@ object SingBoxRemote {
             Log.i(TAG, "Service connected")
             this@SingBoxRemote.binder = binder
             reconnectAttempts = 0
+            clearPendingReconnect()
 
             runCatching { binder?.linkToDeath(deathRecipient, 0) }
 
@@ -340,21 +360,36 @@ object SingBoxRemote {
         val ctx = contextRef?.get() ?: return
         reconnectAttempts++
         val delay = RECONNECT_DELAY_MS * reconnectAttempts
+        clearPendingReconnect()
 
-        mainHandler.postDelayed({
-            if (!bound && contextRef?.get() != null) {
+        val reconnectTask = Runnable {
+            if (connectionActive && !bound && contextRef?.get() != null) {
                 Log.i(TAG, "Reconnect attempt #$reconnectAttempts")
                 doBindService(ctx)
             }
-        }, delay)
+        }
+        pendingReconnect = reconnectTask
+        mainHandler.postDelayed(reconnectTask, delay)
     }
 
     private fun doBindService(context: Context) {
         val intent = Intent(context, SingBoxIpcService::class.java)
         runCatching {
             context.applicationContext.bindService(intent, conn, Context.BIND_AUTO_CREATE)
+        }.onSuccess { boundSuccessfully ->
+            if (!boundSuccessfully) {
+                Log.w(TAG, "bindService returned false, scheduling reconnect")
+                bound = false
+                service = null
+                binder = null
+                scheduleReconnect()
+            }
         }.onFailure {
             Log.e(TAG, "Failed to bind service", it)
+            bound = false
+            service = null
+            binder = null
+            scheduleReconnect()
         }
     }
 
@@ -366,12 +401,14 @@ object SingBoxRemote {
         connectionActive = true
         contextRef = WeakReference(context.applicationContext)
         reconnectAttempts = 0
+        clearPendingReconnect()
         doBindService(context)
     }
 
     fun disconnect(context: Context) {
         unregisterCallback()
         clearPendingLifecycleRetry()
+        clearPendingReconnect()
         if (connectionActive) {
             runCatching { context.applicationContext.unbindService(conn) }
         }
@@ -425,20 +462,26 @@ object SingBoxRemote {
 
         val ctx = contextRef?.get() ?: return false
         val hasVpn = hasSystemVpn(ctx)
+        val persistedState = resolvePersistedState(hasVpn)
 
-        if (hasVpn && !connectionActive) {
-            Log.i(TAG, "queryAndSyncState: system VPN active but not connected, connecting")
+        if (persistedState != ServiceState.STOPPED && !connectionActive) {
+            Log.i(TAG, "queryAndSyncState: persisted state=$persistedState, connecting")
             connect(ctx)
 
-            if (_state.value != ServiceState.RUNNING) {
-                updateState(ServiceState.RUNNING)
+            if (_state.value != persistedState) {
+                updateState(
+                    persistedState,
+                    VpnStateStore.getActiveLabel(),
+                    VpnStateStore.getLastError(),
+                    VpnStateStore.isManuallyStopped()
+                )
             }
             return true
         }
 
-        if (!hasVpn && _state.value == ServiceState.RUNNING) {
-            Log.i(TAG, "queryAndSyncState: no system VPN but state is RUNNING, correcting")
-            updateState(ServiceState.STOPPED)
+        if (persistedState == ServiceState.STOPPED && _state.value != ServiceState.STOPPED) {
+            Log.i(TAG, "queryAndSyncState: persisted state is STOPPED, correcting")
+            updateState(ServiceState.STOPPED, "", "", VpnStateStore.isManuallyStopped())
         }
 
         if (!connectionActive) {

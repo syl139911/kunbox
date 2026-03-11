@@ -621,8 +621,8 @@ class NodeLinkParser(private val gson: Gson) {
                 server = server,
                 serverPort = port,
                 password = password,
-                upMbps = params["up_mbps"]?.toIntOrNull() ?: params["up"]?.toIntOrNull() ?: 50,
-                downMbps = params["down_mbps"]?.toIntOrNull() ?: params["down"]?.toIntOrNull() ?: 50,
+                upMbps = firstParam(params, "up_mbps", "upmbps", "up")?.toIntOrNull(),
+                downMbps = firstParam(params, "down_mbps", "downmbps", "down")?.toIntOrNull(),
                 tls = TlsConfig(
                     enabled = true,
                     serverName = params["sni"] ?: server,

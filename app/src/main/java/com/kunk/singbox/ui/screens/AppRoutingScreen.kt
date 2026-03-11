@@ -110,17 +110,18 @@ fun AppRoutingScreen(
         )
     }
 
-    if (showDeleteGroupConfirm != null) {
+    val groupToDelete = showDeleteGroupConfirm
+    if (groupToDelete != null) {
         ConfirmDialog(
             title = stringResource(R.string.app_groups_delete_title),
             message = stringResource(
                 R.string.app_groups_delete_confirm,
-                showDeleteGroupConfirm?.name ?: "",
-                showDeleteGroupConfirm?.apps?.size ?: 0
+                groupToDelete.name,
+                groupToDelete.apps.size
             ),
             confirmText = stringResource(R.string.common_delete),
             onConfirm = {
-                settingsViewModel.deleteAppGroup(showDeleteGroupConfirm!!.id)
+                settingsViewModel.deleteAppGroup(groupToDelete.id)
                 showDeleteGroupConfirm = null
             },
             onDismiss = { showDeleteGroupConfirm = null }
@@ -158,13 +159,14 @@ fun AppRoutingScreen(
         )
     }
 
-    if (showDeleteRuleConfirm != null) {
+    val ruleToDelete = showDeleteRuleConfirm
+    if (ruleToDelete != null) {
         ConfirmDialog(
             title = stringResource(R.string.app_rules_delete_title),
-            message = stringResource(R.string.app_rules_delete_confirm, showDeleteRuleConfirm?.appName ?: ""),
+            message = stringResource(R.string.app_rules_delete_confirm, ruleToDelete.appName),
             confirmText = stringResource(R.string.common_delete),
             onConfirm = {
-                settingsViewModel.deleteAppRule(showDeleteRuleConfirm!!.id)
+                settingsViewModel.deleteAppRule(ruleToDelete.id)
                 showDeleteRuleConfirm = null
             },
             onDismiss = { showDeleteRuleConfirm = null }

@@ -199,11 +199,12 @@ fun NodeDetailScreen(
                 actions = {
                     val savedMsg = stringResource(R.string.node_detail_saved)
                     IconButton(onClick = {
-                        if (editingOutbound != null) {
+                        val currentOutbound = editingOutbound
+                        if (currentOutbound != null) {
                             if (isCreateMode) {
                                 showSelectProfileDialog = true
                             } else {
-                                configRepository.updateNode(nodeId, editingOutbound!!)
+                                configRepository.updateNode(nodeId, currentOutbound)
                                 Toast.makeText(context, savedMsg, Toast.LENGTH_SHORT).show()
                                 navController.popBackStack()
                             }
@@ -224,12 +225,12 @@ fun NodeDetailScreen(
                 .padding(16.dp)
                 .navigationBarsPadding()
         ) {
-            if (editingOutbound == null) {
+            val outbound = editingOutbound
+            if (outbound == null) {
                 StandardCard {
                     SettingItem(title = stringResource(R.string.common_loading), value = "")
                 }
             } else {
-                val outbound = editingOutbound!!
                 val type = outbound.type
 
                 // --- Common Header ---

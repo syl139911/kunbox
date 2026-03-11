@@ -92,7 +92,9 @@ object AppLifecycleObserver : DefaultLifecycleObserver {
             }
         }
 
-        mainHandler.postDelayed(killProcessRunnable!!, backgroundTimeoutMs)
+        killProcessRunnable?.let { runnable ->
+            mainHandler.postDelayed(runnable, backgroundTimeoutMs)
+        }
         Log.i(TAG, "Scheduled kill process in ${backgroundTimeoutMs / 1000 / 60}min")
     }
 

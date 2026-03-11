@@ -329,7 +329,8 @@ data class RouteConfig(
     @SerializedName("final") val finalOutbound: String? = null,
     @SerializedName("find_process") val findProcess: Boolean? = null,
     @SerializedName("auto_detect_interface") val autoDetectInterface: Boolean? = null,
-    @SerializedName("default_interface") val defaultInterface: String? = null
+    @SerializedName("default_interface") val defaultInterface: String? = null,
+    @SerializedName("default_domain_resolver") val defaultDomainResolver: DomainResolveConfig? = null
 )
 
 @Keep

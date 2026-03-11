@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.repository
+package com.kunk.singbox.repository
 
 import android.content.Context
 import android.util.Log
@@ -321,10 +321,10 @@ class RuleSetRepository(private val context: Context) {
                 }
 
                 if (isValid) {
-                    if (targetFile.exists()) {
-                        targetFile.delete()
+                    if (!replaceRuleSetFile(tempFile, targetFile)) {
+                        tempFile.delete()
+                        return false
                     }
-                    tempFile.renameTo(targetFile)
                     Log.i(TAG, "Rule set downloaded and verified successfully: ${targetFile.name}")
                     return true
                 } else {
@@ -336,5 +336,33 @@ class RuleSetRepository(private val context: Context) {
             Log.e(TAG, "Download error: ${e.message}", e)
             false
         }
+    }
+
+    @Suppress("ReturnCount")
+    private fun replaceRuleSetFile(tempFile: File, targetFile: File): Boolean {
+        val backupFile = File(targetFile.parentFile, "${targetFile.name}.bak")
+
+        if (backupFile.exists() && !backupFile.delete()) {
+            Log.e(TAG, "Failed to delete stale backup file: ${backupFile.name}")
+            return false
+        }
+
+        if (targetFile.exists() && !targetFile.renameTo(backupFile)) {
+            Log.e(TAG, "Failed to backup existing rule set before replace: ${targetFile.name}")
+            return false
+        }
+
+        if (tempFile.renameTo(targetFile)) {
+            if (backupFile.exists() && !backupFile.delete()) {
+                Log.w(TAG, "Failed to delete rule set backup after successful replace: ${backupFile.name}")
+            }
+            return true
+        }
+
+        Log.e(TAG, "Failed to replace rule set file: ${targetFile.name}")
+        if (backupFile.exists() && !backupFile.renameTo(targetFile)) {
+            Log.e(TAG, "Failed to restore original rule set after replace failure: ${targetFile.name}")
+        }
+        return false
     }
 }

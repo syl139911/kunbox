@@ -243,7 +243,8 @@ object NodeLinkExporter {
         val name = encodeUrlComponent(outbound.tag)
 
         val params = mutableListOf<String>()
-        params.add("network=${encodeUrlComponent(if (outbound.quic == true || outbound.network == "quic") "quic" else "h2")}")
+        val networkValue = if (outbound.quic == true || outbound.network == "quic") "quic" else "h2"
+        params.add("network=${encodeUrlComponent(networkValue)}")
         outbound.tls?.serverName?.let { params.add("sni=${encodeUrlComponent(it)}") }
         if (outbound.tls?.insecure == true) params.add("insecure=1")
         outbound.tls?.alpn?.let {

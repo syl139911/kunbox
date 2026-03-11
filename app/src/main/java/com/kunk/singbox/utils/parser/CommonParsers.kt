@@ -150,9 +150,10 @@ class Base64Parser(private val nodeParser: (String) -> Outbound?) : Subscription
                 if (index < 0) break
 
                 val isOverlapped = usedPositions.any { usedPos ->
-                    index >= usedPos && index < usedPos + sortedPrefixes.find {
+                    val matchedPrefixLength = sortedPrefixes.firstOrNull {
                         normalized.substring(usedPos).startsWith(it)
-                    }!!.length
+                    }?.length ?: return@any false
+                    index >= usedPos && index < usedPos + matchedPrefixLength
                 }
 
                 if (!isOverlapped) {

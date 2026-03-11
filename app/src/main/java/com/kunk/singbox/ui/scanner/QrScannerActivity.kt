@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.widget.ImageButton
 import android.widget.Toast
@@ -91,7 +92,7 @@ class QrScannerActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to parse QR code from image", e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@QrScannerActivity, getString(R.string.profiles_import_failed) + ": ${e.message}", Toast.LENGTH_SHORT).show()
                 }
@@ -157,6 +158,7 @@ class QrScannerActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val TAG = "QrScannerActivity"
         const val EXTRA_RESULT = "scan_result"
 
         fun createIntent(activity: Activity): Intent {

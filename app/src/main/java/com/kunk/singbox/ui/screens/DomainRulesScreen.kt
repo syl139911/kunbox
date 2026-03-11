@@ -178,8 +178,9 @@ fun DomainRulesScreen(
     }
 
     if (editingRule != null) {
+        val currentRule = checkNotNull(editingRule)
         DomainRuleEditorDialog(
-            initialRule = editingRule,
+            initialRule = currentRule,
             nodes = allNodes,
             nodesForSelection = nodesForSelection,
             profiles = profiles,
@@ -189,7 +190,7 @@ fun DomainRulesScreen(
                 editingRule = null
             },
             onDelete = {
-                settingsViewModel.deleteCustomRule(editingRule!!.id)
+                settingsViewModel.deleteCustomRule(currentRule.id)
                 editingRule = null
             }
         )

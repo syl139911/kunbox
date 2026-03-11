@@ -389,10 +389,11 @@ class ProxyOnlyService : Service() {
                     serviceScope.launch {
                         val repo = ConfigRepository.getInstance(this@ProxyOnlyService)
                         val generationResult = repo.generateConfigFile()
-                        if (generationResult?.path.isNullOrBlank()) return@launch
+                        val generatedPath = generationResult?.path
+                        if (generatedPath.isNullOrBlank()) return@launch
                         stopCore(stopService = false)
                         waitForCleanupJob()
-                        startCore(generationResult!!.path)
+                        startCore(generatedPath)
                     }
                 }
             }

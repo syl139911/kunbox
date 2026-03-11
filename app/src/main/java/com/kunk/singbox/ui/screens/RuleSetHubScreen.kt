@@ -134,9 +134,10 @@ fun RuleSetHubScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (error != null) {
+                val errorMessage = error.orEmpty()
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = error!!, color = MaterialTheme.colorScheme.error)
+                        Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
                         Button(onClick = { activityRuleSetViewModel.fetchRuleSets() }) {
                             Text(stringResource(R.string.common_retry))
                         }

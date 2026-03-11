@@ -147,7 +147,8 @@ fun SelectProfileDialog(
                     val target = if (isCreatingNew) {
                         SelectProfileTarget.NewProfile(newProfileName.trim())
                     } else {
-                        SelectProfileTarget.ExistingProfile(selectedProfileId!!)
+                        val profileId = selectedProfileId ?: return@TextButton
+                        SelectProfileTarget.ExistingProfile(profileId)
                     }
                     onConfirm(target)
                 },
