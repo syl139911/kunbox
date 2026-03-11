@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.2](https://github.com/roseforljh/KunBox/compare/v2.11.1...v2.11.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* Implement SingBox node configuration management with link parsing, exporting, and detail UI. ([b97c436](https://github.com/roseforljh/KunBox/commit/b97c436a9f019c8d3e9ee7bc76a3f787f90c6c4a))
+* Introduce SingBox core components, including configuration repository, service, and node parsing utilities. ([f6da4da](https://github.com/roseforljh/KunBox/commit/f6da4daefbbc3d4e1c08703ffde594782ca9e8d0))
+
 ## [2.11.1](https://github.com/roseforljh/KunBox/compare/v2.11.0...v2.11.1) (2026-03-05)
 
 
