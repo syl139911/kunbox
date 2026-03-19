@@ -61,7 +61,7 @@ data class RuleSet(
     @SerializedName("url") val url: String = "", // For remote
     @SerializedName("path") val path: String = "", // For local
     @SerializedName("enabled") val enabled: Boolean = true,
-    @SerializedName("outboundMode") val outboundMode: RuleSetOutboundMode? = RuleSetOutboundMode.DIRECT,
+    @SerializedName("outboundMode") val outboundMode: RuleSetOutboundMode? = RuleSetOutboundMode.PROXY,
     @SerializedName("outboundValue") val outboundValue: String? = null, // ID for Node/Profile, or Name for Group
     @SerializedName("inbounds") val inbounds: List<String>? = emptyList(), // List of inbound tags
     @SerializedName("autoUpdateInterval") val autoUpdateInterval: Int = 0 // 0 means disabled, in minutes
@@ -72,7 +72,7 @@ data class AppRule(
     @SerializedName("id") val id: String = UUID.randomUUID().toString(),
     @SerializedName("packageName") val packageName: String, // e.g., "com.google.android.youtube"
     @SerializedName("appName") val appName: String, // Display name, e.g., "YouTube"
-    @SerializedName("outboundMode") val outboundMode: RuleSetOutboundMode? = RuleSetOutboundMode.DIRECT,
+    @SerializedName("outboundMode") val outboundMode: RuleSetOutboundMode? = RuleSetOutboundMode.PROXY,
     @SerializedName("outboundValue") val outboundValue: String? = null, // ID for Node/Profile, or Name for Group
     @SerializedName("enabled") val enabled: Boolean = true
 )

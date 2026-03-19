@@ -371,6 +371,13 @@ class SingBoxService : VpnService() {
                 get() = coreManager.isStopping
             override fun getCommandClient() = commandManager.getCommandClient()
             override fun getSelectedOutbound(groupTag: String) = commandManager.getSelectedOutbound(groupTag)
+            override suspend fun urlTestGroup(groupTag: String, expectedTags: Set<String>): Map<String, Int> {
+                return commandManager.urlTestGroup(
+                    groupTag = groupTag,
+                    timeoutMs = 10000L,
+                    expectedTags = expectedTags
+                )
+            }
         })
         Log.i(TAG, "RouteGroupSelector initialized")
 
@@ -2169,13 +2176,6 @@ class SingBoxService : VpnService() {
             when (result) {
                 is com.kunk.singbox.service.manager.StartupManager.StartResult.Success -> {
                     updateServiceState(ServiceState.RUNNING)
-
-                    // 初始化 BoxWrapperManager with CommandServer
-                    commandManager.getCommandServer()?.let { server ->
-                        if (BoxWrapperManager.init(server)) {
-                            Log.i(TAG, "BoxWrapperManager initialized")
-                        }
-                    }
 
                     // 注册 libbox 服务
                     tryRegisterRunningServiceForLibbox()

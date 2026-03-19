@@ -36,9 +36,9 @@ data class AppSettings(
     @SerializedName("allowLan") val allowLan: Boolean = false,
     @SerializedName("appendHttpProxy") val appendHttpProxy: Boolean = false,
 
-    @SerializedName("localDns") val localDns: String = "local",
+    @SerializedName("localDns") val localDns: String = DEFAULT_LOCAL_DNS,
 
-    @SerializedName("remoteDns") val remoteDns: String = "https://1.1.1.1/dns-query",
+    @SerializedName("remoteDns") val remoteDns: String = DEFAULT_REMOTE_DNS,
     @SerializedName("fakeDnsEnabled") val fakeDnsEnabled: Boolean = false,
     @SerializedName("fakeIpRange") val fakeIpRange: String = "198.18.0.0/15",
     @SerializedName("fakeIpExcludeDomains") val fakeIpExcludeDomains: String = "",
@@ -89,7 +89,13 @@ data class AppSettings(
     @SerializedName("autoCheckUpdate") val autoCheckUpdate: Boolean = true,
 
     @SerializedName("backgroundPowerSavingDelay") val backgroundPowerSavingDelay: BackgroundPowerSavingDelay = BackgroundPowerSavingDelay.MINUTES_30
-)
+) {
+    companion object {
+        const val DEFAULT_LOCAL_DNS = "https://dns.alidns.com/dns-query"
+        const val DEFAULT_REMOTE_DNS = "https://1.1.1.1/dns-query"
+        const val LEGACY_LOCAL_DNS = "local"
+    }
+}
 
 enum class LatencyTestMethod(@StringRes val displayNameRes: Int) {
     @SerializedName("TCP") TCP(R.string.latency_test_tcp),

@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.model
+package com.kunk.singbox.model
 
 import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
@@ -37,10 +37,25 @@ data class DnsConfig(
 @Keep
 data class DnsServer(
     @SerializedName("tag") val tag: String? = null,
+    // New format fields (sing-box 1.13+)
     @SerializedName("type") val type: String? = null,
     @SerializedName("server") val server: String? = null,
+    @SerializedName("server_port") val serverPort: Int? = null,
+    @SerializedName("path") val path: String? = null,
+    @SerializedName("domain_resolver") val domainResolver: DomainResolveConfig? = null,
+    @SerializedName("domain_strategy") val domainStrategy: String? = null,
+    @SerializedName("udp_fragment") val udpFragment: Boolean? = null,
+    @SerializedName("network_strategy") val networkStrategy: String? = null,
+    @SerializedName("network_type") val networkType: List<String>? = null,
+    @SerializedName("fallback_network_type") val fallbackNetworkType: List<String>? = null,
+    @SerializedName("fallback_delay") val fallbackDelay: String? = null,
+    @SerializedName("inet4_range") val inet4Range: String? = null,
+    @SerializedName("inet6_range") val inet6Range: String? = null,
+    // Legacy fields (kept for parsing imported old-format configs)
     @SerializedName("address") val address: String? = null,
     @SerializedName("address_resolver") val addressResolver: String? = null,
+    @SerializedName("headers") val headers: Map<String, String>? = null,
+    @SerializedName("tls") val tls: TlsConfig? = null,
     @SerializedName("detour") val detour: String? = null,
     @SerializedName("strategy") val strategy: String? = null
 )
@@ -58,6 +73,10 @@ data class DnsRule(
     // https://sing-box.sagernet.org/configuration/dns/rule/
     // https://sing-box.sagernet.org/configuration/dns/rule_action/
     @SerializedName("action") val action: String? = null,
+    @SerializedName("strategy") val strategy: String? = null,
+    @SerializedName("disable_cache") val disableCache: Boolean? = null,
+    @SerializedName("rewrite_ttl") val rewriteTtl: Int? = null,
+    @SerializedName("client_subnet") val clientSubnet: String? = null,
     // reject action fields
     @SerializedName("method") val method: String? = null,
     @SerializedName("no_drop") val noDrop: Boolean? = null,
@@ -243,7 +262,8 @@ data class DomainResolveConfig(
     @SerializedName("server") val server: String? = null,
     @SerializedName("strategy") val strategy: String? = null,
     @SerializedName("disable_cache") val disableCache: Boolean? = null,
-    @SerializedName("rewrite_ttl") val rewriteTtl: Int? = null
+    @SerializedName("rewrite_ttl") val rewriteTtl: Int? = null,
+    @SerializedName("client_subnet") val clientSubnet: String? = null
 )
 
 @Keep
@@ -304,12 +324,12 @@ data class TransportConfig(
     @SerializedName("early_data_header_name") val earlyDataHeaderName: String? = null,
     @SerializedName("max_early_data") val maxEarlyData: Int? = null,
     @SerializedName("mode") val mode: String? = null,
-    @SerializedName("scMaxEachPostBytes") val scMaxEachPostBytes: Long? = null,
-    @SerializedName("scMinPostsIntervalMs") val scMinPostsIntervalMs: Long? = null,
-    @SerializedName("scMaxBufferedPosts") val scMaxBufferedPosts: Long? = null,
-    @SerializedName("xPaddingBytes") val xPaddingBytes: String? = null,
-    @SerializedName("noGRPCHeader") val noGRPCHeader: Boolean? = null,
-    @SerializedName("noSSEHeader") val noSSEHeader: Boolean? = null
+    @SerializedName("sc_max_each_post_bytes") val scMaxEachPostBytes: Long? = null,
+    @SerializedName("sc_min_posts_interval_ms") val scMinPostsIntervalMs: Long? = null,
+    @SerializedName("sc_max_buffered_posts") val scMaxBufferedPosts: Long? = null,
+    @SerializedName("x_padding_bytes") val xPaddingBytes: String? = null,
+    @SerializedName("no_grpc_header") val noGRPCHeader: Boolean? = null,
+    @SerializedName("no_sse_header") val noSSEHeader: Boolean? = null
 )
 
 @Keep
@@ -330,7 +350,12 @@ data class RouteConfig(
     @SerializedName("find_process") val findProcess: Boolean? = null,
     @SerializedName("auto_detect_interface") val autoDetectInterface: Boolean? = null,
     @SerializedName("default_interface") val defaultInterface: String? = null,
-    @SerializedName("default_domain_resolver") val defaultDomainResolver: DomainResolveConfig? = null
+    @SerializedName("default_domain_resolver") val defaultDomainResolver: DomainResolveConfig? = null,
+    @SerializedName("default_network_strategy") val defaultNetworkStrategy: String? = null,
+    @SerializedName("default_network_type") val defaultNetworkType: List<String>? = null,
+    @SerializedName("default_fallback_network_type") val defaultFallbackNetworkType: List<String>? = null,
+    @SerializedName("default_fallback_delay") val defaultFallbackDelay: String? = null,
+    @SerializedName("default_udp_fragment") val defaultUdpFragment: Boolean? = null
 )
 
 @Keep

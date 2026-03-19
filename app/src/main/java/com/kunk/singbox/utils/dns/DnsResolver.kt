@@ -1,10 +1,9 @@
-﻿package com.kunk.singbox.utils.dns
+package com.kunk.singbox.utils.dns
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -199,35 +198,17 @@ class DnsResolver(
             return@withContext DnsResolveResult(domain, "direct")
         }
 
-        val dohDeferred = if (dohServer != null) {
-            async { resolveViaDoHAsync(domain, dohServer) }
-        } else null
-
-        val systemDeferred = async { resolveViaSystem(domain) }
-
-        val winner = select {
-            dohDeferred?.onAwait { if (it.isSuccess) it else null }
-            systemDeferred.onAwait { if (it.isSuccess) it else null }
-        }
-
-        if (winner != null) {
-            dohDeferred?.cancel()
-            systemDeferred.cancel()
-            return@withContext winner
-        }
-
-        val fallback = select {
-            if (dohDeferred != null && dohDeferred.isActive) {
-                dohDeferred.onAwait { it }
+        // DoH first to avoid DNS pollution from system DNS
+        if (dohServer != null) {
+            val dohResult = resolveViaDoHAsync(domain, dohServer)
+            if (dohResult.isSuccess) {
+                return@withContext dohResult
             }
-            if (systemDeferred.isActive) {
-                systemDeferred.onAwait { it }
-            }
+            Log.w(TAG, "DoH failed for $domain, falling back to system DNS")
         }
 
-        dohDeferred?.cancel()
-        systemDeferred.cancel()
-        fallback
+        // Fallback to system DNS only when DoH fails
+        resolveViaSystem(domain)
     }
 
     /**

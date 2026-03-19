@@ -47,6 +47,27 @@ class NodeLinkParser(private val gson: Gson) {
         return params
     }
 
+    private fun isIpLiteral(value: String?): Boolean {
+        if (value.isNullOrBlank()) return false
+        val candidate = value.trim().removeSurrounding("[", "]")
+        val ipv4Pattern = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
+        return ipv4Pattern.matches(candidate) || candidate.contains(":")
+    }
+
+    private fun defaultTlsServerName(
+        explicitServerName: String?,
+        primaryFallback: String? = null,
+        server: String?
+    ): String? {
+        val explicit = explicitServerName?.takeIf { it.isNotBlank() }
+        if (explicit != null) return explicit
+
+        val fallback = primaryFallback?.takeIf { it.isNotBlank() }
+        if (fallback != null) return fallback
+
+        return server?.takeIf { it.isNotBlank() && !isIpLiteral(it) }
+    }
+
     /**
      */
     private fun sanitizeUri(link: String): String {
@@ -444,7 +465,11 @@ class NodeLinkParser(private val gson: Gson) {
 
             val security = firstParam(params, "security") ?: "none"
             val hostParam = firstParam(params, "host")
-            val sni = firstParam(params, "sni") ?: hostParam ?: server
+            val sni = defaultTlsServerName(
+                explicitServerName = firstParam(params, "sni"),
+                primaryFallback = hostParam,
+                server = server
+            )
             val transportType = firstParam(params, "type") ?: "tcp"
             val insecure = parseBooleanFlag(firstParam(params, "allowInsecure", "insecure")) == true
             val fingerprint = firstParam(params, "fp")?.takeIf { it.isNotBlank() }
@@ -530,7 +555,11 @@ class NodeLinkParser(private val gson: Gson) {
             val params = parseQueryParams(uri.query)
 
             val hostParam = firstParam(params, "host")
-            val sni = firstParam(params, "sni") ?: hostParam ?: server
+            val sni = defaultTlsServerName(
+                explicitServerName = firstParam(params, "sni"),
+                primaryFallback = hostParam,
+                server = server
+            )
             val insecure = parseBooleanFlag(firstParam(params, "allowInsecure", "insecure")) == true
             val fingerprint = firstParam(params, "fp")?.takeIf { it.isNotBlank() }
             val alpnList = firstParam(params, "alpn")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }
@@ -625,7 +654,10 @@ class NodeLinkParser(private val gson: Gson) {
                 downMbps = firstParam(params, "down_mbps", "downmbps", "down")?.toIntOrNull(),
                 tls = TlsConfig(
                     enabled = true,
-                    serverName = params["sni"] ?: server,
+                    serverName = defaultTlsServerName(
+                        explicitServerName = params["sni"],
+                        server = server
+                    ),
                     insecure = parseBooleanQueryParam(
                         params["insecure"] ?: params["allowInsecure"] ?: params["skip-cert-verify"]
                     ),
@@ -690,7 +722,10 @@ class NodeLinkParser(private val gson: Gson) {
                 downMbps = params["down_mbps"]?.toIntOrNull() ?: params["down"]?.toIntOrNull() ?: 50,
                 tls = TlsConfig(
                     enabled = true,
-                    serverName = params["sni"] ?: server
+                    serverName = defaultTlsServerName(
+                        explicitServerName = params["sni"],
+                        server = server
+                    )
                 )
             )
         } catch (e: Exception) {
@@ -719,7 +754,10 @@ class NodeLinkParser(private val gson: Gson) {
                 }
             }
 
-            val sni = params["sni"] ?: server
+            val sni = defaultTlsServerName(
+                explicitServerName = params["sni"],
+                server = server
+            )
             val insecure = params["insecure"] == "1" || params["allowInsecure"] == "1"
             val alpnList = params["alpn"]?.split(",")?.filter { it.isNotBlank() }
             val fingerprint = params["fp"]?.takeIf { it.isNotBlank() }
@@ -776,7 +814,10 @@ class NodeLinkParser(private val gson: Gson) {
                 ?: firstParam(params, "proto")
                 ?: firstParam(params, "type")
                 ?: "h2"
-            val sni = firstParam(params, "sni") ?: server
+            val sni = defaultTlsServerName(
+                explicitServerName = firstParam(params, "sni"),
+                server = server
+            )
             val insecure = parseBooleanFlag(firstParam(params, "insecure", "allowInsecure")) == true
             val alpn = firstParam(params, "alpn")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }
             val fingerprint = firstParam(params, "fp")?.takeIf { it.isNotBlank() }
@@ -868,7 +909,10 @@ class NodeLinkParser(private val gson: Gson) {
                 password = params["password"] ?: params["token"] ?: uuid
             }
 
-            val sni = params["sni"] ?: server
+            val sni = defaultTlsServerName(
+                explicitServerName = params["sni"],
+                server = server
+            )
             val insecure = params["insecure"] == "1" || params["allow_insecure"] == "1" || params["allowInsecure"] == "1"
             val alpnList = params["alpn"]?.split(",")?.filter { it.isNotBlank() }
             val fingerprint = params["fp"]?.takeIf { it.isNotBlank() }
@@ -986,7 +1030,17 @@ class NodeLinkParser(private val gson: Gson) {
                 serverPort = port,
                 username = username,
                 password = password,
-                tls = if (useTls) TlsConfig(enabled = true, serverName = server) else null
+                tls = if (useTls) {
+                    TlsConfig(
+                        enabled = true,
+                        serverName = defaultTlsServerName(
+                            explicitServerName = null,
+                            server = server
+                        )
+                    )
+                } else {
+                    null
+                }
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse HTTP/HTTPS link", e)

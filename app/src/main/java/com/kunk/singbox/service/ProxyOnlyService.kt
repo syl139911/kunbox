@@ -206,10 +206,28 @@ class ProxyOnlyService : Service() {
 
             networkCallback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
+                    val cm = connectivityManager ?: return
+                    val isActiveDefault = cm.activeNetwork == network
+                    if (!isActiveDefault) return
+                    val caps = cm.getNetworkCapabilities(network)
+                    val isValidated =
+                        caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                    if (!isValidated) {
+                        Log.d(TAG, "Network available but not validated: $network, waiting")
+                        return
+                    }
                     updateDefaultInterface(network)
                 }
 
                 override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                    val cm = connectivityManager ?: return
+                    if (cm.activeNetwork != network) return
+                    val isValidated =
+                        caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                    if (!isValidated) {
+                        Log.d(TAG, "Active network $network not yet validated, waiting")
+                        return
+                    }
                     updateDefaultInterface(network)
                 }
 
@@ -230,7 +248,14 @@ class ProxyOnlyService : Service() {
 
             val activeNet = connectivityManager?.activeNetwork
             if (activeNet != null) {
-                updateDefaultInterface(activeNet)
+                val caps = connectivityManager?.getNetworkCapabilities(activeNet)
+                val isValidated =
+                    caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                if (isValidated) {
+                    updateDefaultInterface(activeNet)
+                } else {
+                    Log.d(TAG, "Initial active network $activeNet not validated, deferring")
+                }
             }
         }
 

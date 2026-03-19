@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.utils.perf
+package com.kunk.singbox.utils.perf
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -9,12 +9,13 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.net.InetAddress
+import com.kunk.singbox.utils.dns.DnsResolver
 import java.util.concurrent.ConcurrentHashMap
 
 object DnsPrewarmer {
     private const val TAG = "DnsPrewarmer"
     private val dnsCache = ConcurrentHashMap<String, List<String>>()
+    private val dnsResolver = DnsResolver()
 
     private const val CACHE_TTL_MS = 5 * 60 * 1000L
     private val cacheTimestamps = ConcurrentHashMap<String, Long>()
@@ -22,9 +23,9 @@ object DnsPrewarmer {
     // 妤犵偠娉涜ぐ鍌炴⒔閹邦剙鐓?
     private const val MAX_CONCURRENCY = 8
 
-    private const val RESOLVE_TIMEOUT_MS = 2000L
+    private const val RESOLVE_TIMEOUT_MS = 1500L
 
-    private const val TOTAL_TIMEOUT_MS = 3000L
+    private const val TOTAL_TIMEOUT_MS = 2000L
 
     /**
      */
@@ -137,12 +138,12 @@ object DnsPrewarmer {
 
         return withTimeoutOrNull(RESOLVE_TIMEOUT_MS) {
             try {
-                val addresses = InetAddress.getAllByName(domain)
-                if (addresses.isNotEmpty()) {
-                    val addressList = addresses.map { it.hostAddress ?: "" }.filter { it.isNotEmpty() }
-                    dnsCache[domain] = addressList
+                // Use Alibaba DoH (accessible in China) instead of Cloudflare default
+                val result = dnsResolver.resolveViaDoH(domain, DnsResolver.DOH_ALIDNS)
+                if (result.isSuccess && result.ip != null) {
+                    dnsCache[domain] = listOf(result.ip)
                     cacheTimestamps[domain] = System.currentTimeMillis()
-                    Log.v(TAG, "DNS resolved: $domain -> ${addressList.firstOrNull()}")
+                    Log.v(TAG, "DNS resolved via DoH: $domain -> ${result.ip}")
                     ResolveResult.RESOLVED
                 } else {
                     ResolveResult.FAILED

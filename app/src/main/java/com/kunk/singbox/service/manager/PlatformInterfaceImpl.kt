@@ -11,6 +11,8 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.system.OsConstants
 import android.util.Log
+import com.kunk.singbox.model.AppSettings
+import com.kunk.singbox.model.RoutingMode
 import io.nekohasekai.libbox.ConnectionOwner
 import io.nekohasekai.libbox.InterfaceUpdateListener
 import io.nekohasekai.libbox.NetworkInterfaceIterator
@@ -40,6 +42,16 @@ class PlatformInterfaceImpl(
     companion object {
         private const val TAG = "PlatformInterfaceImpl"
         private const val NETWORK_SWITCH_DELAY_MS = 2000L
+
+        internal fun shouldForceConnectionOwnerRouting(settings: AppSettings?): Boolean {
+            if (settings?.routingMode != RoutingMode.RULE) return false
+            return settings.appRules.any { it.enabled } || settings.appGroups.any { it.enabled }
+        }
+
+        internal fun shouldExposeProcFsToLibbox(procFsReadable: Boolean, settings: AppSettings?): Boolean {
+            if (!procFsReadable) return false
+            return !shouldForceConnectionOwnerRouting(settings)
+        }
     }
 
     private val networkSwitchManager: NetworkSwitchManager by lazy {
@@ -189,7 +201,7 @@ class PlatformInterfaceImpl(
 
     override fun usePlatformAutoDetectInterfaceControl(): Boolean = true
 
-    override fun useProcFS(): Boolean {
+    private fun getProcFsReadable(): Boolean {
         val now = SystemClock.elapsedRealtime()
         val cached = cachedProcFsReadable
         val last = lastProcFsCheckAtMs.get()
@@ -226,6 +238,16 @@ class PlatformInterfaceImpl(
         return readable
     }
 
+    override fun useProcFS(): Boolean {
+        val procFsReadable = getProcFsReadable()
+        val settings = callbacks.getCurrentSettings()
+        val exposeProcFs = shouldExposeProcFsToLibbox(procFsReadable, settings)
+        if (!exposeProcFs && procFsReadable && shouldForceConnectionOwnerRouting(settings)) {
+            callbacks.setConnectionOwnerLastEvent("app_routing_force_findConnectionOwner")
+        }
+        return exposeProcFs
+    }
+
     @Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod", "ReturnCount")
     override fun findConnectionOwner(
         ipProtocol: Int,
@@ -237,7 +259,7 @@ class PlatformInterfaceImpl(
         callbacks.incrementConnectionOwnerCalls()
 
         // Avoid expensive /proc scanning when it's known to be unreadable.
-        val procFsUsable = runCatching { useProcFS() }.getOrDefault(false)
+        val procFsUsable = runCatching { getProcFsReadable() }.getOrDefault(false)
 
         fun toConnectionOwner(uid: Int): ConnectionOwner {
             if (uid <= 0) return ConnectionOwner()
@@ -472,11 +494,17 @@ class PlatformInterfaceImpl(
                 if (isVpn) return
 
                 val isActiveDefault = cm.activeNetwork == network
-                if (isActiveDefault) {
-                    networkCallbackReady = true
-                    Log.i(TAG, "Network available: $network (active default)")
-                    updateDefaultInterface(network)
+                if (!isActiveDefault) return
+
+                val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                if (!isValidated) {
+                    Log.d(TAG, "Network available but not validated: $network, waiting for validation")
+                    return
                 }
+
+                networkCallbackReady = true
+                Log.i(TAG, "Network available: $network (active default, validated)")
+                updateDefaultInterface(network)
             }
 
             override fun onLost(network: Network) {
@@ -511,6 +539,11 @@ class PlatformInterfaceImpl(
                 if (isVpn) return
 
                 if (cm.activeNetwork == network) {
+                    val isValidated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                    if (!isValidated) {
+                        Log.d(TAG, "Active network $network not yet validated, waiting")
+                        return
+                    }
                     networkCallbackReady = true
                     updateDefaultInterface(network)
                 }

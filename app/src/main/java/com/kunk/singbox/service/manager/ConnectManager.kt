@@ -251,7 +251,21 @@ class ConnectManager(
     }
 
     private fun handleNetworkAvailable(network: Network) {
-        Log.i(TAG, "Network available: $network")
+        val cm = connectivityManager ?: return
+        val isActiveDefault = cm.activeNetwork == network
+        if (!isActiveDefault) {
+            Log.d(TAG, "Network available but not active default: $network, ignoring")
+            return
+        }
+
+        val caps = cm.getNetworkCapabilities(network)
+        val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+        if (!isValidated) {
+            Log.d(TAG, "Network available but not validated: $network, deferring")
+            return
+        }
+
+        Log.i(TAG, "Network available: $network (active, validated)")
         lastKnownNetwork = network
         StateCache.updateNetworkCache(network)
         isReady = true
@@ -333,12 +347,26 @@ class ConnectManager(
             return
         }
 
-        setUnderlyingNetworksFn?.invoke(arrayOf(network))
+        val cm = connectivityManager ?: return
+        val isActiveDefault = cm.activeNetwork == network
+        if (!isActiveDefault) {
+            return
+        }
+
+        val isValidated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 
         if (lastKnownNetwork != network) {
+            if (!isValidated) {
+                Log.d(TAG, "New network $network not validated yet, deferring switch")
+                return
+            }
+            Log.i(TAG, "Capabilities changed, switching to validated network: $network")
             lastKnownNetwork = network
             StateCache.updateNetworkCache(network)
+            setUnderlyingNetworksFn?.invoke(arrayOf(network))
             onNetworkChanged?.invoke(network)
+        } else {
+            setUnderlyingNetworksFn?.invoke(arrayOf(network))
         }
 
         checkAndResetOnInterfaceChange(network)

@@ -1,5 +1,9 @@
 package com.kunk.singbox.repository
 
+import com.google.gson.Gson
+import com.kunk.singbox.model.AppSettings
+import com.kunk.singbox.model.DomainResolveConfig
+import com.kunk.singbox.model.RuleSetOutboundMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
@@ -167,6 +171,20 @@ class ConfigRepositoryTest {
     }
 
     @Test
+    fun testResolveAppRuleOutboundModeDefaultsToProxy() {
+        val resolved = ConfigRepository.resolveAppRuleOutboundMode(null)
+
+        assertEquals(RuleSetOutboundMode.PROXY, resolved)
+    }
+
+    @Test
+    fun testResolveAppRuleOutboundModeKeepsExplicitMode() {
+        val resolved = ConfigRepository.resolveAppRuleOutboundMode(RuleSetOutboundMode.DIRECT)
+
+        assertEquals(RuleSetOutboundMode.DIRECT, resolved)
+    }
+
+    @Test
     fun testShouldRecordSubscriptionNetworkFailureForConnectException() {
         assertTrue(
             ConfigRepository.shouldRecordSubscriptionNetworkFailure(
@@ -257,5 +275,77 @@ class ConfigRepositoryTest {
         assertEquals(listOf("dns.google", "dns.alidns.com"), rules[0].domain)
         assertEquals(listOf("dns.google", "dns.alidns.com"), rules[1].domain)
         assertEquals(listOf("dns.google", "dns.alidns.com"), rules[2].domain)
+    }
+
+    @Test
+    fun testNormalizeLocalDnsReplacesLegacyLocalValue() {
+        val normalized = ConfigRepository.normalizeLocalDns(AppSettings.LEGACY_LOCAL_DNS)
+
+        assertEquals(AppSettings.DEFAULT_LOCAL_DNS, normalized)
+    }
+
+    @Test
+    fun testNormalizeLocalDnsReplacesBlankValue() {
+        val normalized = ConfigRepository.normalizeLocalDns("   ")
+
+        assertEquals(AppSettings.DEFAULT_LOCAL_DNS, normalized)
+    }
+
+    @Test
+    fun testBuildDnsResolverForDomainUrlReturnsBootstrapResolver() {
+        val resolver = ConfigRepository.buildDnsResolverForAddress("https://dns.alidns.com/dns-query")
+
+        assertNotNull(resolver)
+        assertEquals("dns-bootstrap", resolver?.server)
+    }
+
+    @Test
+    fun testBuildDnsResolverForIpUrlReturnsNull() {
+        val resolver = ConfigRepository.buildDnsResolverForAddress("https://1.1.1.1/dns-query")
+
+        assertNull(resolver)
+    }
+
+    @Test
+    fun testBuildDnsResolverForLocalValueReturnsNull() {
+        val resolver = ConfigRepository.buildDnsResolverForAddress("local")
+
+        assertNull(resolver)
+    }
+
+    @Test
+    fun testBuildDnsServerPreservesDomainResolverInJson() {
+        val server = ConfigRepository.buildDnsServer(
+            address = "https://dns.alidns.com/dns-query",
+            tag = "local",
+            domainStrategy = "prefer_ipv4",
+            domainResolver = DomainResolveConfig(server = "dns-bootstrap")
+        )
+
+        assertEquals("local", server.tag)
+        assertEquals("https", server.type)
+        assertEquals("dns.alidns.com", server.server)
+        assertEquals("/dns-query", server.path)
+        assertNotNull(server.domainResolver)
+        assertEquals("dns-bootstrap", server.domainResolver?.server)
+
+        val json = Gson().toJson(server)
+        assertTrue(json.contains("\"domain_resolver\""))
+        assertTrue(json.contains("\"server\":\"dns-bootstrap\""))
+    }
+
+    @Test
+    fun testBuildDnsServerPreservesDetourAndResolverForRemoteDns() {
+        val server = ConfigRepository.buildDnsServer(
+            address = "https://dns.google/dns-query",
+            tag = "remote",
+            detour = "PROXY",
+            domainStrategy = "prefer_ipv4",
+            domainResolver = DomainResolveConfig(server = "dns-bootstrap")
+        )
+
+        assertEquals("remote", server.tag)
+        assertEquals("PROXY", server.detour)
+        assertEquals("dns-bootstrap", server.domainResolver?.server)
     }
 }

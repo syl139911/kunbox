@@ -7,6 +7,7 @@ import com.google.gson.GsonBuilder
 import com.kunk.singbox.database.AppDatabase
 import com.kunk.singbox.database.entity.SettingsEntity
 import com.kunk.singbox.model.AppSettings
+import com.kunk.singbox.model.RuleSetOutboundMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,6 +32,63 @@ class SettingsStore private constructor(context: Context) {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: SettingsStore(context.applicationContext).also { INSTANCE = it }
             }
+        }
+
+        @Suppress("CognitiveComplexMethod")
+        internal fun migrateSettings(version: Int, settings: AppSettings): AppSettings {
+            var result = settings
+
+            if (version < 2) {
+                result = result.copy(tunMtuAuto = true)
+            }
+
+            if (version < 3) {
+                val oldLocalDefaults = listOf(
+                    "https://dns.alidns.com/dns-query",
+                    "https://1.1.1.1/dns-query",
+                    "223.5.5.5",
+                    ""
+                )
+                val oldRemoteDefaults = listOf(
+                    "https://dns.google/dns-query",
+                    "https://1.1.1.1/dns-query",
+                    "8.8.8.8",
+                    "1.1.1.1",
+                    ""
+                )
+
+                var newLocal = result.localDns
+                var newRemote = result.remoteDns
+
+                if (result.localDns in oldLocalDefaults) {
+                    newLocal = AppSettings.DEFAULT_LOCAL_DNS
+                    Log.i(TAG, "Migrating localDns from '${result.localDns}' to '$newLocal'")
+                }
+                if (result.remoteDns in oldRemoteDefaults) {
+                    newRemote = AppSettings.DEFAULT_REMOTE_DNS
+                    Log.i(TAG, "Migrating remoteDns from '${result.remoteDns}' to '$newRemote'")
+                }
+
+                result = result.copy(localDns = newLocal, remoteDns = newRemote)
+            }
+
+            if (version < 4 && result.localDns.equals(AppSettings.LEGACY_LOCAL_DNS, ignoreCase = true)) {
+                result = result.copy(localDns = AppSettings.DEFAULT_LOCAL_DNS)
+                Log.i(TAG, "Migrating legacy localDns to '${AppSettings.DEFAULT_LOCAL_DNS}'")
+            }
+
+            if (version < 5) {
+                result = result.copy(
+                    appRules = result.appRules.map { rule ->
+                        if (rule.outboundMode != null) rule else rule.copy(outboundMode = RuleSetOutboundMode.PROXY)
+                    },
+                    appGroups = result.appGroups.map { group ->
+                        if (group.outboundMode != null) group else group.copy(outboundMode = RuleSetOutboundMode.PROXY)
+                    }
+                )
+            }
+
+            return result
         }
     }
 
@@ -60,7 +118,7 @@ class SettingsStore private constructor(context: Context) {
             if (entity != null) {
                 val loaded = gson.fromJson(entity.data, AppSettings::class.java)
                 if (loaded != null) {
-                    val migrated = migrateIfNeeded(entity.version, loaded)
+                    val migrated = migrateSettings(entity.version, loaded)
                     _settings.value = migrated
                     // Persist migration if we upgraded settings.
                     if (entity.version != SettingsEntity.CURRENT_VERSION) {
@@ -78,49 +136,6 @@ class SettingsStore private constructor(context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load settings", e)
         }
-    }
-
-    private fun migrateIfNeeded(version: Int, settings: AppSettings): AppSettings {
-        var result = settings
-
-        // v2: introduce tunMtuAuto and improved throughput defaults.
-        // For existing installs, enable auto MTU by default to improve throughput while keeping manual MTU as fallback.
-        if (version < 2) {
-            result = result.copy(tunMtuAuto = true)
-        }
-
-        if (version < 3) {
-
-            val oldLocalDefaults = listOf(
-                "https://dns.alidns.com/dns-query",
-                "https://1.1.1.1/dns-query",
-                "223.5.5.5",
-                ""
-            )
-            val oldRemoteDefaults = listOf(
-                "https://dns.google/dns-query",
-                "https://1.1.1.1/dns-query",
-                "8.8.8.8",
-                "1.1.1.1",
-                ""
-            )
-
-            var newLocal = result.localDns
-            var newRemote = result.remoteDns
-
-            if (result.localDns in oldLocalDefaults) {
-                newLocal = "local" // ·侇垵宕电划?閺夆晜鍔橀幆鈧柛?DNS
-                Log.i(TAG, "Migrating localDns from '${result.localDns}' to 'local'")
-            }
-            if (result.remoteDns in oldRemoteDefaults) {
-                newRemote = "https://1.1.1.1/dns-query" // Cloudflare DoH
-                Log.i(TAG, "Migrating remoteDns from '${result.remoteDns}' to 'https://1.1.1.1/dns-query'")
-            }
-
-            result = result.copy(localDns = newLocal, remoteDns = newRemote)
-        }
-
-        return result
     }
 
     /**

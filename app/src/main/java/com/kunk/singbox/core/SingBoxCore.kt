@@ -279,25 +279,23 @@ class SingBoxCore private constructor(private val context: Context) {
             val config = SingBoxConfig(
                 log = com.kunk.singbox.model.LogConfig(level = "debug", timestamp = true),
 
+                // sing-box 1.13+: 不设 detour 即为直连
                 dns = com.kunk.singbox.model.DnsConfig(
                     servers = listOf(
                         com.kunk.singbox.model.DnsServer(
                             tag = "dns-direct-v4",
-                            address = "223.5.5.5",
-                            detour = "direct",
-                            strategy = "prefer_ipv4"
+                            type = "udp",
+                            server = "223.5.5.5"
                         ),
                         com.kunk.singbox.model.DnsServer(
                             tag = "dns-direct-v6",
-                            address = "https://[2606:4700:4700::1111]/dns-query",
-                            detour = "direct",
-                            strategy = "prefer_ipv6"
+                            type = "https",
+                            server = "2606:4700:4700::1111"
                         ),
                         com.kunk.singbox.model.DnsServer(
                             tag = "dns-backup",
-                            address = "119.29.29.29",
-                            detour = "direct",
-                            strategy = "prefer_ipv4"
+                            type = "udp",
+                            server = "119.29.29.29"
                         )
                     ),
                     rules = listOf(
@@ -488,7 +486,7 @@ class SingBoxCore private constructor(private val context: Context) {
         }
 
         val portToTagMap = ports.zip(batchOutbounds.map { it.tag }).toMap()
-        val fixedOutbounds = batchOutbounds.map { OutboundFixer.buildForRuntime(context, it) }
+        val fixedOutbounds = batchOutbounds.mapNotNull { OutboundFixer.buildForRuntime(context, it) }
         val config = buildBatchTestConfig(fixedOutbounds, ports)
         val configJson = gson.toJson(config)
         val batchTestDbPath = config.experimental?.cacheFile?.path
@@ -562,37 +560,34 @@ class SingBoxCore private constructor(private val context: Context) {
             ))
         }
 
+        // sing-box 1.13+: 不设 detour 即为直连
         val dnsConfig = com.kunk.singbox.model.DnsConfig(
             servers = listOf(
                 com.kunk.singbox.model.DnsServer(
                     tag = "dns-direct-v4",
-                    address = "223.5.5.5",
-                    detour = "direct",
-                    strategy = "prefer_ipv4"
+                    type = "udp",
+                    server = "223.5.5.5"
                 ),
                 com.kunk.singbox.model.DnsServer(
                     tag = "dns-direct-v6",
-                    address = "https://[2606:4700:4700::1111]/dns-query",
-                    detour = "direct",
-                    strategy = "prefer_ipv6"
+                    type = "https",
+                    server = "2606:4700:4700::1111"
                 ),
                 com.kunk.singbox.model.DnsServer(
                     tag = "dns-backup",
-                    address = "119.29.29.29",
-                    detour = "direct",
-                    strategy = "prefer_ipv4"
+                    type = "udp",
+                    server = "119.29.29.29"
                 ),
                 com.kunk.singbox.model.DnsServer(
                     tag = "dns-bootstrap",
-                    address = "223.5.5.5",
-                    detour = "direct",
-                    strategy = "prefer_ipv4"
+                    type = "udp",
+                    server = "223.5.5.5"
                 )
             ),
             rules = listOf(
                 com.kunk.singbox.model.DnsRule(queryType = listOf("A"), server = "dns-direct-v4"),
-                com.kunk.singbox.model.DnsRule(queryType = listOf("AAAA"), server = "dns-direct-v6"),
-                com.kunk.singbox.model.DnsRule(outboundRaw = listOf("any"), server = "dns-bootstrap")
+                com.kunk.singbox.model.DnsRule(queryType = listOf("AAAA"), server = "dns-direct-v6")
+                // sing-box 1.12.0+: outbound DNS rule deprecated, use route.default_domain_resolver instead
             ),
             finalServer = "dns-backup",
             strategy = "prefer_ipv4"
@@ -611,7 +606,7 @@ class SingBoxCore private constructor(private val context: Context) {
         }
 
         if (safeOutbounds.none { it.tag == "direct" }) safeOutbounds.add(com.kunk.singbox.model.Outbound(type = "direct", tag = "direct"))
-        if (safeOutbounds.none { it.tag == "block" }) safeOutbounds.add(com.kunk.singbox.model.Outbound(type = "block", tag = "block"))
+        // sing-box 1.13.0+: "block" outbound type removed, no longer needed
 
         val batchTestDbPath = File(tempDir, "batch_test_${UUID.randomUUID()}.db").absolutePath
 
@@ -929,8 +924,8 @@ class SingBoxCore private constructor(private val context: Context) {
                 servers = listOf(
                     DnsServer(
                         tag = tag,
-                        address = "223.5.5.5",
-                        detour = "direct"
+                        type = "udp",
+                        server = "223.5.5.5"
                     )
                 )
             )

@@ -453,7 +453,11 @@ fun NodeDetailScreen(
                             title = stringResource(R.string.node_detail_disable_sni),
                             checked = outbound.disableSni == true,
                             icon = Icons.Rounded.Fingerprint,
-                            onCheckedChange = { editingOutbound = outbound.copy(disableSni = it) }
+                            onCheckedChange = { checked ->
+                                editingOutbound = outbound.copy(
+                                    disableSni = if (checked) true else null
+                                )
+                            }
                         )
                     }
 

@@ -13,8 +13,8 @@ class DnsResolveStore private constructor() {
         private const val TAG = "DnsResolveStore"
         private const val MMKV_ID = "dns_resolve_cache"
 
-        // 榛樿 TTL: 1 灏忔椂
-        const val DEFAULT_TTL_SECONDS = 3600
+        // 默认 TTL: 4 小时 (节点域名 IP 变化频率低，减少断连后重复解析)
+        const val DEFAULT_TTL_SECONDS = 14400
 
         @Volatile
         private var instance: DnsResolveStore? = null

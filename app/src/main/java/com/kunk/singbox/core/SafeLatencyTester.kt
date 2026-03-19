@@ -3,9 +3,9 @@ package com.kunk.singbox.core
 import android.util.Log
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.service.SingBoxService
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -43,13 +43,22 @@ class SafeLatencyTester private constructor() {
     private val isTestingActive = AtomicBoolean(false)
     private val consecutiveFailures = AtomicInteger(0)
     private val lastCircuitBreakerTrip = AtomicLong(0)
+    @Volatile
+    private var activeGroupTest: CompletableDeferred<Map<String, Int>>? = null
 
     private var guardJob: Job? = null
 
     /**
      *
      */
-    @Suppress("UNUSED_PARAMETER", "CyclomaticComplexMethod", "CognitiveComplexMethod", "LongMethod", "NestedBlockDepth")
+    @Suppress(
+        "UNUSED_PARAMETER",
+        "CyclomaticComplexMethod",
+        "CognitiveComplexMethod",
+        "LongMethod",
+        "NestedBlockDepth",
+        "ReturnCount"
+    )
     suspend fun testOutboundsLatencySafe(
         outbounds: List<Outbound>,
         targetUrl: String,
@@ -64,11 +73,27 @@ class SafeLatencyTester private constructor() {
             return
         }
 
-        if (!isTestingActive.compareAndSet(false, true)) {
-            Log.w(TAG, "Another test is in progress, waiting for cached results")
-            waitForCachedResults(outbounds, URL_TEST_TIMEOUT_MS, onResult)
+        val existingTest = activeGroupTest
+        if (existingTest != null && !existingTest.isCompleted) {
+            Log.i(TAG, "Joining in-flight URL test for ${outbounds.size} nodes")
+            emitResultsFromSharedTest(existingTest, outbounds, onResult)
             return
         }
+
+        if (!isTestingActive.compareAndSet(false, true)) {
+            val sharedTest = activeGroupTest
+            if (sharedTest != null) {
+                Log.i(TAG, "Another test is in progress, awaiting shared results")
+                emitResultsFromSharedTest(sharedTest, outbounds, onResult)
+                return
+            }
+            Log.w(TAG, "Another test is in progress but no shared state is available")
+            outbounds.forEach { onResult(it.tag, -1L) }
+            return
+        }
+
+        val groupTest = CompletableDeferred<Map<String, Int>>()
+        activeGroupTest = groupTest
 
         try {
             Log.i(TAG, "Starting URL test for ${outbounds.size} nodes via group API")
@@ -90,6 +115,7 @@ class SafeLatencyTester private constructor() {
             )
 
             if (results.isEmpty()) {
+                groupTest.complete(emptyMap())
                 Log.w(TAG, "URL test returned no results, marking all as failed")
                 handleTestFailure()
                 outbounds.forEach { outbound ->
@@ -101,6 +127,7 @@ class SafeLatencyTester private constructor() {
             }
 
             consecutiveFailures.set(0)
+            groupTest.complete(results)
 
             outbounds.forEach { outbound ->
                 if (!emittedTags.add(outbound.tag)) return@forEach
@@ -115,12 +142,17 @@ class SafeLatencyTester private constructor() {
 
             Log.i(TAG, "URL test completed: ${successCount.get()}/${outbounds.size} succeeded")
         } catch (e: CancellationException) {
+            groupTest.cancel(e)
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "URL test failed: ${e.message}")
+            if (!groupTest.isCompleted) {
+                groupTest.complete(emptyMap())
+            }
             handleTestFailure()
             outbounds.forEach { onResult(it.tag, -1L) }
         } finally {
+            activeGroupTest = null
             isTestingActive.set(false)
         }
     }
@@ -151,40 +183,18 @@ class SafeLatencyTester private constructor() {
         }
     }
 
-    @Suppress("CognitiveComplexMethod", "NestedBlockDepth")
-    private suspend fun waitForCachedResults(
+    private suspend fun emitResultsFromSharedTest(
+        groupTest: CompletableDeferred<Map<String, Int>>,
         outbounds: List<Outbound>,
-        timeoutMs: Long,
         onResult: (tag: String, latency: Long) -> Unit
     ) {
-        val service = SingBoxService.instance ?: return
-        val deadline = System.currentTimeMillis() + timeoutMs
-        val emittedTags = mutableSetOf<String>()
-        while (System.currentTimeMillis() < deadline) {
-            var hasAnyResult = false
-            outbounds.forEach { outbound ->
-                val delay = service.getCachedUrlTestDelay(outbound.tag)
-                if (delay != null && delay > 0) {
-                    hasAnyResult = true
-                    if (emittedTags.add(outbound.tag)) {
-                        onResult(outbound.tag, delay.toLong())
-                    }
-                }
-            }
-            if (emittedTags.size == outbounds.size) {
-                return
-            }
-            if (hasAnyResult && emittedTags.isNotEmpty()) {
-                delay(120)
-            } else {
-                delay(100)
-            }
-        }
+        val sharedResults = withTimeoutOrNull(URL_TEST_TIMEOUT_MS + 1000L) {
+            groupTest.await()
+        }.orEmpty()
 
         outbounds.forEach { outbound ->
-            if (emittedTags.add(outbound.tag)) {
-                onResult(outbound.tag, -1L)
-            }
+            val latency = sharedResults[outbound.tag]?.takeIf { it > 0 }?.toLong() ?: -1L
+            onResult(outbound.tag, latency)
         }
     }
 

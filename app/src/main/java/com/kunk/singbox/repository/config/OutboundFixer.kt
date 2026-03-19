@@ -1,14 +1,17 @@
-﻿package com.kunk.singbox.repository.config
+package com.kunk.singbox.repository.config
 
+import android.util.Log
 import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
+import com.kunk.singbox.model.TransportConfig
 import com.kunk.singbox.repository.SettingsRepository
 
 /**
  */
 object OutboundFixer {
+    private const val TAG = "OutboundFixer"
     @Volatile private var cachedTcpKeepAliveEnabled: Boolean? = null
     @Volatile private var cachedTcpKeepAliveInterval: String? = null
     @Volatile private var cachedConnectTimeout: String? = null
@@ -266,13 +269,56 @@ object OutboundFixer {
 
     /**
      */
+    private fun normalizeLegacyTransport(outbound: Outbound): Outbound {
+        val legacyNetwork = outbound.network?.takeIf { it.isNotBlank() }
+        val legacyPath = outbound.path?.takeIf { it.isNotBlank() }
+        val legacyHeaders = outbound.headers?.takeIf { it.isNotEmpty() }
+        val transport = outbound.transport
+
+        val hasNoLegacy = legacyNetwork == null && legacyPath == null && legacyHeaders == null
+        if (transport == null && hasNoLegacy) {
+            return outbound
+        }
+
+        val normalizedTransport = if (transport == null) {
+            TransportConfig(
+                type = legacyNetwork ?: "tcp",
+                path = legacyPath,
+                headers = legacyHeaders
+            )
+        } else {
+            transport.copy(
+                type = transport.type?.ifBlank { legacyNetwork ?: "tcp" } ?: (legacyNetwork ?: "tcp"),
+                path = transport.path ?: legacyPath,
+                headers = transport.headers ?: legacyHeaders
+            )
+        }
+
+        return outbound.copy(
+            transport = normalizedTransport,
+            network = null,
+            path = null,
+            headers = null
+        )
+    }
+
+    private fun applyCommonDialFields(runtime: Outbound, fixed: Outbound): Outbound {
+        return runtime.copy(
+            detour = runtime.detour ?: fixed.detour,
+            connectTimeout = runtime.connectTimeout ?: fixed.connectTimeout,
+            tcpFastOpen = runtime.tcpFastOpen ?: fixed.tcpFastOpen,
+            udpOverTcp = runtime.udpOverTcp ?: fixed.udpOverTcp,
+            domainResolver = runtime.domainResolver ?: fixed.domainResolver
+        )
+    }
+
     @Suppress("LongMethod")
-    fun buildForRuntime(context: android.content.Context, outbound: Outbound): Outbound {
-        val fixed = applyNaiveRuntimeCompatibility(fix(outbound))
+    fun buildForRuntime(context: android.content.Context, outbound: Outbound): Outbound? {
+        val fixed = normalizeLegacyTransport(applyNaiveRuntimeCompatibility(fix(outbound)))
 
         val (tcpKeepAliveEnabled, tcpKeepAliveInterval, connectTimeout) = getTcpKeepAliveConfig(context)
 
-        return when (fixed.type) {
+        return applyCommonDialFields(when (fixed.type) {
             "selector", "urltest", "url-test" -> Outbound(
                 type = "selector",
                 tag = fixed.tag,
@@ -281,7 +327,14 @@ object OutboundFixer {
                 interruptExistConnections = fixed.interruptExistConnections
             )
 
-            "direct", "block", "dns" -> Outbound(type = fixed.type, tag = fixed.tag)
+            "direct" -> Outbound(type = fixed.type, tag = fixed.tag)
+
+            // "block" and "dns" outbound types are removed in sing-box 1.13.0+
+            // Use route rule actions "reject" and "hijack-dns" instead
+            "block", "dns" -> {
+                Log.w(TAG, "Skipping removed outbound type '${fixed.type}': ${fixed.tag}")
+                return null
+            }
 
             "vmess" -> Outbound(
                 type = fixed.type,
@@ -294,7 +347,11 @@ object OutboundFixer {
                 packetEncoding = fixed.packetEncoding,
                 tls = fixed.tls,
                 transport = fixed.transport,
+                network = fixed.network,
+                path = fixed.path,
+                headers = fixed.headers,
                 multiplex = fixed.multiplex,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -311,7 +368,11 @@ object OutboundFixer {
                 packetEncoding = fixed.packetEncoding,
                 tls = fixed.tls,
                 transport = fixed.transport,
+                network = fixed.network,
+                path = fixed.path,
+                headers = fixed.headers,
                 multiplex = fixed.multiplex,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -326,7 +387,11 @@ object OutboundFixer {
                 password = fixed.password,
                 tls = fixed.tls,
                 transport = fixed.transport,
+                network = fixed.network,
+                path = fixed.path,
+                headers = fixed.headers,
                 multiplex = fixed.multiplex,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -346,6 +411,7 @@ object OutboundFixer {
                 multiplex = fixed.multiplex,
                 detour = fixed.detour,
                 network = fixed.network,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -369,6 +435,7 @@ object OutboundFixer {
                 serverPorts = fixed.serverPorts,
                 tls = fixed.tls,
                 multiplex = fixed.multiplex,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -390,29 +457,17 @@ object OutboundFixer {
                 mtu = fixed.mtu,
                 tls = fixed.tls,
                 multiplex = fixed.multiplex,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
             )
 
-            "naive" -> Outbound(
-                type = fixed.type,
-                tag = fixed.tag,
-                server = fixed.server,
-                serverPort = fixed.serverPort,
-                username = fixed.username,
-                password = fixed.password,
-                insecureConcurrency = fixed.insecureConcurrency,
-                extraHeaders = fixed.extraHeaders,
-                quic = fixed.network?.equals("quic", ignoreCase = true),
-                quicCongestionControl = fixed.congestionControl,
-                tls = fixed.tls,
-                udpOverTcp = fixed.udpOverTcp,
-                domainResolver = resolveNaiveDomainResolver(fixed),
-
-                tcpKeepAlive = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
-                tcpKeepAliveInterval = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
+            "naive" -> buildRuntimeNaiveOutbound(
+                fixed = fixed,
+                tcpKeepAliveEnabled = tcpKeepAliveEnabled,
+                tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
             )
 
@@ -427,6 +482,7 @@ object OutboundFixer {
                 minIdleSession = fixed.minIdleSession,
                 tls = fixed.tls,
                 multiplex = fixed.multiplex,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -442,6 +498,7 @@ object OutboundFixer {
                 preSharedKey = fixed.preSharedKey,
                 reserved = fixed.reserved,
                 peers = fixed.peers,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -460,6 +517,7 @@ object OutboundFixer {
                 hostKey = fixed.hostKey,
                 hostKeyAlgorithms = fixed.hostKeyAlgorithms,
                 clientVersion = fixed.clientVersion,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -474,6 +532,7 @@ object OutboundFixer {
                 version = fixed.version,
                 password = fixed.password,
                 tls = fixed.tls,
+                domainResolver = resolveDomainResolver(fixed),
 
                 tcpKeepAlive = tcpKeepAliveInterval,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
@@ -481,7 +540,34 @@ object OutboundFixer {
             )
 
             else -> fixed
-        }
+        }, fixed)
+    }
+
+    internal fun buildRuntimeNaiveOutbound(
+        fixed: Outbound,
+        tcpKeepAliveEnabled: Boolean,
+        tcpKeepAliveInterval: String?,
+        connectTimeout: String?
+    ): Outbound {
+        return Outbound(
+            type = fixed.type,
+            tag = fixed.tag,
+            server = fixed.server,
+            serverPort = fixed.serverPort,
+            username = fixed.username,
+            password = fixed.password,
+            insecureConcurrency = fixed.insecureConcurrency,
+            extraHeaders = fixed.extraHeaders,
+            quic = fixed.network?.equals("quic", ignoreCase = true),
+            quicCongestionControl = fixed.congestionControl,
+            tls = fixed.tls,
+            udpOverTcp = fixed.udpOverTcp,
+            domainResolver = resolveNaiveDomainResolver(fixed),
+
+            tcpKeepAlive = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
+            tcpKeepAliveInterval = if (tcpKeepAliveEnabled) tcpKeepAliveInterval else null,
+            connectTimeout = connectTimeout
+        )
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -528,7 +614,7 @@ object OutboundFixer {
         )
     }
 
-    private fun resolveNaiveDomainResolver(outbound: Outbound): com.kunk.singbox.model.DomainResolveConfig? {
+    private fun resolveDomainResolver(outbound: Outbound): com.kunk.singbox.model.DomainResolveConfig? {
         val existing = outbound.domainResolver
         if (existing?.server.isNullOrBlank().not()) return existing
 
@@ -539,6 +625,9 @@ object OutboundFixer {
 
         return com.kunk.singbox.model.DomainResolveConfig(server = "dns-bootstrap")
     }
+
+    // Keep backward-compatible alias for naive-specific callers
+    private fun resolveNaiveDomainResolver(outbound: Outbound) = resolveDomainResolver(outbound)
 
     private fun applyNaiveRuntimeCompatibility(outbound: Outbound): Outbound {
         if (outbound.type != "naive") return outbound

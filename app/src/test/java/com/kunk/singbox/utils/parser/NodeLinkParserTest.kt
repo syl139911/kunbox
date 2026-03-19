@@ -388,6 +388,16 @@ class NodeLinkParserTest {
         assertEquals(listOf("20000", "20001"), outbound?.serverPorts)
     }
 
+    @Test
+    fun testParseHysteria2IpWithoutSniKeepsServerNameNull() {
+        val link = "hysteria2://password@34.150.59.170:38313#Hy2IpNode"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("34.150.59.170", outbound?.server)
+        assertNull(outbound?.tls?.serverName)
+    }
+
     // ==================== Naive ====================
 
     @Test
@@ -441,6 +451,16 @@ class NodeLinkParserTest {
         assertEquals("u", outbound?.username)
         assertEquals("p", outbound?.password)
         assertEquals(4, outbound?.insecureConcurrency)
+    }
+
+    @Test
+    fun testParseNaiveIpWithoutSniKeepsServerNameNull() {
+        val link = "naive://u:p@34.150.59.170:443?network=h2#NaiveIp"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("34.150.59.170", outbound?.server)
+        assertNull(outbound?.tls?.serverName)
     }
 
     // ==================== TUIC ====================
@@ -514,6 +534,16 @@ class NodeLinkParserTest {
         assertEquals("pass", outbound?.password)
         assertNotNull(outbound?.tls)
         assertEquals(true, outbound?.tls?.enabled)
+    }
+
+    @Test
+    fun testParseHttpsProxyIpKeepsServerNameNull() {
+        val link = "https://user:pass@1.2.3.4:8443#HTTPSProxyIp"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("1.2.3.4", outbound?.server)
+        assertNull(outbound?.tls?.serverName)
     }
 
     @Test

@@ -21,8 +21,7 @@ object InboundBuilder {
                     listen = if (settings.allowLan) "0.0.0.0" else "127.0.0.1",
                     listenPort = settings.proxyPort,
                     reuseAddr = true,
-                    sniff = true,
-                    sniffOverrideDestination = true
+                    sniff = true
                 )
             )
         }
@@ -40,8 +39,7 @@ object InboundBuilder {
                     stack = effectiveTunStack.name.lowercase(),
                     endpointIndependentNat = settings.endpointIndependentNat,
                     gso = null,
-                    sniff = true,
-                    sniffOverrideDestination = true
+                    sniff = true
                 )
             )
         } else if (settings.proxyPort <= 0) {
@@ -52,8 +50,7 @@ object InboundBuilder {
                     listen = "127.0.0.1",
                     listenPort = 2080,
                     reuseAddr = true,
-                    sniff = true,
-                    sniffOverrideDestination = true
+                    sniff = true
                 )
             )
         }

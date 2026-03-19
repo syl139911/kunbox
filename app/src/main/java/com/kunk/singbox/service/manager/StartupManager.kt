@@ -342,6 +342,7 @@ class StartupManager(
                 logVlessDebug(outbound)
                 logNaiveDebug(outbound)
             }
+            logRouteDebug(debugConfig)
         } catch (e: Exception) {
             Log.d(TAG, "[DEBUG] Failed to dump config: ${e.message}")
         }
@@ -375,6 +376,29 @@ class StartupManager(
                 "resolver=${outbound.domainResolver?.server}, sni=${outbound.tls?.serverName}, " +
                 "insecure=${outbound.tls?.insecure}, host=$host"
         )
+    }
+
+    private fun logRouteDebug(config: SingBoxConfig) {
+        val route = config.route ?: return
+        val interestingRules = route.rules
+            ?.filter { !it.ruleSet.isNullOrEmpty() || !it.packageName.isNullOrEmpty() }
+            .orEmpty()
+
+        Log.d(
+            TAG,
+            "[DEBUG] Route final=${route.finalOutbound}, " +
+                "rule_set_count=${route.ruleSet?.size ?: 0}, " +
+                "interesting_rules=${interestingRules.size}"
+        )
+
+        interestingRules.take(12).forEach { rule ->
+            Log.d(
+                TAG,
+                "[DEBUG] Route rule: rule_set=${rule.ruleSet}, " +
+                    "package=${rule.packageName}, " +
+                    "outbound=${rule.outbound}, action=${rule.action}"
+            )
+        }
     }
 
     private suspend fun ensureNetworkCallbackReady(callbacks: Callbacks): Network? {

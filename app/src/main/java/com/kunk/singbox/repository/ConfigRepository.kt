@@ -265,6 +265,107 @@ class ConfigRepository(private val context: Context) {
             return "failed to connect" in message || "timeout" in message
         }
 
+        internal fun resolveAppRuleOutboundMode(mode: RuleSetOutboundMode?): RuleSetOutboundMode {
+            return mode ?: RuleSetOutboundMode.PROXY
+        }
+
+        internal fun normalizeLocalDns(value: String?): String {
+            val trimmed = value?.trim().orEmpty()
+            return if (trimmed.isBlank() || trimmed.equals(AppSettings.LEGACY_LOCAL_DNS, ignoreCase = true)) {
+                AppSettings.DEFAULT_LOCAL_DNS
+            } else {
+                trimmed
+            }
+        }
+
+        internal fun buildDnsResolverForAddress(address: String): DomainResolveConfig? {
+            val trimmed = address.trim()
+            if (trimmed.equals("local", ignoreCase = true)) {
+                return null
+            }
+            val host = extractHostFromAddress(trimmed)?.trim().orEmpty()
+            if (host.isEmpty() || isIpAddressValue(host)) {
+                return null
+            }
+            return DomainResolveConfig(server = "dns-bootstrap")
+        }
+
+        internal fun buildDnsServer(
+            address: String,
+            tag: String,
+            detour: String? = null,
+            domainStrategy: String? = null,
+            domainResolver: DomainResolveConfig? = null
+        ): DnsServer {
+            val trimmed = address.trim()
+            if (trimmed.equals("local", ignoreCase = true)) {
+                return DnsServer(
+                    tag = tag,
+                    type = "local",
+                    domainResolver = domainResolver,
+                    domainStrategy = domainStrategy,
+                    detour = detour
+                )
+            }
+            if (trimmed.equals("fakeip", ignoreCase = true)) {
+                return DnsServer(
+                    tag = tag,
+                    type = "fakeip",
+                    domainResolver = domainResolver,
+                    domainStrategy = domainStrategy,
+                    detour = detour
+                )
+            }
+
+            val uri = try {
+                URI(trimmed)
+            } catch (_: Exception) {
+                return DnsServer(
+                    tag = tag,
+                    type = "udp",
+                    server = trimmed,
+                    domainResolver = domainResolver,
+                    domainStrategy = domainStrategy,
+                    detour = detour
+                )
+            }
+
+            val scheme = uri.scheme?.lowercase()
+            val host = uri.host?.removePrefix("[")?.removeSuffix("]") ?: trimmed
+            val port = if (uri.port > 0) uri.port else null
+            val path = uri.path?.takeIf { it.isNotBlank() && it != "/" }
+
+            val type = when (scheme) {
+                "https" -> "https"
+                "h3" -> "h3"
+                "tls" -> "tls"
+                "quic" -> "quic"
+                "tcp" -> "tcp"
+                "udp" -> "udp"
+                "dhcp" -> "dhcp"
+                null -> "udp"
+                else -> "udp"
+            }
+            val server = if (scheme == null || scheme == "https" || scheme == "h3" || scheme == "tls" ||
+                scheme == "quic" || scheme == "tcp" || scheme == "udp" || scheme == "dhcp"
+            ) {
+                host
+            } else {
+                trimmed
+            }
+
+            return DnsServer(
+                tag = tag,
+                type = type,
+                server = server,
+                serverPort = port,
+                path = path,
+                domainResolver = domainResolver,
+                domainStrategy = domainStrategy,
+                detour = detour
+            )
+        }
+
         @Volatile
         private var instance: ConfigRepository? = null
 
@@ -825,7 +926,8 @@ class ConfigRepository(private val context: Context) {
         return nodes.mapNotNull { node ->
             val config = loadConfig(node.sourceProfileId) ?: return@mapNotNull null
             val outbound = config.outbounds?.find { it.tag == node.name } ?: return@mapNotNull null
-            NodeTestInfo(buildOutboundForRuntime(outbound), node.id, node.sourceProfileId)
+            val runtimeOutbound = buildOutboundForRuntime(outbound) ?: return@mapNotNull null
+            NodeTestInfo(runtimeOutbound, node.id, node.sourceProfileId)
         }
     }
 
@@ -1430,7 +1532,7 @@ class ConfigRepository(private val context: Context) {
         lastError?.let { Log.e(TAG, "All User-Agent attempts failed", it) }
         return null
     }
-    @Suppress("LongMethod", "CognitiveComplexMethod")
+    @Suppress("LongMethod", "CognitiveComplexMethod", "CyclomaticComplexMethod")
     suspend fun importFromSubscription(
         name: String,
         url: String,
@@ -2236,7 +2338,11 @@ class ConfigRepository(private val context: Context) {
                         }
 
                         val fixedOutbound = buildOutboundForRuntime(outbound)
-                        val allOutbounds = config.outbounds.map { buildOutboundForRuntime(it) }
+                        if (fixedOutbound == null) {
+                            Log.e(TAG, "Outbound type removed: ${outbound.type}")
+                            return@withContext -1L
+                        }
+                        val allOutbounds = config.outbounds.mapNotNull { buildOutboundForRuntime(it) }
                         val probeOutbound = if (VpnStateStore.getActive()) {
                             fixedOutbound
                         } else {
@@ -2573,7 +2679,8 @@ class ConfigRepository(private val context: Context) {
             null
         }
     }
-    private fun buildOutboundForRuntime(outbound: Outbound): Outbound = OutboundFixer.buildForRuntime(context, outbound)
+    private fun buildOutboundForRuntime(outbound: Outbound): Outbound? =
+        OutboundFixer.buildForRuntime(context, outbound)
 
     private suspend fun preResolveDomainsForProfile(
         profileId: String,
@@ -2975,57 +3082,52 @@ class ConfigRepository(private val context: Context) {
         val bootstrapV4Tag = "dns-bootstrap-v4"
         val bootstrapV6Tag = "dns-bootstrap-v6"
 
+        // sing-box 1.13+: 不设 detour 即为直连，显式设 detour="direct" 会报
+        // "detour to an empty direct outbound makes no sense"
         dnsServers.add(
             DnsServer(
                 tag = bootstrapV4Tag,
-                address = "223.5.5.5",
-                detour = "direct",
-                strategy = bootstrapStrategy
+                type = "https",
+                server = "223.5.5.5",
+                domainStrategy = bootstrapStrategy
             )
         )
         dnsServers.add(
             DnsServer(
                 tag = bootstrapV6Tag,
-                address = "https://[2606:4700:4700::1111]/dns-query",
-                detour = "direct",
-                strategy = "prefer_ipv6"
+                type = "https",
+                server = "2606:4700:4700::1111",
+                domainStrategy = "prefer_ipv6"
             )
         )
         dnsServers.add(
             DnsServer(
                 tag = "dns-bootstrap",
-                address = "119.29.29.29",
-                detour = "direct",
-                strategy = bootstrapStrategy
+                type = "https",
+                server = "1.12.12.12",
+                domainStrategy = bootstrapStrategy
             )
         )
 
         val localDnsAddr = settings.localDns.takeIf { it.isNotBlank() } ?: "https://dns.alidns.com/dns-query"
-        val localResolver = if (localDnsAddr == "local" || isIpAddress(localDnsAddr)) null else "dns-bootstrap"
-        dnsServers.add(
-            DnsServer(
-                tag = "local",
-                address = localDnsAddr,
-                detour = "direct",
-                strategy = mapDnsStrategy(settings.directDnsStrategy),
-                addressResolver = localResolver
-            )
+        val localResolver = buildDnsResolverForAddress(localDnsAddr)
+        val localServer = buildDnsServer(
+            address = localDnsAddr,
+            tag = "local",
+            domainStrategy = mapDnsStrategy(settings.directDnsStrategy),
+            domainResolver = localResolver
         )
+        dnsServers.add(localServer)
         val remoteDnsAddr = settings.remoteDns.takeIf { it.isNotBlank() } ?: "https://dns.google/dns-query"
-        val remoteResolver = if (remoteDnsAddr == "local" || isIpAddress(extractHost(remoteDnsAddr))) {
-            null
-        } else {
-            "dns-bootstrap"
-        }
-        dnsServers.add(
-            DnsServer(
-                tag = "remote",
-                address = remoteDnsAddr,
-                detour = "PROXY",
-                strategy = mapDnsStrategy(settings.remoteDnsStrategy),
-                addressResolver = remoteResolver
-            )
+        val remoteResolver = buildDnsResolverForAddress(remoteDnsAddr)
+        val remoteServer = buildDnsServer(
+            address = remoteDnsAddr,
+            tag = "remote",
+            detour = "PROXY",
+            domainStrategy = mapDnsStrategy(settings.remoteDnsStrategy),
+            domainResolver = remoteResolver
         )
+        dnsServers.add(remoteServer)
 
         dnsRules.addAll(
             buildBootstrapDnsRules(
@@ -3043,7 +3145,7 @@ class ConfigRepository(private val context: Context) {
             dnsServers.add(
                 DnsServer(
                     tag = "fakeip-dns",
-                    address = "fakeip"
+                    type = "fakeip"
                 )
             )
         }
@@ -3319,11 +3421,7 @@ class ConfigRepository(private val context: Context) {
         }
 
         val fixedOutbounds = rawOutbounds?.mapNotNull { outbound ->
-            var processed = buildOutboundForRuntime(outbound)
-            if (processed.type == "dns") {
-                Log.w(TAG, "Skipping deprecated dns outbound: ${processed.tag}")
-                return@mapNotNull null
-            }
+            var processed = buildOutboundForRuntime(outbound) ?: return@mapNotNull null
             if (dnsPreResolve && profileId != null) {
                 processed = applyDnsResolveToOutbound(profileId, processed)
             }
@@ -3338,10 +3436,6 @@ class ConfigRepository(private val context: Context) {
         if (fixedOutbounds.none { it.tag == "direct" }) {
             fixedOutbounds.add(Outbound(type = "direct", tag = "direct"))
         }
-        if (fixedOutbounds.none { it.tag == "block" }) {
-            fixedOutbounds.add(Outbound(type = "block", tag = "block"))
-        }
-
         val activeProfileId = _activeProfileId.value
         val requiredNodeIds = mutableSetOf<String>()
         val requiredProfileIds = mutableSetOf<String>()
@@ -3453,6 +3547,10 @@ class ConfigRepository(private val context: Context) {
                 return@forEach
             }
             var fixedSourceOutbound = buildOutboundForRuntime(sourceOutbound)
+            if (fixedSourceOutbound == null) {
+                Log.w(TAG, "Skipping removed outbound type: ${sourceOutbound.type} (${sourceOutbound.tag})")
+                return@forEach
+            }
             var finalTag = fixedSourceOutbound.tag
             if (existingTags.contains(finalTag)) {
                 val suffix = sourceProfileId.take(4)
@@ -3605,7 +3703,7 @@ class ConfigRepository(private val context: Context) {
     private fun buildQuicBlockRule(settings: AppSettings): List<RouteRule> {
         return if (settings.blockQuic) {
             listOf(
-                RouteRule(protocolRaw = listOf("quic"), outbound = "block"),
+                RouteRule(protocolRaw = listOf("quic"), action = "reject"),
                 RouteRule(networkRaw = listOf("udp"), port = listOf(443), action = "reject")
             )
         } else {
@@ -3656,7 +3754,7 @@ class ConfigRepository(private val context: Context) {
     private fun buildDefaultRules(settings: AppSettings, selectorTag: String): List<RouteRule> {
         return when (settings.defaultRule) {
             DefaultRule.DIRECT -> listOf(RouteRule(outbound = "direct"))
-            DefaultRule.BLOCK -> listOf(RouteRule(outbound = "block"))
+            DefaultRule.BLOCK -> listOf(RouteRule(action = "reject"))
             DefaultRule.PROXY -> listOf(RouteRule(outbound = selectorTag))
         }
     }
@@ -3695,7 +3793,10 @@ class ConfigRepository(private val context: Context) {
         }
 
         val normalizedRules = allRules.map { rule ->
-            if (!rule.outbound.isNullOrBlank() && rule.action.isNullOrBlank()) {
+            if (rule.outbound == "block") {
+                // sing-box 1.13.0+: "block" outbound removed, use "reject" action
+                rule.copy(outbound = null, action = "reject")
+            } else if (!rule.outbound.isNullOrBlank() && rule.action.isNullOrBlank()) {
                 rule.copy(action = "route")
             } else {
                 rule
@@ -3821,9 +3922,6 @@ class ConfigRepository(private val context: Context) {
             newOutbounds.add(finalOutbound)
             if (newOutbounds.none { it.tag == "direct" }) {
                 newOutbounds.add(Outbound(type = "direct", tag = "direct"))
-            }
-            if (newOutbounds.none { it.tag == "block" }) {
-                newOutbounds.add(Outbound(type = "block", tag = "block"))
             }
             val newConfig = deduplicateTags(SingBoxConfig(outbounds = newOutbounds))
 
@@ -3953,9 +4051,6 @@ class ConfigRepository(private val context: Context) {
 
             if (newOutbounds.none { it.tag == "direct" }) {
                 newOutbounds.add(Outbound(type = "direct", tag = "direct"))
-            }
-            if (newOutbounds.none { it.tag == "block" }) {
-                newOutbounds.add(Outbound(type = "block", tag = "block"))
             }
             val newConfig = deduplicateTags(SingBoxConfig(outbounds = newOutbounds))
 
@@ -4159,5 +4254,57 @@ class ConfigRepository(private val context: Context) {
 
     private fun extractHost(url: String): String {
         return extractHostFromAddress(url) ?: url
+    }
+
+    /**
+     * Parses a legacy DNS address string into new-format DnsServer fields.
+     * Returns a DnsServer with type/server/serverPort/path set, plus any extra fields passed via [extra].
+     *
+     * Supported formats:
+     * - "local"                         → type="local"
+     * - "fakeip"                        → type="fakeip"
+     * - "dhcp://..."                    → type="dhcp"
+     * - "quic://host"                   → type="quic", server=host
+     * - "tls://host"                    → type="tls",  server=host
+     * - "https://host/path"             → type="https", server=host, path=/path
+     * - "h3://host/path"               → type="h3",   server=host, path=/path
+     * - "tcp://host"                    → type="tcp",  server=host
+     * - pure IP or hostname             → type="udp",  server=address
+     * - "udp://host"                    → type="udp",  server=host
+     */
+    @Suppress("CyclomaticComplexMethod", "ReturnCount")
+    private fun parseDnsAddress(address: String): DnsServer {
+        val trimmed = address.trim()
+
+        if (trimmed.equals("local", ignoreCase = true)) {
+            return DnsServer(type = "local")
+        }
+        if (trimmed.equals("fakeip", ignoreCase = true)) {
+            return DnsServer(type = "fakeip")
+        }
+
+        val uri = try {
+            java.net.URI(trimmed)
+        } catch (_: Exception) {
+            // Fallback: treat as UDP with raw address
+            return DnsServer(type = "udp", server = trimmed)
+        }
+
+        val scheme = uri.scheme?.lowercase()
+        val host = uri.host?.removePrefix("[")?.removeSuffix("]") ?: trimmed
+        val port = if (uri.port > 0) uri.port else null
+        val path = uri.path?.takeIf { it.isNotBlank() && it != "/" }
+
+        return when (scheme) {
+            "https" -> DnsServer(type = "https", server = host, serverPort = port, path = path)
+            "h3" -> DnsServer(type = "h3", server = host, serverPort = port, path = path)
+            "tls" -> DnsServer(type = "tls", server = host, serverPort = port)
+            "quic" -> DnsServer(type = "quic", server = host, serverPort = port)
+            "tcp" -> DnsServer(type = "tcp", server = host, serverPort = port)
+            "udp" -> DnsServer(type = "udp", server = host, serverPort = port)
+            "dhcp" -> DnsServer(type = "dhcp", server = host)
+            null -> DnsServer(type = "udp", server = trimmed)
+            else -> DnsServer(type = "udp", server = trimmed)
+        }
     }
 }
