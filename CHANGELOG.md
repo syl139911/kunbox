@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.11.3](https://github.com/roseforljh/KunBox/compare/v2.11.2...v2.11.3) (2026-03-20)
+
+
+### Bug Fixes
+
+* ... ([fc3ef4c](https://github.com/roseforljh/KunBox/commit/fc3ef4c11b4c41d9a8e90cb595bf7e0be2693bdf))
+* Add NodesViewModel for managing node display logic, filtering, sorting, and latency testing. ([3a2ae4c](https://github.com/roseforljh/KunBox/commit/3a2ae4c9e5d288c2c7804ee4960f603063e3ac78))
+* 内核更新、bug修复 ([199f481](https://github.com/roseforljh/KunBox/commit/199f4814148446f2d1f316df2efa81eaae5ffce1))
+
 ## [2.11.2](https://github.com/roseforljh/KunBox/compare/v2.11.1...v2.11.2) (2026-03-06)
 
 
