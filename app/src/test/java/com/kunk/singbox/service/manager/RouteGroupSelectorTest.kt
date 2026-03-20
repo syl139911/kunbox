@@ -78,6 +78,24 @@ class RouteGroupSelectorTest {
     }
 
     @Test
+    fun testCollectRouteGroupTargetsSkipsProxySelectorEvenWhenReferenced() {
+        val config = SingBoxConfig(
+            outbounds = listOf(
+                Outbound(type = "selector", tag = "PROXY", outbounds = listOf("node-a", "node-b")),
+                Outbound(type = "vmess", tag = "node-a"),
+                Outbound(type = "hysteria2", tag = "node-b")
+            ),
+            route = RouteConfig(
+                rules = listOf(RouteRule(outbound = "PROXY"))
+            )
+        )
+
+        val targets = RouteGroupSelector.collectRouteGroupTargets(config)
+
+        assertTrue(targets.isEmpty())
+    }
+
+    @Test
     fun testCollectRouteGroupTargetsReturnsEmptyWithoutRouteSelectors() {
         val config = SingBoxConfig(
             outbounds = listOf(

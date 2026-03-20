@@ -3703,8 +3703,8 @@ class ConfigRepository(private val context: Context) {
     private fun buildQuicBlockRule(settings: AppSettings): List<RouteRule> {
         return if (settings.blockQuic) {
             listOf(
-                RouteRule(protocolRaw = listOf("quic"), action = "reject"),
-                RouteRule(networkRaw = listOf("udp"), port = listOf(443), action = "reject")
+                RouteRule(protocolRaw = listOf("quic"), action = "reject", outbound = "direct"),
+                RouteRule(networkRaw = listOf("udp"), port = listOf(443), action = "reject", outbound = "direct")
             )
         } else {
             emptyList()

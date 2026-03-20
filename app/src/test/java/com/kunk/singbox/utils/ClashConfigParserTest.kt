@@ -124,6 +124,52 @@ class ClashConfigParserTest {
     }
 
     @Test
+    fun testParseHysteria2YamlWithExtendedFields() {
+        val yaml = """
+            proxies:
+              - name: "hy2-node"
+                type: hysteria2
+                server: hy2.example.com
+                port: 443
+                password: secret
+                sni: edge.example.com
+                skip-cert-verify: true
+                alpn:
+                  - h3
+                  - hysteria
+                client-fingerprint: chrome
+                obfs: salamander
+                obfs-password: obfs-pass
+                network: udp
+                up: 100
+                down: 200
+                ports: 20000,20001
+                hop-interval: 30s
+        """.trimIndent()
+
+        val config = ClashConfigParser.parse(yaml)
+        val hy2 = config?.outbounds?.find { it.tag == "hy2-node" }
+
+        assertNotNull(hy2)
+        assertEquals("hysteria2", hy2?.type)
+        assertEquals("hy2.example.com", hy2?.server)
+        assertEquals(443, hy2?.serverPort)
+        assertEquals("secret", hy2?.password)
+        assertEquals("udp", hy2?.network)
+        assertEquals(100, hy2?.upMbps)
+        assertEquals(200, hy2?.downMbps)
+        assertEquals(listOf("20000,20001"), hy2?.serverPorts)
+        assertEquals("30s", hy2?.hopInterval)
+        assertEquals(true, hy2?.tls?.enabled)
+        assertEquals("edge.example.com", hy2?.tls?.serverName)
+        assertEquals(true, hy2?.tls?.insecure)
+        assertEquals(listOf("h3", "hysteria"), hy2?.tls?.alpn)
+        assertEquals("chrome", hy2?.tls?.utls?.fingerprint)
+        assertEquals("salamander", hy2?.obfs?.type)
+        assertEquals("obfs-pass", hy2?.obfs?.password)
+    }
+
+    @Test
     fun testParseNaiveProxy() {
         val yaml = """
             proxies:
@@ -268,5 +314,70 @@ class ClashConfigParserTest {
         println(gson.toJson(ss))
         println("\nShadowTLS Outbound:")
         println(gson.toJson(stls))
+    }
+
+    @Test
+    fun testParseAnyTlsWithCertificateFields() {
+        val certificatePem = "-----BEGIN CERTIFICATE-----\nMIIBTESTCERTDATA\n-----END CERTIFICATE-----"
+        val caPem = "-----BEGIN CERTIFICATE-----\nMIIBTESTCADATA\n-----END CERTIFICATE-----"
+        val privateKeyPem = "-----BEGIN PRIVATE KEY-----\nMIIBTESTKEYDATA\n-----END PRIVATE KEY-----"
+        val yaml = """
+            proxies:
+              - name: "anytls-cert"
+                type: anytls
+                server: anytls.example.com
+                port: 443
+                password: test-pass
+                sni: edge.example.com
+                cert: |
+                  -----BEGIN CERTIFICATE-----
+                  MIIBTESTCERTDATA
+                  -----END CERTIFICATE-----
+                ca-cert: |
+                  -----BEGIN CERTIFICATE-----
+                  MIIBTESTCADATA
+                  -----END CERTIFICATE-----
+                client-key: |
+                  -----BEGIN PRIVATE KEY-----
+                  MIIBTESTKEYDATA
+                  -----END PRIVATE KEY-----
+        """.trimIndent()
+
+        val config = ClashConfigParser.parse(yaml)
+        assertNotNull(config)
+
+        val anytls = config?.outbounds?.find { it.tag == "anytls-cert" }
+        assertNotNull(anytls)
+        assertEquals("anytls", anytls?.type)
+        assertEquals(certificatePem, anytls?.tls?.certificate?.trim())
+        assertEquals(caPem, anytls?.tls?.ca?.trim())
+        assertEquals(privateKeyPem, anytls?.tls?.key?.trim())
+        assertTrue(anytls?.tls?.certificate?.endsWith("\n") == true)
+        assertEquals("edge.example.com", anytls?.tls?.serverName)
+    }
+
+    @Test
+    fun testParseHttpTlsCertificateAliasPaths() {
+        val yaml = """
+            proxies:
+              - name: "http-cert-paths"
+                type: http
+                server: http.example.com
+                port: 443
+                tls: true
+                certificate-path: /etc/ssl/client.pem
+                key-path: /etc/ssl/client.key
+                ca_path: /etc/ssl/ca.pem
+        """.trimIndent()
+
+        val config = ClashConfigParser.parse(yaml)
+        assertNotNull(config)
+
+        val http = config?.outbounds?.find { it.tag == "http-cert-paths" }
+        assertNotNull(http)
+        assertEquals("http", http?.type)
+        assertEquals("/etc/ssl/client.pem", http?.tls?.certificatePath)
+        assertEquals("/etc/ssl/client.key", http?.tls?.keyPath)
+        assertEquals("/etc/ssl/ca.pem", http?.tls?.caPath)
     }
 }

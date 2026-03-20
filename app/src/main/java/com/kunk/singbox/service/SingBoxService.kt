@@ -1218,28 +1218,32 @@ class SingBoxService : VpnService() {
         return false
     }
 
-    @Suppress("LongMethod")
     private suspend fun executeRecoveryRequest(request: RecoveryRequest) {
         synchronized(this) {
             recoveryInFlight = true
         }
         try {
-            val context = buildRecoveryDebounceContext(request)
-            if (shouldSkipByGlobalDebounce(request, context)) return
-            if (shouldSkipBySourceDebounce(request, context)) return
+            val recoveryProfile = getRecoveryProfile()
+            val adjustedRequest = when {
+                recoveryProfile == RecoveryProfile.HYSTERIA2 && request.reason == RecoveryReason.NETWORK_TYPE_CHANGED && request.force -> {
+                    request.copy(force = false)
+                }
+                else -> request
+            }
+            val context = buildRecoveryDebounceContext(adjustedRequest)
+            if (shouldSkipByGlobalDebounce(adjustedRequest, context)) return
+            if (shouldSkipBySourceDebounce(adjustedRequest, context)) return
 
             recoveryLastTriggeredAtMs.set(context.now)
             recoveryReasonLastAtMs[context.reasonKey] = context.now
             recoveryTriggerCount.incrementAndGet()
 
-            // 使用智能恢复替代原有的 SOFT/HARD 二级恢复
             val smartResult = BoxWrapperManager.smartRecover(
                 context = this@SingBoxService,
-                source = request.rawReason,
-                skipProbe = request.force // 强制恢复时跳过探测
+                source = adjustedRequest.rawReason,
+                skipProbe = adjustedRequest.force
             )
 
-            // 映射 smartRecover 结果到原有统计
             val mode = when (smartResult.level) {
                 BoxWrapperManager.RecoveryLevel.NONE,
                 BoxWrapperManager.RecoveryLevel.PROBE -> BoxWrapperManager.RecoveryMode.SOFT
@@ -1270,21 +1274,22 @@ class SingBoxService : VpnService() {
                 if (smartResult.closedConnections > 0) {
                     append(",closed=${smartResult.closedConnections}")
                 }
+                if (adjustedRequest.force != request.force) {
+                    append(",force_downgraded=true")
+                }
                 append(",rate=$successRate)")
             }
             logRecoveryEvent(
                 event = "executed",
-                request = request,
+                request = adjustedRequest,
                 mode = mode,
-                merged = request.merged,
+                merged = adjustedRequest.merged,
                 skipped = false,
                 outcome = outcomeDetail
             )
 
-            // smartRecover 已包含渐进升级逻辑，不再需要 foregroundHardFallback
-            // 仅当 PROBE 级别（链路正常无需恢复）时才考虑调度兜底
             if (smartResult.level == BoxWrapperManager.RecoveryLevel.PROBE) {
-                scheduleForegroundHardFallbackIfNeeded(request, mode, success)
+                scheduleForegroundHardFallbackIfNeeded(adjustedRequest, mode, success)
             }
         } finally {
             val nextRequest = synchronized(this) {
@@ -1313,16 +1318,44 @@ class SingBoxService : VpnService() {
      * 比 smartRecover 少 2-5 秒（不做 PROBE + SELECTIVE 的验证循环）
      * 仅在 APP_FOREGROUND + force 时使用
      */
+    private fun isSelectedHysteria2Outbound(): Boolean {
+        val selectedTag = SelectorManager.getSelectedOutbound()
+            ?: BoxWrapperManager.getSelectedOutbound()
+            ?: return false
+
+        return try {
+            val configPath = lastConfigPath ?: File(filesDir, "running_config.json").absolutePath
+            val configContent = File(configPath).takeIf { it.exists() }?.readText() ?: return false
+            val config = gson.fromJson(configContent, SingBoxConfig::class.java) ?: return false
+            config.outbounds
+                ?.firstOrNull { it.tag == selectedTag }
+                ?.type
+                ?.equals("hysteria2", ignoreCase = true) == true
+        } catch (e: Exception) {
+            Log.w(TAG, "isSelectedHysteria2Outbound failed: ${e.message}")
+            false
+        }
+    }
+
+    private fun getRecoveryProfile(): RecoveryProfile {
+        return if (isSelectedHysteria2Outbound()) RecoveryProfile.HYSTERIA2 else RecoveryProfile.DEFAULT
+    }
+
     private fun executeForegroundFastRecovery(request: RecoveryRequest) {
         val startMs = SystemClock.elapsedRealtime()
+        val isHy2 = isSelectedHysteria2Outbound()
 
-        // 2026-fix: wake + 清理僵死连接 + resetNetwork
-        // 息屏/后台期间 TCP 连接已超时，必须清理旧连接引用
-        // 否则前台应用复用旧连接会一直 loading
         BoxWrapperManager.wake()
-        BoxWrapperManager.closeAllTrackedConnections()
-        BoxWrapperManager.resetAllConnections(true)
-        BoxWrapperManager.resetNetwork()
+        if (isHy2) {
+            Log.i(TAG, "[ForegroundFastRecovery] hysteria2 selected, skip aggressive reset")
+        } else {
+            // 2026-fix: wake + 清理僵死连接 + resetNetwork
+            // 息屏/后台期间 TCP 连接已超时，必须清理旧连接引用
+            // 否则前台应用复用旧连接会一直 loading
+            BoxWrapperManager.closeAllTrackedConnections()
+            BoxWrapperManager.resetAllConnections(true)
+            BoxWrapperManager.resetNetwork()
+        }
 
         val elapsedMs = SystemClock.elapsedRealtime() - startMs
         Log.i(TAG, "[ForegroundFastRecovery] completed in ${elapsedMs}ms")
@@ -1339,7 +1372,7 @@ class SingBoxService : VpnService() {
             mode = BoxWrapperManager.RecoveryMode.SOFT,
             merged = false,
             skipped = false,
-            outcome = "fast_path(${elapsedMs}ms)"
+            outcome = if (isHy2) "hy2_fast_path(${elapsedMs}ms)" else "fast_path(${elapsedMs}ms)"
         )
     }
 
@@ -1590,6 +1623,11 @@ class SingBoxService : VpnService() {
         APP_FOREGROUND(priority = 50, sourceDebounceMs = 1500L, isFastLane = true),
         SCREEN_ON(priority = 50, sourceDebounceMs = 1500L, isFastLane = true),
         UNKNOWN(priority = 10, sourceDebounceMs = 3000L, isFastLane = false)
+    }
+
+    private enum class RecoveryProfile {
+        DEFAULT,
+        HYSTERIA2
     }
 
     private val recoveryGlobalDebounceMs: Long = 800L

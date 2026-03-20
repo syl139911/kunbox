@@ -418,26 +418,8 @@ object OutboundFixer {
                 connectTimeout = connectTimeout
             )
 
-            "hysteria", "hysteria2" -> Outbound(
-                type = fixed.type,
-                tag = fixed.tag,
-                server = fixed.server,
-                serverPort = fixed.serverPort,
-                password = fixed.password,
-                authStr = fixed.authStr,
-                upMbps = fixed.upMbps,
-                downMbps = fixed.downMbps,
-                obfs = fixed.obfs,
-                recvWindowConn = fixed.recvWindowConn,
-                recvWindow = fixed.recvWindow,
-                disableMtuDiscovery = fixed.disableMtuDiscovery,
-                hopInterval = fixed.hopInterval,
-                serverPorts = fixed.serverPorts,
-                tls = fixed.tls,
-                multiplex = fixed.multiplex,
-                domainResolver = resolveDomainResolver(fixed),
-
-                tcpKeepAlive = tcpKeepAliveInterval,
+            "hysteria", "hysteria2" -> buildRuntimeHysteriaOutbound(
+                fixed = fixed,
                 tcpKeepAliveInterval = tcpKeepAliveInterval,
                 connectTimeout = connectTimeout
             )
@@ -541,6 +523,32 @@ object OutboundFixer {
 
             else -> fixed
         }, fixed)
+    }
+
+    internal fun buildRuntimeHysteriaOutbound(
+        fixed: Outbound,
+        tcpKeepAliveInterval: String?,
+        connectTimeout: String?
+    ): Outbound {
+        return Outbound(
+            type = fixed.type,
+            tag = fixed.tag,
+            server = fixed.server,
+            serverPort = fixed.serverPort,
+            password = fixed.password,
+            authStr = fixed.authStr,
+            upMbps = fixed.upMbps ?: 50,
+            downMbps = fixed.downMbps ?: 50,
+            obfs = fixed.obfs,
+            recvWindowConn = fixed.recvWindowConn,
+            recvWindow = fixed.recvWindow,
+            disableMtuDiscovery = fixed.disableMtuDiscovery,
+            hopInterval = fixed.hopInterval,
+            serverPorts = fixed.serverPorts,
+            tls = fixed.tls,
+            multiplex = fixed.multiplex,
+            domainResolver = fixed.domainResolver
+        )
     }
 
     internal fun buildRuntimeNaiveOutbound(

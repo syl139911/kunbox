@@ -4,6 +4,11 @@ import com.google.gson.Gson
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.DomainResolveConfig
 import com.kunk.singbox.model.RuleSetOutboundMode
+import com.kunk.singbox.utils.parser.Base64Parser
+import com.kunk.singbox.utils.parser.ClashYamlParser
+import com.kunk.singbox.utils.parser.NodeLinkParser
+import com.kunk.singbox.utils.parser.SingBoxParser
+import com.kunk.singbox.utils.parser.SubscriptionManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
@@ -14,6 +19,16 @@ import java.net.ConnectException
 import java.net.SocketTimeoutException
 
 class ConfigRepositoryTest {
+
+    private val gson = Gson()
+    private val nodeLinkParser = NodeLinkParser(gson)
+    private val subscriptionManager = SubscriptionManager(
+        listOf(
+            SingBoxParser(gson),
+            ClashYamlParser(),
+            Base64Parser { nodeLinkParser.parse(it) }
+        )
+    )
 
     @Test
     fun testStableNodeIdConsistency() {
@@ -311,6 +326,84 @@ class ConfigRepositoryTest {
         val resolver = ConfigRepository.buildDnsResolverForAddress("local")
 
         assertNull(resolver)
+    }
+
+    @Test
+    fun testSubscriptionManagerPreservesTlsCertificateFromYamlImport() {
+        val certificatePem = "-----BEGIN CERTIFICATE-----\nMIIBYAMLTEST\n-----END CERTIFICATE-----"
+        val yaml = """
+            proxies:
+              - name: "yaml-anytls-cert"
+                type: anytls
+                server: anytls.example.com
+                port: 443
+                password: test-pass
+                cert: |
+                  -----BEGIN CERTIFICATE-----
+                  MIIBYAMLTEST
+                  -----END CERTIFICATE-----
+        """.trimIndent()
+
+        val config = subscriptionManager.parse(yaml)
+        val anytls = config?.outbounds?.find { it.tag == "yaml-anytls-cert" }
+        assertNotNull(anytls)
+        assertEquals(certificatePem, anytls?.tls?.certificate?.trim())
+    }
+
+    @Test
+    fun testSubscriptionManagerDoesNotTreatTlsCertificateAsNodeLink() {
+        val yaml = """
+            proxies:
+              - name: "user-info-cert"
+                type: anytls
+                server: anytls.example.com
+                port: 443
+                password: test-pass
+                cert: |
+                  -----BEGIN CERTIFICATE-----
+                  MIIBNOTUSERINFO
+                  -----END CERTIFICATE-----
+        """.trimIndent()
+
+        val config = subscriptionManager.parse(yaml)
+
+        assertNotNull(config?.outbounds?.find { it.tag == "user-info-cert" }?.tls?.certificate)
+        assertEquals(1, config?.outbounds?.size)
+    }
+
+    @Test
+    fun testSubscriptionManagerPreservesJsonTlsCertificateFields() {
+        val certificatePem = "-----BEGIN CERTIFICATE-----\nMIIBJSONCERT\n-----END CERTIFICATE-----"
+        val caPem = "-----BEGIN CERTIFICATE-----\nMIIBJSONCA\n-----END CERTIFICATE-----"
+        val keyPem = "-----BEGIN PRIVATE KEY-----\nMIIBJSONKEY\n-----END PRIVATE KEY-----"
+        val json = """
+            {
+              "outbounds": [
+                {
+                  "type": "anytls",
+                  "tag": "json-anytls-cert",
+                  "server": "json.example.com",
+                  "server_port": 443,
+                  "password": "test-pass",
+                  "tls": {
+                    "enabled": true,
+                    "server_name": "edge.example.com",
+                    "certificate": "-----BEGIN CERTIFICATE-----\nMIIBJSONCERT\n-----END CERTIFICATE-----",
+                    "ca": "-----BEGIN CERTIFICATE-----\nMIIBJSONCA\n-----END CERTIFICATE-----",
+                    "key": "-----BEGIN PRIVATE KEY-----\nMIIBJSONKEY\n-----END PRIVATE KEY-----"
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val config = subscriptionManager.parse(json)
+
+        val anytls = config?.outbounds?.find { it.tag == "json-anytls-cert" }
+        assertNotNull(anytls)
+        assertEquals(certificatePem, anytls?.tls?.certificate)
+        assertEquals(caPem, anytls?.tls?.ca)
+        assertEquals(keyPem, anytls?.tls?.key)
     }
 
     @Test

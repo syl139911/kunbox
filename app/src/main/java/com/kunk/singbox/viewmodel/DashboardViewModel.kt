@@ -1023,8 +1023,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     fun testAllNodesLatency() {
         viewModelScope.launch {
             _testStatus.value = getApplication<Application>().getString(R.string.common_loading)
-            val targetIds = nodes.value.map { it.id }
-            configRepository.testAllNodesLatency(targetIds)
+            val targetNodeId = activeNodeId.value
+            if (targetNodeId.isNullOrBlank()) {
+                _testStatus.value = null
+                return@launch
+            }
+            configRepository.testNodeLatency(targetNodeId)
             _testStatus.value = getApplication<Application>().getString(R.string.dashboard_test_complete)
             delay(2000)
             _testStatus.value = null

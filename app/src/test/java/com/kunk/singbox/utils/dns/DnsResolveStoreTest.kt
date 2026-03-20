@@ -60,6 +60,6 @@ class DnsResolveStoreTest {
 
     @Test
     fun testDefaultTtl() {
-        assertEquals(3600, DnsResolveStore.DEFAULT_TTL_SECONDS)
+        assertEquals(14400, DnsResolveStore.DEFAULT_TTL_SECONDS)
     }
 }

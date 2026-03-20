@@ -169,15 +169,15 @@ class ClashYamlParser : SubscriptionParser {
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
         // Reality support
-        val realityOpts = map["reality-opts"] as? Map<*, *>
+        val realityOpts = asNestedMap(map["reality-opts"])
         val realityPublicKey = asString(realityOpts?.get("public-key"))
         val realityShortId = asString(realityOpts?.get("short-id"))
 
         val finalAlpn = if (tlsEnabled && network == "ws" && (alpn == null || alpn.isEmpty())) listOf("http/1.1") else alpn
 
         val tlsConfig = if (tlsEnabled) {
-            TlsConfig(
-                enabled = true,
+            buildTlsConfig(
+                map = map,
                 serverName = serverName,
                 insecure = insecure,
                 alpn = finalAlpn,
@@ -303,8 +303,8 @@ class ClashYamlParser : SubscriptionParser {
         val finalAlpn = if (tlsEnabled && network == "ws" && (alpn == null || alpn.isEmpty())) listOf("http/1.1") else alpn
 
         val tlsConfig = if (tlsEnabled) {
-            TlsConfig(
-                enabled = true,
+            buildTlsConfig(
+                map = map,
                 serverName = serverName,
                 insecure = insecure,
                 alpn = finalAlpn,
@@ -438,8 +438,8 @@ class ClashYamlParser : SubscriptionParser {
                     serverPort = port,
                     version = stlsVersion,
                     password = stlsPassword,
-                    tls = TlsConfig(
-                        enabled = true,
+                    tls = buildTlsConfig(
+                        map = pluginOpts,
                         serverName = stlsHost,
                         utls = fingerprint?.let { UtlsConfig(enabled = true, fingerprint = it) }
                     )
@@ -506,8 +506,8 @@ class ClashYamlParser : SubscriptionParser {
                 }
 
                 val tlsConfig = if (tlsEnabled) {
-                    TlsConfig(
-                        enabled = true,
+                    buildTlsConfig(
+                        map = pluginOpts ?: emptyMap<Any, Any>(),
                         serverName = host,
                         utls = fingerprint?.let { UtlsConfig(enabled = true, fingerprint = it) }
                     )
@@ -568,8 +568,8 @@ class ClashYamlParser : SubscriptionParser {
 
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
-        val tlsConfig = TlsConfig(
-            enabled = true,
+        val tlsConfig = buildTlsConfig(
+            map = map,
             serverName = sni,
             insecure = insecure,
             alpn = alpn,
@@ -682,8 +682,8 @@ class ClashYamlParser : SubscriptionParser {
             downMbps = downMbps,
             serverPorts = serverPorts,
             hopInterval = hopInterval,
-            tls = TlsConfig(
-                enabled = true,
+            tls = buildTlsConfig(
+                map = map,
                 serverName = sni,
                 insecure = insecure,
                 alpn = alpn,
@@ -721,8 +721,8 @@ class ClashYamlParser : SubscriptionParser {
             congestionControl = congestion,
             udpRelayMode = udpRelayMode,
             zeroRttHandshake = zeroRtt,
-            tls = TlsConfig(
-                enabled = true,
+            tls = buildTlsConfig(
+                map = map,
                 serverName = sni,
                 insecure = insecure,
                 alpn = alpn,
@@ -803,8 +803,8 @@ class ClashYamlParser : SubscriptionParser {
             idleSessionCheckInterval = idleSessionCheckInterval,
             idleSessionTimeout = idleSessionTimeout,
             minIdleSession = minIdleSession,
-            tls = TlsConfig(
-                enabled = true,
+            tls = buildTlsConfig(
+                map = map,
                 serverName = sni,
                 insecure = insecure,
                 alpn = alpn,
@@ -865,8 +865,8 @@ class ClashYamlParser : SubscriptionParser {
             quicCongestionControl = if (useQuic) congestionControl else null,
             congestionControl = if (useQuic) null else congestionControl,
             udpOverTcp = if (uot) com.kunk.singbox.model.UdpOverTcpConfig(enabled = true) else null,
-            tls = TlsConfig(
-                enabled = true,
+            tls = buildTlsConfig(
+                map = map,
                 serverName = sni,
                 insecure = insecure,
                 alpn = alpn,
@@ -904,8 +904,8 @@ class ClashYamlParser : SubscriptionParser {
             downMbps = downMbps,
             serverPorts = serverPorts,
             hopInterval = hopInterval,
-            tls = TlsConfig(
-                enabled = true,
+            tls = buildTlsConfig(
+                map = map,
                 serverName = sni,
                 insecure = insecure,
                 alpn = alpn,
@@ -932,8 +932,8 @@ class ClashYamlParser : SubscriptionParser {
             val insecure = if (skipCertVerify == null) true else asBool(skipCertVerify) == true
             val alpn = asStringList(map["alpn"])
             val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
-            TlsConfig(
-                enabled = true,
+            buildTlsConfig(
+                map = map,
                 serverName = sni,
                 insecure = insecure,
                 alpn = alpn,
@@ -1002,8 +1002,8 @@ class ClashYamlParser : SubscriptionParser {
             serverPort = port,
             version = version,
             password = password,
-            tls = TlsConfig(
-                enabled = true,
+            tls = buildTlsConfig(
+                map = map,
                 serverName = sni,
                 utls = fingerprint?.let { UtlsConfig(enabled = true, fingerprint = it) }
             )
@@ -1035,6 +1035,55 @@ class ClashYamlParser : SubscriptionParser {
             padding = asBool(smuxOpts["padding"])
         )
     }
+
+    private fun buildTlsConfig(
+        map: Map<*, *>,
+        enabled: Boolean = true,
+        serverName: String? = null,
+        insecure: Boolean? = null,
+        alpn: List<String>? = null,
+        minVersion: String? = null,
+        utls: UtlsConfig? = null,
+        reality: com.kunk.singbox.model.RealityConfig? = null
+    ): TlsConfig {
+        return TlsConfig(
+            enabled = enabled,
+            serverName = serverName,
+            insecure = insecure,
+            alpn = alpn,
+            minVersion = minVersion,
+            utls = utls,
+            reality = reality,
+            ca = firstNonBlankString(map, "ca", "ca-cert", "ca_cert", "caPem", "ca_pem"),
+            caPath = firstNonBlankString(map, "ca_path", "ca-path"),
+            certificate = firstNonBlankString(
+                map,
+                "certificate",
+                "cert",
+                "client-cert",
+                "client_cert"
+            ),
+            certificatePath = firstNonBlankString(
+                map,
+                "certificate_path",
+                "certificate-path",
+                "cert_path",
+                "cert-path",
+                "client-cert-path",
+                "client_cert_path"
+            ),
+            key = firstNonBlankString(map, "key", "client-key", "client_key"),
+            keyPath = firstNonBlankString(map, "key_path", "key-path", "client-key-path", "client_key_path")
+        )
+    }
+
+    private fun firstNonBlankString(map: Map<*, *>, vararg keys: String): String? {
+        return keys.firstNotNullOfOrNull { key ->
+            asString(map[key])?.takeIf { it.isNotBlank() }
+        }
+    }
+
+    private fun asNestedMap(v: Any?): Map<*, *>? = v as? Map<*, *>
 
     private fun getUserAgent(fingerprint: String?): String {
         return if (fingerprint?.contains("chrome", ignoreCase = true) == true) {

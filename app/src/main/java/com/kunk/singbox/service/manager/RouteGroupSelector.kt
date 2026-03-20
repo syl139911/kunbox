@@ -122,6 +122,17 @@ class RouteGroupSelector(
             Log.i(TAG, "Route group auto-select scheduled, initialDelay=${INITIAL_DELAY_MS}ms")
             delay(INITIAL_DELAY_MS)
             while (callbacks?.isRunning == true && callbacks?.isStopping != true) {
+                val targets = runCatching {
+                    gson.fromJson(configContent, SingBoxConfig::class.java)
+                        ?.let { collectRouteGroupTargets(it) }
+                        .orEmpty()
+                }.getOrDefault(emptyList())
+
+                if (targets.isEmpty()) {
+                    Log.d(TAG, "No route-linked selector groups found for auto-select, stop loop")
+                    break
+                }
+
                 runCatching {
                     selectBestForRouteGroups(configContent)
                 }.onFailure { e ->

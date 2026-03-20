@@ -3,10 +3,13 @@
 import android.util.Base64
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.SingBoxConfig
+import com.kunk.singbox.model.TlsConfig
 
 /**
  */
@@ -32,13 +35,75 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
         return parseAsConfigObject(trimmed)
     }
 
+    private fun normalizeOutbounds(outbounds: List<Outbound>): List<Outbound> {
+        return outbounds.map(::normalizeOutbound)
+    }
+
+    private fun normalizeOutbounds(outbounds: List<Outbound>, rawElements: JsonArray): List<Outbound> {
+        return outbounds.mapIndexed { index, outbound ->
+            val rawElement = if (index < rawElements.size()) rawElements[index] else null
+            val raw = rawElement?.takeIf { it.isJsonObject }?.asJsonObject
+            normalizeOutbound(outbound, raw)
+        }
+    }
+
+    private fun normalizeOutbound(outbound: Outbound, rawObject: JsonObject? = null): Outbound {
+        val normalizedTls = normalizeTlsAliases(outbound.tls, rawObject?.getAsJsonObject("tls"))
+        return if (normalizedTls == outbound.tls) {
+            outbound
+        } else {
+            outbound.copy(tls = normalizedTls)
+        }
+    }
+
+    private fun normalizeTlsAliases(tls: TlsConfig?, rawTls: JsonObject? = null): TlsConfig? {
+        if (tls == null && rawTls == null) return null
+        val baseTls = tls ?: TlsConfig()
+        return baseTls.copy(
+            ca = baseTls.ca ?: readJsonAlias(rawTls, "ca", "ca-cert", "ca_cert", "caPem", "ca_pem"),
+            caPath = baseTls.caPath ?: readJsonAlias(rawTls, "ca_path", "ca-path"),
+            certificate = baseTls.certificate ?: readJsonAlias(
+                rawTls,
+                "certificate",
+                "cert",
+                "client-cert",
+                "client_cert"
+            ),
+            certificatePath = baseTls.certificatePath ?: readJsonAlias(
+                rawTls,
+                "certificate_path",
+                "certificate-path",
+                "cert_path",
+                "cert-path",
+                "client-cert-path",
+                "client_cert_path"
+            ),
+            key = baseTls.key ?: readJsonAlias(rawTls, "key", "client-key", "client_key"),
+            keyPath = baseTls.keyPath ?: readJsonAlias(
+                rawTls,
+                "key_path",
+                "key-path",
+                "client-key-path",
+                "client_key_path"
+            )
+        )
+    }
+
+    private fun readJsonAlias(rawObject: JsonObject?, vararg aliases: String): String? {
+        if (rawObject == null) return null
+        return aliases.firstNotNullOfOrNull { alias ->
+            rawObject.get(alias)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
+        }
+    }
+
     /**
      */
     private fun parseAsOutboundArray(content: String): SingBoxConfig? {
         return try {
+            val rawElements = JsonParser.parseString(content).asJsonArray
             val outbounds: List<Outbound> = gson.fromJson(content, OUTBOUND_LIST_TYPE)
             if (outbounds.isNotEmpty()) {
-                SingBoxConfig(outbounds = outbounds)
+                SingBoxConfig(outbounds = normalizeOutbounds(outbounds, rawElements))
             } else null
         } catch (e: Exception) {
             Log.w(TAG, "Failed to parse as outbound array: ${e.message}")
@@ -55,9 +120,10 @@ class SingBoxParser(private val gson: Gson) : SubscriptionParser {
             val outboundsElement = jsonObject.get("outbounds") ?: jsonObject.get("proxies")
 
             if (outboundsElement != null && outboundsElement.isJsonArray) {
-                val outbounds: List<Outbound> = gson.fromJson(outboundsElement, OUTBOUND_LIST_TYPE)
+                val rawElements = outboundsElement.asJsonArray
+                val outbounds: List<Outbound> = gson.fromJson(rawElements, OUTBOUND_LIST_TYPE)
                 if (outbounds.isNotEmpty()) {
-                    return SingBoxConfig(outbounds = outbounds)
+                    return SingBoxConfig(outbounds = normalizeOutbounds(outbounds, rawElements))
                 }
             }
             null
