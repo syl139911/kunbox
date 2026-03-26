@@ -1,9 +1,15 @@
 package com.kunk.singbox.repository
 
 import com.google.gson.Gson
+import com.kunk.singbox.model.AppGroup
 import com.kunk.singbox.model.AppSettings
+import com.kunk.singbox.model.CustomRule
 import com.kunk.singbox.model.DomainResolveConfig
+import com.kunk.singbox.model.OutboundTag
+import com.kunk.singbox.model.RuleSet
 import com.kunk.singbox.model.RuleSetOutboundMode
+import com.kunk.singbox.model.RuleSetType
+import com.kunk.singbox.model.RuleType
 import com.kunk.singbox.utils.parser.Base64Parser
 import com.kunk.singbox.utils.parser.ClashYamlParser
 import com.kunk.singbox.utils.parser.NodeLinkParser
@@ -428,17 +434,277 @@ class ConfigRepositoryTest {
     }
 
     @Test
-    fun testBuildDnsServerPreservesDetourAndResolverForRemoteDns() {
-        val server = ConfigRepository.buildDnsServer(
-            address = "https://dns.google/dns-query",
-            tag = "remote",
-            detour = "PROXY",
-            domainStrategy = "prefer_ipv4",
-            domainResolver = DomainResolveConfig(server = "dns-bootstrap")
+    fun testBuildDynamicDnsServersDeduplicatesSameDetour() {
+        val servers = ConfigRepository.buildDynamicDnsServersForTest(
+            semantics = listOf(
+                ConfigRepository.OutboundSemantic.RouteTag("P:HK"),
+                ConfigRepository.OutboundSemantic.RouteTag("P:HK")
+            ),
+            remoteDnsAddr = "https://dns.google/dns-query",
+            remoteStrategy = "prefer_ipv4",
+            remoteResolver = DomainResolveConfig(server = "dns-bootstrap")
         )
 
-        assertEquals("remote", server.tag)
-        assertEquals("PROXY", server.detour)
+        assertEquals(1, servers.size)
+        assertEquals("P:HK", servers.first().detour)
+    }
+
+    @Test
+    fun testBuildDynamicDnsServersIncludesDifferentDetours() {
+        val servers = ConfigRepository.buildDynamicDnsServersForTest(
+            semantics = listOf(
+                ConfigRepository.OutboundSemantic.RouteTag("P:HK"),
+                ConfigRepository.OutboundSemantic.RouteTag("node-tag-1")
+            ),
+            remoteDnsAddr = "https://dns.google/dns-query",
+            remoteStrategy = "prefer_ipv4",
+            remoteResolver = DomainResolveConfig(server = "dns-bootstrap")
+        )
+
+        assertEquals(2, servers.size)
+        assertTrue(servers.any { it.detour == "P:HK" })
+        assertTrue(servers.any { it.detour == "node-tag-1" })
+    }
+
+    @Test
+    fun testBuildDynamicDnsServerTagIsStableForSameDetour() {
+        val tag1 = ConfigRepository.buildDynamicDnsServerTag("P:HK")
+        val tag2 = ConfigRepository.buildDynamicDnsServerTag("P:HK")
+
+        assertEquals(tag1, tag2)
+        assertTrue(tag1.startsWith("dns-remote-"))
+    }
+
+    @Test
+    fun testBuildDynamicDnsServerTagDiffersForDifferentDetours() {
+        val tag1 = ConfigRepository.buildDynamicDnsServerTag("P:HK")
+        val tag2 = ConfigRepository.buildDynamicDnsServerTag("P/HK")
+
+        assertNotEquals(tag1, tag2)
+    }
+
+    @Test
+    fun testBuildDynamicDnsServerUsesGivenDetour() {
+        val server = ConfigRepository.buildDynamicRemoteDnsServerForTest(
+            detourTag = "P:HK",
+            remoteDnsAddr = "https://dns.google/dns-query",
+            remoteStrategy = "prefer_ipv4",
+            remoteResolver = DomainResolveConfig(server = "dns-bootstrap")
+        )
+
+        assertEquals("P:HK", server.detour)
+        assertEquals("https", server.type)
+        assertEquals("dns.google", server.server)
         assertEquals("dns-bootstrap", server.domainResolver?.server)
+    }
+
+    @Test
+    fun testDnsServerTagForRouteTagUsesDynamicServerWhenFakeDnsDisabled() {
+        val serverTag = ConfigRepository.dnsServerTagForSemanticForTest(
+            semantic = ConfigRepository.OutboundSemantic.RouteTag("P:HK"),
+            fakeDnsEnabled = false
+        )
+
+        assertEquals(ConfigRepository.buildDynamicDnsServerTag("P:HK"), serverTag)
+    }
+
+    @Test
+    fun testDnsServerTagForRouteTagUsesDynamicServerWhenFakeDnsEnabled() {
+        val serverTag = ConfigRepository.dnsServerTagForSemanticForTest(
+            semantic = ConfigRepository.OutboundSemantic.RouteTag("P:HK"),
+            fakeDnsEnabled = true
+        )
+
+        assertEquals(ConfigRepository.buildDynamicDnsServerTag("P:HK"), serverTag)
+    }
+
+    @Test
+    fun testDnsServerTagForFallbackProxyUsesProxyServer() {
+        val serverTag = ConfigRepository.dnsServerTagForSemanticForTest(
+            semantic = ConfigRepository.OutboundSemantic.FallbackProxy("PROXY"),
+            fakeDnsEnabled = false
+        )
+
+        assertEquals("remote", serverTag)
+    }
+
+    @Test
+    fun testDnsServerTagForFakeIpExcludeDomainUsesDynamicServerWhenFakeDnsEnabled() {
+        val serverTag = ConfigRepository.dnsServerTagForSemanticForTest(
+            semantic = ConfigRepository.OutboundSemantic.RouteTag("P:HK"),
+            fakeDnsEnabled = true
+        )
+
+        assertEquals(ConfigRepository.buildDynamicDnsServerTag("P:HK"), serverTag)
+    }
+
+    @Test
+    fun testResolveRouteModeForRuleSetUsesProxyDefault() {
+        val resolved = ConfigRepository.resolveRouteModeForRuleSetForTest(
+            RuleSet(
+                tag = "geo-test",
+                type = RuleSetType.LOCAL,
+                path = "/tmp/geo.srs",
+                outboundMode = null
+            )
+        )
+
+        assertEquals(RuleSetOutboundMode.PROXY, resolved)
+    }
+
+    @Test
+    fun testResolveRouteModeForAppGroupUsesDirectDefault() {
+        val resolved = ConfigRepository.resolveRouteModeForAppGroupForTest(
+            AppGroup(name = "group", outboundMode = null)
+        )
+
+        assertEquals(RuleSetOutboundMode.DIRECT, resolved)
+    }
+
+    @Test
+    fun testResolveRouteModeForCustomRuleUsesLegacyOutboundDefault() {
+        val resolved = ConfigRepository.resolveRouteModeForCustomRuleForTest(
+            CustomRule(
+                name = "rule",
+                type = RuleType.DOMAIN,
+                value = "example.com",
+                outbound = OutboundTag.BLOCK,
+                outboundMode = null
+            )
+        )
+
+        assertEquals(RuleSetOutboundMode.BLOCK, resolved)
+    }
+
+    @Test
+    fun testResolveOutboundSemanticDirect() {
+        val semantic = ConfigRepository.resolveOutboundSemanticForTest(
+            ConfigRepository.Companion.OutboundSemanticTestInput(
+                mode = RuleSetOutboundMode.DIRECT,
+                value = null,
+                selectorTag = "PROXY",
+                outbounds = emptyList(),
+                profiles = emptyList(),
+                nodeTagResolver = { null }
+            )
+        )
+
+        assertEquals(ConfigRepository.OutboundSemantic.Direct, semantic)
+    }
+
+    @Test
+    fun testResolveOutboundSemanticBlock() {
+        val semantic = ConfigRepository.resolveOutboundSemanticForTest(
+            ConfigRepository.Companion.OutboundSemanticTestInput(
+                mode = RuleSetOutboundMode.BLOCK,
+                value = null,
+                selectorTag = "PROXY",
+                outbounds = emptyList(),
+                profiles = emptyList(),
+                nodeTagResolver = { null }
+            )
+        )
+
+        assertEquals(ConfigRepository.OutboundSemantic.Block, semantic)
+    }
+
+    @Test
+    fun testResolveOutboundSemanticProxy() {
+        val semantic = ConfigRepository.resolveOutboundSemanticForTest(
+            ConfigRepository.Companion.OutboundSemanticTestInput(
+                mode = RuleSetOutboundMode.PROXY,
+                value = null,
+                selectorTag = "PROXY",
+                outbounds = emptyList(),
+                profiles = emptyList(),
+                nodeTagResolver = { null }
+            )
+        )
+
+        assertEquals(ConfigRepository.OutboundSemantic.Proxy, semantic)
+    }
+
+    @Test
+    fun testResolveOutboundSemanticNodeValid() {
+        val semantic = ConfigRepository.resolveOutboundSemanticForTest(
+            ConfigRepository.Companion.OutboundSemanticTestInput(
+                mode = RuleSetOutboundMode.NODE,
+                value = "node-id-1",
+                selectorTag = "PROXY",
+                outbounds = emptyList(),
+                profiles = emptyList(),
+                nodeTagResolver = { id -> if (id == "node-id-1") "node-tag-1" else null }
+            )
+        )
+
+        assertEquals(ConfigRepository.OutboundSemantic.RouteTag("node-tag-1"), semantic)
+    }
+
+    @Test
+    fun testResolveOutboundSemanticNodeInvalid() {
+        val semantic = ConfigRepository.resolveOutboundSemanticForTest(
+            ConfigRepository.Companion.OutboundSemanticTestInput(
+                mode = RuleSetOutboundMode.NODE,
+                value = "missing-node",
+                selectorTag = "PROXY",
+                outbounds = emptyList(),
+                profiles = emptyList(),
+                nodeTagResolver = { null }
+            )
+        )
+
+        assertEquals(ConfigRepository.OutboundSemantic.FallbackProxy("PROXY"), semantic)
+    }
+
+    @Test
+    fun testResolveOutboundSemanticProfileValid() {
+        val semantic = ConfigRepository.resolveOutboundSemanticForTest(
+            ConfigRepository.Companion.OutboundSemanticTestInput(
+                mode = RuleSetOutboundMode.PROFILE,
+                value = "profile-1",
+                selectorTag = "PROXY",
+                outbounds = listOf(com.kunk.singbox.model.Outbound(tag = "P:HK", type = "selector")),
+                profiles = listOf(
+                    com.kunk.singbox.database.entity.ProfileEntity(
+                        id = "profile-1",
+                        name = "HK",
+                        type = com.kunk.singbox.model.ProfileType.Subscription,
+                        url = "",
+                        lastUpdated = 0L,
+                        enabled = true
+                    )
+                ),
+                nodeTagResolver = { null }
+            )
+        )
+
+        assertEquals(ConfigRepository.OutboundSemantic.RouteTag("P:HK"), semantic)
+    }
+
+    @Test
+    fun testResolveOutboundSemanticProfileInvalid() {
+        val semantic = ConfigRepository.resolveOutboundSemanticForTest(
+            ConfigRepository.Companion.OutboundSemanticTestInput(
+                mode = RuleSetOutboundMode.PROFILE,
+                value = "missing-profile",
+                selectorTag = "PROXY",
+                outbounds = emptyList(),
+                profiles = emptyList(),
+                nodeTagResolver = { null }
+            )
+        )
+
+        assertEquals(ConfigRepository.OutboundSemantic.FallbackProxy("PROXY"), semantic)
+    }
+
+    @Test
+    fun testBuildAppRoutingRulesUsesSemanticRejectForBlockRule() {
+        val routeRule = ConfigRepository.toRouteRuleForTest(
+            ConfigRepository.OutboundSemantic.Block,
+            "PROXY"
+        )
+
+        assertEquals("reject", routeRule.action)
+        assertNull(routeRule.outbound)
     }
 }
