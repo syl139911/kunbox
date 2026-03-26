@@ -58,6 +58,14 @@ import com.tencent.mmkv.MMKV
 
 class ConfigRepository(private val context: Context) {
 
+    sealed class OutboundSemantic {
+        object Direct : OutboundSemantic()
+        object Block : OutboundSemantic()
+        object Proxy : OutboundSemantic()
+        data class RouteTag(val tag: String) : OutboundSemantic()
+        data class FallbackProxy(val tag: String) : OutboundSemantic()
+    }
+
     private data class NodeTestInfo(
         val outbound: Outbound,
         val nodeId: String,
@@ -267,6 +275,220 @@ class ConfigRepository(private val context: Context) {
 
         internal fun resolveAppRuleOutboundMode(mode: RuleSetOutboundMode?): RuleSetOutboundMode {
             return mode ?: RuleSetOutboundMode.PROXY
+        }
+
+        internal fun resolveAppGroupOutboundMode(mode: RuleSetOutboundMode?): RuleSetOutboundMode {
+            return mode ?: RuleSetOutboundMode.DIRECT
+        }
+
+        internal fun resolveRuleSetOutboundMode(mode: RuleSetOutboundMode?): RuleSetOutboundMode {
+            return mode ?: RuleSetOutboundMode.PROXY
+        }
+
+        internal fun resolveCustomRuleOutboundMode(
+            mode: RuleSetOutboundMode?,
+            oldOutbound: OutboundTag
+        ): RuleSetOutboundMode {
+            if (mode != null) return mode
+            return when (oldOutbound) {
+                OutboundTag.DIRECT -> RuleSetOutboundMode.DIRECT
+                OutboundTag.PROXY -> RuleSetOutboundMode.PROXY
+                OutboundTag.BLOCK -> RuleSetOutboundMode.BLOCK
+            }
+        }
+
+        internal fun resolveRouteModeForRuleSetForTest(ruleSet: RuleSet): RuleSetOutboundMode {
+            return resolveRuleSetOutboundMode(ruleSet.outboundMode)
+        }
+
+        internal fun resolveRouteModeForAppGroupForTest(group: AppGroup): RuleSetOutboundMode {
+            return resolveAppGroupOutboundMode(group.outboundMode)
+        }
+
+        internal fun resolveRouteModeForCustomRuleForTest(rule: CustomRule): RuleSetOutboundMode {
+            return resolveCustomRuleOutboundMode(rule.outboundMode, rule.outbound)
+        }
+
+        private fun toRouteRule(semantic: OutboundSemantic, selectorTag: String): RouteRule {
+            return when (semantic) {
+                OutboundSemantic.Direct -> RouteRule(outbound = "direct")
+                OutboundSemantic.Block -> RouteRule(action = "reject")
+                OutboundSemantic.Proxy -> RouteRule(outbound = selectorTag)
+                is OutboundSemantic.RouteTag -> RouteRule(outbound = semantic.tag)
+                is OutboundSemantic.FallbackProxy -> RouteRule(outbound = semantic.tag)
+            }
+        }
+
+        private data class OutboundSemanticContext(
+            val selectorTag: String,
+            val outbounds: List<Outbound>,
+            val profiles: List<ProfileUi>,
+            val nodeTagResolver: (String?) -> String?
+        )
+
+        private fun resolveOutboundSemantic(
+            mode: RuleSetOutboundMode?,
+            value: String?,
+            context: OutboundSemanticContext
+        ): OutboundSemantic {
+            val selectorTag = context.selectorTag
+            val outbounds = context.outbounds
+            val profiles = context.profiles
+            val nodeTagResolver = context.nodeTagResolver
+            return when (mode ?: RuleSetOutboundMode.PROXY) {
+                RuleSetOutboundMode.DIRECT -> OutboundSemantic.Direct
+                RuleSetOutboundMode.BLOCK -> OutboundSemantic.Block
+                RuleSetOutboundMode.PROXY -> OutboundSemantic.Proxy
+                RuleSetOutboundMode.NODE -> {
+                    val resolvedTag = nodeTagResolver(value)
+                    if (resolvedTag != null) {
+                        OutboundSemantic.RouteTag(resolvedTag)
+                    } else {
+                        Log.w(TAG, "Node ID '$value' not resolved to any tag, falling back to $selectorTag")
+                        OutboundSemantic.FallbackProxy(selectorTag)
+                    }
+                }
+                RuleSetOutboundMode.PROFILE -> {
+                    val profileId = value
+                    if (profileId.isNullOrBlank()) {
+                        Log.w(TAG, "Profile ID is null or blank, falling back to $selectorTag")
+                        return OutboundSemantic.FallbackProxy(selectorTag)
+                    }
+                    val profileName = profiles.find { it.id == profileId }?.name
+                    if (profileName == null) {
+                        Log.w(TAG, "Profile with ID '$profileId' not found, falling back to $selectorTag")
+                        return OutboundSemantic.FallbackProxy(selectorTag)
+                    }
+                    val tag = "P:$profileName"
+                    if (outbounds.any { it.tag == tag }) {
+                        OutboundSemantic.RouteTag(tag)
+                    } else {
+                        Log.w(TAG, "Profile selector tag '$tag' not found in outbounds, falling back to $selectorTag")
+                        OutboundSemantic.FallbackProxy(selectorTag)
+                    }
+                }
+            }
+        }
+
+        internal fun toRouteRuleForTest(semantic: OutboundSemantic, selectorTag: String): RouteRule {
+            return toRouteRule(semantic, selectorTag)
+        }
+
+        internal data class OutboundSemanticTestInput(
+            val mode: RuleSetOutboundMode?,
+            val value: String?,
+            val selectorTag: String,
+            val outbounds: List<Outbound>,
+            val profiles: List<ProfileEntity>,
+            val nodeTagResolver: (String?) -> String?
+        )
+
+        internal fun resolveOutboundSemanticForTest(input: OutboundSemanticTestInput): OutboundSemantic {
+            val profileUis = input.profiles.map { it.toUiModel() }
+            return resolveOutboundSemantic(
+                input.mode,
+                input.value,
+                OutboundSemanticContext(
+                    input.selectorTag,
+                    input.outbounds,
+                    profileUis,
+                    input.nodeTagResolver
+                )
+            )
+        }
+
+        internal fun buildDynamicDnsServerTag(detourTag: String): String {
+            val normalized = detourTag
+                .lowercase()
+                .replace(Regex("[^a-z0-9]+"), "-")
+                .trim('-')
+                .ifBlank { "tag" }
+                .take(24)
+            val hash = detourTag.toByteArray(Charsets.UTF_8)
+                .fold(0x811c9dc5.toInt()) { acc, byte ->
+                    (acc xor byte.toInt()) * 0x01000193
+                }
+                .toUInt()
+                .toString(16)
+                .padStart(8, '0')
+            return "dns-remote-$normalized-$hash"
+        }
+
+        private fun ensureDynamicRemoteDnsServers(
+            dnsServers: MutableList<DnsServer>,
+            semantics: List<OutboundSemantic>,
+            remoteDnsAddr: String,
+            remoteStrategy: String?,
+            remoteResolver: DomainResolveConfig?
+        ) {
+            semantics.asSequence()
+                .filterIsInstance<OutboundSemantic.RouteTag>()
+                .map { it.tag }
+                .distinct()
+                .forEach { detourTag ->
+                    val serverTag = buildDynamicDnsServerTag(detourTag)
+                    if (dnsServers.none { it.tag == serverTag }) {
+                        dnsServers.add(
+                            buildDnsServer(
+                                address = remoteDnsAddr,
+                                tag = serverTag,
+                                detour = detourTag,
+                                domainStrategy = remoteStrategy,
+                                domainResolver = remoteResolver
+                            )
+                        )
+                    }
+                }
+        }
+
+        internal fun buildDynamicDnsServersForTest(
+            semantics: List<OutboundSemantic>,
+            remoteDnsAddr: String,
+            remoteStrategy: String?,
+            remoteResolver: DomainResolveConfig?
+        ): List<DnsServer> {
+            val servers = mutableListOf<DnsServer>()
+            ensureDynamicRemoteDnsServers(servers, semantics, remoteDnsAddr, remoteStrategy, remoteResolver)
+            return servers
+        }
+
+        internal fun buildDynamicRemoteDnsServerForTest(
+            detourTag: String,
+            remoteDnsAddr: String,
+            remoteStrategy: String?,
+            remoteResolver: DomainResolveConfig?
+        ): DnsServer {
+            return buildDnsServer(
+                address = remoteDnsAddr,
+                tag = buildDynamicDnsServerTag(detourTag),
+                detour = detourTag,
+                domainStrategy = remoteStrategy,
+                domainResolver = remoteResolver
+            )
+        }
+
+        private fun dnsServerTagForSemantic(
+            semantic: OutboundSemantic,
+            fakeDnsEnabled: Boolean,
+            directServerTag: String = "local",
+            proxyServerTag: String = if (fakeDnsEnabled) "fakeip-dns" else "remote"
+        ): String? {
+            return when (semantic) {
+                OutboundSemantic.Direct -> directServerTag
+                OutboundSemantic.Block -> null
+                OutboundSemantic.Proxy -> proxyServerTag
+                is OutboundSemantic.FallbackProxy -> proxyServerTag
+                is OutboundSemantic.RouteTag -> buildDynamicDnsServerTag(semantic.tag)
+            }
+        }
+
+        internal fun dnsServerTagForSemanticForTest(
+            semantic: OutboundSemantic,
+            fakeDnsEnabled: Boolean,
+            directServerTag: String = "local",
+            proxyServerTag: String = if (fakeDnsEnabled) "fakeip-dns" else "remote"
+        ): String? {
+            return dnsServerTagForSemantic(semantic, fakeDnsEnabled, directServerTag, proxyServerTag)
         }
 
         internal fun normalizeLocalDns(value: String?): String {
@@ -2626,14 +2848,18 @@ class ConfigRepository(private val context: Context) {
             val inbounds = buildRunInbounds(settings)
             val customRuleSets = buildCustomRuleSets(settings)
 
-            val dns = buildRunDns(settings, customRuleSets)
-
             val outboundsContext = buildRunOutbounds(
                 config, activeNode, settings, allNodesSnapshot,
                 activeProfile?.dnsPreResolve ?: false, activeId
             )
-            val route =
-                buildRunRoute(settings, outboundsContext.selectorTag, outboundsContext.outbounds, outboundsContext.nodeTagResolver, customRuleSets)
+            val dns = buildRunDns(settings, customRuleSets, outboundsContext)
+            val route = buildRunRoute(
+                settings,
+                outboundsContext.selectorTag,
+                outboundsContext.outbounds,
+                outboundsContext.nodeTagResolver,
+                customRuleSets
+            )
 
             lastTagToNodeName = outboundsContext.nodeTagMap.mapNotNull { (nodeId, tag) ->
                 val name = allNodesSnapshot.firstOrNull { it.id == nodeId }?.name
@@ -2795,24 +3021,6 @@ class ConfigRepository(private val context: Context) {
                 .filter { it.isNotEmpty() }
         }
 
-        fun resolveOutboundTag(mode: RuleSetOutboundMode?, value: String?): String {
-            return when (mode ?: RuleSetOutboundMode.PROXY) {
-                RuleSetOutboundMode.DIRECT -> "direct"
-                RuleSetOutboundMode.BLOCK -> "block"
-                RuleSetOutboundMode.PROXY -> defaultProxyTag
-                RuleSetOutboundMode.NODE -> {
-                    val resolvedTag = nodeTagResolver(value)
-                    if (resolvedTag != null) resolvedTag else defaultProxyTag
-                }
-                RuleSetOutboundMode.PROFILE -> {
-                    val profileId = value
-                    val profileName = _profiles.value.find { it.id == profileId }?.name ?: "Profile_$profileId"
-                    val tag = "P:$profileName"
-                    if (outbounds.any { it.tag == tag }) tag else defaultProxyTag
-                }
-            }
-        }
-
         val rules = settings.customRules
             .filter { it.enabled }
             .filter {
@@ -2824,18 +3032,26 @@ class ConfigRepository(private val context: Context) {
                 val values = splitValues(rule.value)
                 if (values.isEmpty()) return@mapNotNull null
 
-                val mode = rule.outboundMode ?: when (rule.outbound) {
-                    OutboundTag.DIRECT -> RuleSetOutboundMode.DIRECT
-                    OutboundTag.BLOCK -> RuleSetOutboundMode.BLOCK
-                    OutboundTag.PROXY -> RuleSetOutboundMode.PROXY
-                }
-
-                val outbound = resolveOutboundTag(mode, rule.outboundValue)
-                Log.d(TAG, "CustomDomainRule: type=${rule.type}, value=${rule.value}, mode=$mode, outboundValue=${rule.outboundValue}, resolved=$outbound")
+                val semantic = resolveOutboundSemantic(
+                    mode = resolveCustomRuleOutboundMode(rule.outboundMode, rule.outbound),
+                    value = rule.outboundValue,
+                    context = OutboundSemanticContext(
+                        selectorTag = defaultProxyTag,
+                        outbounds = outbounds,
+                        profiles = _profiles.value,
+                        nodeTagResolver = nodeTagResolver
+                    )
+                )
+                val baseRule = toRouteRule(semantic, defaultProxyTag)
+                Log.d(
+                    TAG,
+                    "CustomDomainRule: type=${rule.type}, value=${rule.value}, mode=${rule.outboundMode}, " +
+                        "outboundValue=${rule.outboundValue}, resolved=${baseRule.outbound}"
+                )
                 when (rule.type) {
-                    RuleType.DOMAIN -> RouteRule(domain = values, outbound = outbound)
-                    RuleType.DOMAIN_SUFFIX -> RouteRule(domainSuffix = values, outbound = outbound)
-                    RuleType.DOMAIN_KEYWORD -> RouteRule(domainKeyword = values, outbound = outbound)
+                    RuleType.DOMAIN -> baseRule.copy(domain = values)
+                    RuleType.DOMAIN_SUFFIX -> baseRule.copy(domainSuffix = values)
+                    RuleType.DOMAIN_KEYWORD -> baseRule.copy(domainKeyword = values)
                     else -> null
                 }
             }
@@ -2864,44 +3080,29 @@ class ConfigRepository(private val context: Context) {
                     }
                 },
                 { ruleSet ->
-                    when (ruleSet.outboundMode) {
+                    when (resolveRuleSetOutboundMode(ruleSet.outboundMode)) {
                         RuleSetOutboundMode.NODE -> 0
                         RuleSetOutboundMode.PROXY -> 1
                         RuleSetOutboundMode.DIRECT -> 2
                         RuleSetOutboundMode.BLOCK -> 3
                         RuleSetOutboundMode.PROFILE -> 1
-                        null -> 4
                     }
                 }
             )
         )
 
         sortedRuleSets.forEach { ruleSet ->
-
-            val outboundTag = when (ruleSet.outboundMode ?: RuleSetOutboundMode.DIRECT) {
-                RuleSetOutboundMode.DIRECT -> "direct"
-                RuleSetOutboundMode.BLOCK -> "block"
-                RuleSetOutboundMode.PROXY -> defaultProxyTag
-                RuleSetOutboundMode.NODE -> {
-                    val resolvedTag = nodeTagResolver(ruleSet.outboundValue)
-                    if (resolvedTag != null) {
-                        resolvedTag
-                    } else {
-                        Log.w(TAG, "Node ID '${ruleSet.outboundValue}' not resolved to any tag, falling back to $defaultProxyTag")
-                        defaultProxyTag
-                    }
-                }
-                RuleSetOutboundMode.PROFILE -> {
-                    val profileId = ruleSet.outboundValue
-                    val profileName = _profiles.value.find { it.id == profileId }?.name ?: "Profile_$profileId"
-                    val tag = "P:$profileName"
-                    if (outbounds.any { it.tag == tag }) {
-                        tag
-                    } else {
-                        defaultProxyTag
-                    }
-                }
-            }
+            val semantic = resolveOutboundSemantic(
+                mode = resolveRuleSetOutboundMode(ruleSet.outboundMode),
+                value = ruleSet.outboundValue,
+                context = OutboundSemanticContext(
+                    selectorTag = defaultProxyTag,
+                    outbounds = outbounds,
+                    profiles = _profiles.value,
+                    nodeTagResolver = nodeTagResolver
+                )
+            )
+            val baseRule = toRouteRule(semantic, defaultProxyTag)
             val inboundTags = if (ruleSet.inbounds.isNullOrEmpty()) {
                 null
             } else {
@@ -2914,9 +3115,8 @@ class ConfigRepository(private val context: Context) {
                 }
             }
 
-            rules.add(RouteRule(
+            rules.add(baseRule.copy(
                 ruleSet = listOf(ruleSet.tag),
-                outbound = outboundTag,
                 inbound = inboundTags
             ))
         }
@@ -2941,61 +3141,60 @@ class ConfigRepository(private val context: Context) {
             }
         }
 
-        fun resolveOutboundTag(mode: RuleSetOutboundMode?, value: String?): String {
-            return when (mode ?: RuleSetOutboundMode.DIRECT) {
-                RuleSetOutboundMode.DIRECT -> "direct"
-                RuleSetOutboundMode.BLOCK -> "block"
-                RuleSetOutboundMode.PROXY -> defaultProxyTag
-                RuleSetOutboundMode.NODE -> {
-                    val resolvedTag = nodeTagResolver(value)
-                    if (resolvedTag != null) resolvedTag else defaultProxyTag
-                }
-                RuleSetOutboundMode.PROFILE -> {
-                    val profileId = value
-                    val profileName = _profiles.value.find { it.id == profileId }?.name ?: "Profile_$profileId"
-                    val tag = "P:$profileName"
-                    if (outbounds.any { it.tag == tag }) tag else defaultProxyTag
-                }
-            }
-        }
         settings.appRules.filter { it.enabled }.forEach { rule ->
-            val outboundTag = resolveOutboundTag(rule.outboundMode, rule.outboundValue)
+            val semantic = resolveOutboundSemantic(
+                mode = resolveAppRuleOutboundMode(rule.outboundMode),
+                value = rule.outboundValue,
+                context = OutboundSemanticContext(
+                    selectorTag = defaultProxyTag,
+                    outbounds = outbounds,
+                    profiles = _profiles.value,
+                    nodeTagResolver = nodeTagResolver
+                )
+            )
+            val baseRule = toRouteRule(semantic, defaultProxyTag)
 
             val uid = resolveUidByPackageName(rule.packageName)
             if (uid > 0) {
                 rules.add(
-                    RouteRule(
-                        userId = listOf(uid),
-                        outbound = outboundTag
+                    baseRule.copy(
+                        userId = listOf(uid)
                     )
                 )
             }
 
             rules.add(
-                RouteRule(
-                    packageName = listOf(rule.packageName),
-                    outbound = outboundTag
+                baseRule.copy(
+                    packageName = listOf(rule.packageName)
                 )
             )
         }
         settings.appGroups.filter { it.enabled }.forEach { group ->
-            val outboundTag = resolveOutboundTag(group.outboundMode, group.outboundValue)
+            val semantic = resolveOutboundSemantic(
+                mode = resolveAppGroupOutboundMode(group.outboundMode),
+                value = group.outboundValue,
+                context = OutboundSemanticContext(
+                    selectorTag = defaultProxyTag,
+                    outbounds = outbounds,
+                    profiles = _profiles.value,
+                    nodeTagResolver = nodeTagResolver
+                )
+            )
+            val baseRule = toRouteRule(semantic, defaultProxyTag)
             val packageNames = group.apps.map { it.packageName }
             if (packageNames.isNotEmpty()) {
                 val uids = packageNames.map { resolveUidByPackageName(it) }.filter { it > 0 }.distinct()
                 if (uids.isNotEmpty()) {
                     rules.add(
-                        RouteRule(
-                            userId = uids,
-                            outbound = outboundTag
+                        baseRule.copy(
+                            userId = uids
                         )
                     )
                 }
 
                 rules.add(
-                    RouteRule(
-                        packageName = packageNames,
-                        outbound = outboundTag
+                    baseRule.copy(
+                        packageName = packageNames
                     )
                 )
             }
@@ -3036,7 +3235,11 @@ class ConfigRepository(private val context: Context) {
             getEffectiveTunStack(settings.tunStack)
         )
 
-    private fun buildRunDns(settings: AppSettings, validRuleSets: List<RuleSetConfig>): DnsConfig {
+    private fun buildRunDns(
+        settings: AppSettings,
+        validRuleSets: List<RuleSetConfig>,
+        outboundsContext: RunOutboundsContext
+    ): DnsConfig {
         val dnsServers = mutableListOf<DnsServer>()
         val dnsRules = mutableListOf<DnsRule>()
 
@@ -3156,17 +3359,26 @@ class ConfigRepository(private val context: Context) {
                     it.type == RuleType.DOMAIN_SUFFIX ||
                     it.type == RuleType.DOMAIN_KEYWORD
             }
+        val domainSemantics = mutableListOf<OutboundSemantic>()
 
         if (customDomainRulesForDns.isNotEmpty()) {
-            val proxyDomains = mutableListOf<String>()
-            val proxySuffixes = mutableListOf<String>()
-            val proxyKeywords = mutableListOf<String>()
-            val directDomains = mutableListOf<String>()
-            val directSuffixes = mutableListOf<String>()
-            val directKeywords = mutableListOf<String>()
-            val blockDomains = mutableListOf<String>()
-            val blockSuffixes = mutableListOf<String>()
-            val blockKeywords = mutableListOf<String>()
+            val dnsRulesByServer = linkedMapOf<String, MutableList<DnsRule>>()
+
+            fun addDnsRuleForSemantic(rule: DnsRule, semantic: OutboundSemantic) {
+                domainSemantics.add(semantic)
+                when (semantic) {
+                    OutboundSemantic.Block -> dnsRules.add(dnsReject(rule))
+                    else -> {
+                        val serverTag = dnsServerTagForSemantic(
+                            semantic,
+                            settings.fakeDnsEnabled,
+                            directServerTag,
+                            proxyServerTag
+                        ) ?: return
+                        dnsRulesByServer.getOrPut(serverTag) { mutableListOf() }.add(rule)
+                    }
+                }
+            }
 
             customDomainRulesForDns.forEach { rule ->
                 val values = rule.value
@@ -3174,123 +3386,138 @@ class ConfigRepository(private val context: Context) {
                     .map { it.trim() }
                     .filter { it.isNotEmpty() }
 
-                val mode = outboundModeOf(rule.outboundMode, rule.outbound)
-                when (mode) {
-                    RuleSetOutboundMode.DIRECT -> when (rule.type) {
-                        RuleType.DOMAIN -> directDomains.addAll(values)
-                        RuleType.DOMAIN_SUFFIX -> directSuffixes.addAll(values)
-                        RuleType.DOMAIN_KEYWORD -> directKeywords.addAll(values)
-                        else -> {}
-                    }
+                if (values.isEmpty()) return@forEach
 
-                    RuleSetOutboundMode.BLOCK -> when (rule.type) {
-                        RuleType.DOMAIN -> blockDomains.addAll(values)
-                        RuleType.DOMAIN_SUFFIX -> blockSuffixes.addAll(values)
-                        RuleType.DOMAIN_KEYWORD -> blockKeywords.addAll(values)
-                        else -> {}
-                    }
+                val semantic = resolveOutboundSemantic(
+                    mode = resolveCustomRuleOutboundMode(rule.outboundMode, rule.outbound),
+                    value = rule.outboundValue,
+                    context = OutboundSemanticContext(
+                        selectorTag = outboundsContext.selectorTag,
+                        outbounds = outboundsContext.outbounds,
+                        profiles = _profiles.value,
+                        nodeTagResolver = outboundsContext.nodeTagResolver
+                    )
+                )
 
-                    RuleSetOutboundMode.PROXY,
-                    RuleSetOutboundMode.NODE,
-                    RuleSetOutboundMode.PROFILE -> when (rule.type) {
-                        RuleType.DOMAIN -> proxyDomains.addAll(values)
-                        RuleType.DOMAIN_SUFFIX -> proxySuffixes.addAll(values)
-                        RuleType.DOMAIN_KEYWORD -> proxyKeywords.addAll(values)
-                        else -> {}
+                when (rule.type) {
+                    RuleType.DOMAIN -> {
+                        addDnsRuleForSemantic(DnsRule(domain = values.distinct()), semantic)
                     }
+                    RuleType.DOMAIN_SUFFIX -> {
+                        addDnsRuleForSemantic(DnsRule(domainSuffix = values.distinct()), semantic)
+                    }
+                    RuleType.DOMAIN_KEYWORD -> {
+                        addDnsRuleForSemantic(DnsRule(domainKeyword = values.distinct()), semantic)
+                    }
+                    else -> {}
                 }
             }
 
-            // BLOCK: reject DNS queries (method=default)
-            if (blockDomains.isNotEmpty()) {
-                dnsRules.add(dnsReject(DnsRule(domain = blockDomains.distinct())))
-            }
-            if (blockSuffixes.isNotEmpty()) {
-                dnsRules.add(dnsReject(DnsRule(domainSuffix = blockSuffixes.distinct())))
-            }
-            if (blockKeywords.isNotEmpty()) {
-                dnsRules.add(dnsReject(DnsRule(domainKeyword = blockKeywords.distinct())))
-            }
-
-            if (proxyDomains.isNotEmpty()) {
-                dnsRules.addAll(dnsRouteToProxy(DnsRule(domain = proxyDomains.distinct())))
-            }
-            if (proxySuffixes.isNotEmpty()) {
-                dnsRules.addAll(dnsRouteToProxy(DnsRule(domainSuffix = proxySuffixes.distinct())))
-            }
-            if (proxyKeywords.isNotEmpty()) {
-                dnsRules.addAll(dnsRouteToProxy(DnsRule(domainKeyword = proxyKeywords.distinct())))
-            }
-
-            if (directDomains.isNotEmpty()) {
-                dnsRules.add(
-                    dnsRouteTo(directServerTag, DnsRule(domain = directDomains.distinct()))
-                )
-            }
-            if (directSuffixes.isNotEmpty()) {
-                dnsRules.add(
-                    dnsRouteTo(directServerTag, DnsRule(domainSuffix = directSuffixes.distinct()))
-                )
-            }
-            if (directKeywords.isNotEmpty()) {
-                dnsRules.add(
-                    dnsRouteTo(directServerTag, DnsRule(domainKeyword = directKeywords.distinct()))
-                )
+            dnsRulesByServer.forEach { (serverTag, rulesForServer) ->
+                rulesForServer.forEach { rule ->
+                    if (serverTag == "fakeip-dns") {
+                        dnsRules.addAll(dnsRouteToProxy(rule))
+                    } else {
+                        dnsRules.add(dnsRouteTo(serverTag, rule))
+                    }
+                }
             }
         }
         val validRuleSetTags = validRuleSets.mapNotNull { it.tag }.toSet()
-        val proxyRuleSetTags = mutableListOf<String>()
-        val directRuleSetTags = mutableListOf<String>()
-        val blockRuleSetTags = mutableListOf<String>()
+        val dnsRuleSetRulesByServer = linkedMapOf<String, MutableList<DnsRule>>()
+        val ruleSetSemantics = mutableListOf<OutboundSemantic>()
+
+        fun addRuleSetDnsRule(rule: DnsRule, semantic: OutboundSemantic) {
+            ruleSetSemantics.add(semantic)
+            when (semantic) {
+                OutboundSemantic.Block -> dnsRules.add(dnsReject(rule))
+                else -> {
+                    val serverTag = dnsServerTagForSemantic(
+                        semantic,
+                        settings.fakeDnsEnabled,
+                        directServerTag,
+                        proxyServerTag
+                    ) ?: return
+                    dnsRuleSetRulesByServer.getOrPut(serverTag) {
+                        mutableListOf()
+                    }.add(rule)
+                }
+            }
+        }
 
         settings.ruleSets
             .filter { it.enabled }
             .forEach { ruleSet ->
-                // Only apply DNS mapping for rule sets that are actually available in runtime config.
                 val tag = ruleSet.tag
                 if (tag.isBlank() || tag !in validRuleSetTags) return@forEach
 
-                val mode = ruleSet.outboundMode ?: RuleSetOutboundMode.DIRECT
-                when (mode) {
-                    RuleSetOutboundMode.DIRECT -> directRuleSetTags.add(tag)
-                    RuleSetOutboundMode.BLOCK -> blockRuleSetTags.add(tag)
-                    RuleSetOutboundMode.PROXY,
-                    RuleSetOutboundMode.NODE,
-                    RuleSetOutboundMode.PROFILE -> proxyRuleSetTags.add(tag)
-                }
+                val semantic = resolveOutboundSemantic(
+                    mode = resolveRuleSetOutboundMode(ruleSet.outboundMode),
+                    value = ruleSet.outboundValue,
+                    context = OutboundSemanticContext(
+                        selectorTag = outboundsContext.selectorTag,
+                        outbounds = outboundsContext.outbounds,
+                        profiles = _profiles.value,
+                        nodeTagResolver = outboundsContext.nodeTagResolver
+                    )
+                )
+                addRuleSetDnsRule(DnsRule(ruleSet = listOf(tag)), semantic)
             }
 
-        if (blockRuleSetTags.isNotEmpty()) {
-            dnsRules.add(dnsReject(DnsRule(ruleSet = blockRuleSetTags.distinct())))
+        dnsRuleSetRulesByServer.forEach { (serverTag, rulesForServer) ->
+            rulesForServer.forEach { rule ->
+                if (serverTag == "fakeip-dns") {
+                    dnsRules.addAll(dnsRouteToProxy(rule))
+                } else {
+                    dnsRules.add(dnsRouteTo(serverTag, rule))
+                }
+            }
         }
-        if (proxyRuleSetTags.isNotEmpty()) {
-            dnsRules.addAll(dnsRouteToProxy(DnsRule(ruleSet = proxyRuleSetTags.distinct())))
-        }
-        if (directRuleSetTags.isNotEmpty()) {
-            dnsRules.add(
-                dnsRouteTo(directServerTag, DnsRule(ruleSet = directRuleSetTags.distinct()))
-            )
-        }
-        val proxyPackages = mutableListOf<String>()
-        val directPackages = mutableListOf<String>()
-        val blockPackages = mutableListOf<String>()
+        val packageRulesByServer = linkedMapOf<String, MutableList<DnsRule>>()
+        val packageSemantics = mutableListOf<OutboundSemantic>()
+        val packageBlockRules = mutableListOf<DnsRule>()
 
-        fun addPackageByMode(pkg: String, mode: RuleSetOutboundMode) {
-            when (mode) {
-                RuleSetOutboundMode.DIRECT -> directPackages.add(pkg)
-                RuleSetOutboundMode.BLOCK -> blockPackages.add(pkg)
-                RuleSetOutboundMode.PROXY,
-                RuleSetOutboundMode.NODE,
-                RuleSetOutboundMode.PROFILE -> proxyPackages.add(pkg)
+        fun addPackageDnsRule(rule: DnsRule, semantic: OutboundSemantic) {
+            packageSemantics.add(semantic)
+            when (semantic) {
+                OutboundSemantic.Block -> packageBlockRules.add(rule)
+                else -> {
+                    val serverTag = dnsServerTagForSemantic(
+                        semantic,
+                        settings.fakeDnsEnabled,
+                        directServerTag,
+                        proxyServerTag
+                    ) ?: return
+                    packageRulesByServer.getOrPut(serverTag) { mutableListOf() }.add(rule)
+                }
             }
         }
 
         settings.appRules.filter { it.enabled }.forEach { rule ->
-            addPackageByMode(rule.packageName, rule.outboundMode ?: RuleSetOutboundMode.PROXY)
+            val semantic = resolveOutboundSemantic(
+                mode = resolveAppRuleOutboundMode(rule.outboundMode),
+                value = rule.outboundValue,
+                context = OutboundSemanticContext(
+                    selectorTag = outboundsContext.selectorTag,
+                    outbounds = outboundsContext.outbounds,
+                    profiles = _profiles.value,
+                    nodeTagResolver = outboundsContext.nodeTagResolver
+                )
+            )
+            addPackageDnsRule(DnsRule(packageName = listOf(rule.packageName)), semantic)
         }
         settings.appGroups.filter { it.enabled }.forEach { group ->
-            val mode = group.outboundMode ?: RuleSetOutboundMode.PROXY
-            group.apps.forEach { addPackageByMode(it.packageName, mode) }
+            val semantic = resolveOutboundSemantic(
+                mode = resolveAppGroupOutboundMode(group.outboundMode),
+                value = group.outboundValue,
+                context = OutboundSemanticContext(
+                    selectorTag = outboundsContext.selectorTag,
+                    outbounds = outboundsContext.outbounds,
+                    profiles = _profiles.value,
+                    nodeTagResolver = outboundsContext.nodeTagResolver
+                )
+            )
+            group.apps.forEach { addPackageDnsRule(DnsRule(packageName = listOf(it.packageName)), semantic) }
         }
 
         // We keep both package_name and user_id matching for robustness.
@@ -3305,9 +3532,29 @@ class ConfigRepository(private val context: Context) {
             }.distinct()
         }
 
-        val directPkgs = directPackages.distinct().filter { it.isNotBlank() }
-        val proxyPkgs = proxyPackages.distinct().filter { it.isNotBlank() }
-        val blockPkgs = blockPackages.distinct().filter { it.isNotBlank() }
+        val directPkgs = packageRulesByServer[directServerTag]
+            .orEmpty()
+            .flatMap { it.packageName.orEmpty() }
+            .distinct()
+            .filter { it.isNotBlank() }
+        val proxyPkgs = packageRulesByServer[proxyServerTag]
+            .orEmpty()
+            .flatMap { it.packageName.orEmpty() }
+            .distinct()
+            .filter { it.isNotBlank() }
+        val blockPkgs = packageBlockRules
+            .flatMap { it.packageName.orEmpty() }
+            .distinct()
+            .filter { it.isNotBlank() }
+
+        packageRulesByServer.forEach { (serverTag, rulesForServer) ->
+            if (serverTag == directServerTag || serverTag == proxyServerTag) {
+                return@forEach
+            }
+            rulesForServer.forEach { rule ->
+                dnsRules.add(dnsRouteTo(serverTag, rule))
+            }
+        }
 
         if (blockPkgs.isNotEmpty()) {
             dnsRules.add(
@@ -3327,6 +3574,14 @@ class ConfigRepository(private val context: Context) {
                 )
             )
         }
+        ensureDynamicRemoteDnsServers(
+            dnsServers = dnsServers,
+            semantics = domainSemantics + ruleSetSemantics + packageSemantics,
+            remoteDnsAddr = remoteDnsAddr,
+            remoteStrategy = mapDnsStrategy(settings.remoteDnsStrategy),
+            remoteResolver = remoteResolver
+        )
+
         if (settings.fakeDnsEnabled) {
             val fakeIpExcludeDomains = buildList {
                 settings.fakeIpExcludeDomains
@@ -3351,7 +3606,7 @@ class ConfigRepository(private val context: Context) {
             }.distinct()
 
             if (fakeIpExcludeDomains.isNotEmpty()) {
-                dnsRules.add(dnsRouteTo("remote", DnsRule(domain = fakeIpExcludeDomains)))
+                dnsRules.add(dnsRouteTo(proxyFinalServerTag, DnsRule(domain = fakeIpExcludeDomains)))
             }
         }
         if (settings.fakeDnsEnabled) {
