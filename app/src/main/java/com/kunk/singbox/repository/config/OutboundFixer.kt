@@ -421,9 +421,9 @@ object OutboundFixer {
             )
 
             "hysteria", "hysteria2" -> buildRuntimeHysteriaOutbound(
-                fixed = fixed,
-                tcpKeepAliveInterval = tcpKeepAliveInterval,
-                connectTimeout = connectTimeout
+                fixed,
+                tcpKeepAliveInterval,
+                connectTimeout
             )
 
             "tuic" -> Outbound(
@@ -527,6 +527,7 @@ object OutboundFixer {
         }, fixed)
     }
 
+    @Suppress("UnusedParameter")
     internal fun buildRuntimeHysteriaOutbound(
         fixed: Outbound,
         tcpKeepAliveInterval: String?,
@@ -549,7 +550,7 @@ object OutboundFixer {
             serverPorts = fixed.serverPorts,
             tls = fixed.tls,
             multiplex = fixed.multiplex,
-            domainResolver = fixed.domainResolver
+            domainResolver = resolveDomainResolver(fixed)
         )
     }
 

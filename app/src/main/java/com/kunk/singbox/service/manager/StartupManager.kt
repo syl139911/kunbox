@@ -16,6 +16,7 @@ import com.kunk.singbox.repository.LogRepository
 import com.kunk.singbox.repository.RuleSetRepository
 import com.kunk.singbox.repository.SettingsRepository
 import com.kunk.singbox.service.notification.VpnNotificationManager
+import com.kunk.singbox.utils.dns.DnsResolver
 import com.kunk.singbox.utils.perf.DnsPrewarmer
 import com.kunk.singbox.utils.perf.PerfTracer
 import kotlinx.coroutines.*
@@ -31,6 +32,56 @@ class StartupManager(
 ) {
     companion object {
         private const val TAG = "StartupManager"
+
+        internal fun applyPrewarmedDomainIps(
+            config: SingBoxConfig,
+            prewarmedDomainIps: Map<String, String>
+        ): SingBoxConfig {
+            if (prewarmedDomainIps.isEmpty()) return config
+
+            var changed = false
+            val newOutbounds = config.outbounds?.map { outbound ->
+                val server = outbound.server?.trim()
+                if (
+                    server.isNullOrBlank() ||
+                    DnsResolver.isIpAddress(server) ||
+                    !canReplaceServerWithPrewarmedIp(outbound)
+                ) {
+                    outbound
+                } else {
+                    val resolvedIp = prewarmedDomainIps[server]
+                    if (resolvedIp.isNullOrBlank()) {
+                        outbound
+                    } else {
+                        changed = true
+                        outbound.copy(server = resolvedIp)
+                    }
+                }
+            }
+
+            return if (changed) config.copy(outbounds = newOutbounds) else config
+        }
+
+        private fun canReplaceServerWithPrewarmedIp(outbound: com.kunk.singbox.model.Outbound): Boolean {
+            val hasTls = outbound.tls != null
+            if (!hasTls) return true
+
+            val explicitServerName = outbound.tls?.serverName?.takeIf { it.isNotBlank() }
+            val explicitHost = sequenceOf(
+                outbound.transport?.headers,
+                outbound.headers,
+                outbound.extraHeaders
+            )
+                .filterNotNull()
+                .mapNotNull { headers ->
+                    headers.entries.firstOrNull { (key, value) ->
+                        key.equals("Host", ignoreCase = true) && value.isNotBlank()
+                    }?.value
+                }
+                .firstOrNull()
+
+            return explicitServerName != null || explicitHost != null
+        }
     }
 
     private val gson = Gson()
@@ -312,14 +363,15 @@ class StartupManager(
 
         stepStart = SystemClock.elapsedRealtime()
         val settings = settingsDeferred.await()
-        val configContent = patchConfig(rawConfigContent, settings)
+        val dnsResult = dnsPrewarmDeferred.await()
+        val prewarmedDomainIps = DnsPrewarmer.snapshotResolvedDomains(rawConfigContent)
+        val configContent = patchConfig(rawConfigContent, settings, prewarmedDomainIps)
         log("[parallelInit] patchConfig: ${SystemClock.elapsedRealtime() - stepStart}ms")
 
         dumpDebugOutbounds(configContent, settings.debugLoggingEnabled)
 
         val network = networkDeferred.await()
         val ruleSetReady = ruleSetDeferred.await()
-        val dnsResult = dnsPrewarmDeferred.await()
 
         log("[parallelInit] END: ${SystemClock.elapsedRealtime() - parallelStart}ms total")
 
@@ -437,7 +489,11 @@ class StartupManager(
         return result
     }
 
-    private fun patchConfig(rawConfigContent: String, settings: AppSettings): String {
+    private fun patchConfig(
+        rawConfigContent: String,
+        settings: AppSettings,
+        prewarmedDomainIps: Map<String, String> = emptyMap()
+    ): String {
         var configContent = rawConfigContent
         val logLevel = if (settings.debugLoggingEnabled) "debug" else "info"
 
@@ -448,6 +504,7 @@ class StartupManager(
                 ?: com.kunk.singbox.model.LogConfig(level = logLevel, timestamp = true, output = "box.log")
 
             var newConfig = configObj.copy(log = logConfig)
+            newConfig = applyPrewarmedDomainIps(newConfig, prewarmedDomainIps)
 
             if (newConfig.inbounds != null) {
                 val newInbounds = newConfig.inbounds.orEmpty().map { inbound ->
@@ -482,7 +539,8 @@ class StartupManager(
             Log.i(
                 TAG,
                 "Patched config: auto_route=${settings.autoRoute}, " +
-                    "log_level=$logLevel, connect_timeout=$defaultConnectTimeout"
+                    "log_level=$logLevel, connect_timeout=$defaultConnectTimeout, " +
+                    "prewarmed_domains=${prewarmedDomainIps.size}"
             )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to patch config: ${e.message}")

@@ -123,6 +123,14 @@ object DnsPrewarmer {
         return dnsCache[domain]
     }
 
+    internal fun snapshotResolvedDomains(configContent: String): Map<String, String> {
+        return extractNodeDomains(configContent)
+            .mapNotNull { domain ->
+                getCachedAddresses(domain)?.firstOrNull()?.let { ip -> domain to ip }
+            }
+            .toMap()
+    }
+
     private enum class ResolveResult {
         RESOLVED,
         CACHED,

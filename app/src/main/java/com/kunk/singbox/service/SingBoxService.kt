@@ -58,6 +58,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.absoluteValue
 
 class SingBoxService : VpnService() {
 
@@ -377,6 +378,19 @@ class SingBoxService : VpnService() {
                     timeoutMs = 10000L,
                     expectedTags = expectedTags
                 )
+            }
+
+            override fun onRouteGroupFallback(groupTag: String, actualSelectedTag: String?) {
+                val targetTag = actualSelectedTag?.takeIf { it.isNotBlank() } ?: "当前全局节点"
+                val message =
+                    "配置分流 $groupTag 节点全部不可用，已临时回退到全局节点 $targetTag"
+                val notificationId = 2000 + (groupTag.hashCode().absoluteValue % 500)
+                val notification = notificationManager.createStartingNotification(message)
+                notificationManager.showTemporaryNotification(notificationId, notification)
+                serviceScope.launch {
+                    delay(8000)
+                    notificationManager.cancelNotification(notificationId)
+                }
             }
         })
         Log.i(TAG, "RouteGroupSelector initialized")

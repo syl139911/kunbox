@@ -5,6 +5,7 @@ import com.kunk.singbox.model.RouteConfig
 import com.kunk.singbox.model.RouteRule
 import com.kunk.singbox.model.SingBoxConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,7 +19,7 @@ class RouteGroupSelectorTest {
                 Outbound(
                     type = "selector",
                     tag = "P:HK",
-                    outbounds = listOf("node-a", "direct", "node-b", "node-a")
+                    outbounds = listOf("node-a", "direct", "node-b", "PROXY", "node-a")
                 ),
                 Outbound(
                     type = "selector",
@@ -46,6 +47,7 @@ class RouteGroupSelectorTest {
         assertEquals(1, targets.size)
         assertEquals("P:HK", targets.first().groupTag)
         assertEquals(listOf("node-a", "node-b"), targets.first().candidates)
+        assertEquals("PROXY", targets.first().fallbackTag)
     }
 
     @Test
@@ -75,6 +77,54 @@ class RouteGroupSelectorTest {
         )
 
         assertNull(best)
+    }
+
+    @Test
+    fun testShouldNotifyFallbackWhenSwitchSucceededFirstTime() {
+        val shouldNotify = RouteGroupSelector.shouldNotifyFallback(
+            currentSelected = "node-a",
+            fallbackTag = "PROXY",
+            switchSucceeded = true,
+            wasFallbackActive = false
+        )
+
+        assertTrue(shouldNotify)
+    }
+
+    @Test
+    fun testShouldNotifyFallbackWhenAlreadyUsingFallbackFirstSeen() {
+        val shouldNotify = RouteGroupSelector.shouldNotifyFallback(
+            currentSelected = "PROXY",
+            fallbackTag = "PROXY",
+            switchSucceeded = true,
+            wasFallbackActive = false
+        )
+
+        assertTrue(shouldNotify)
+    }
+
+    @Test
+    fun testShouldNotNotifyFallbackWhenSwitchFailed() {
+        val shouldNotify = RouteGroupSelector.shouldNotifyFallback(
+            currentSelected = "node-a",
+            fallbackTag = "PROXY",
+            switchSucceeded = false,
+            wasFallbackActive = false
+        )
+
+        assertFalse(shouldNotify)
+    }
+
+    @Test
+    fun testShouldNotNotifyFallbackRepeatedlyWithinSameEpisode() {
+        val shouldNotify = RouteGroupSelector.shouldNotifyFallback(
+            currentSelected = "PROXY",
+            fallbackTag = "PROXY",
+            switchSucceeded = true,
+            wasFallbackActive = true
+        )
+
+        assertFalse(shouldNotify)
     }
 
     @Test
@@ -109,5 +159,24 @@ class RouteGroupSelectorTest {
         val targets = RouteGroupSelector.collectRouteGroupTargets(config)
 
         assertTrue(targets.isEmpty())
+    }
+
+    @Test
+    fun testCollectRouteGroupTargetsLeavesFallbackNullWhenProxyMissing() {
+        val config = SingBoxConfig(
+            outbounds = listOf(
+                Outbound(type = "selector", tag = "P:HK", outbounds = listOf("node-a", "node-b")),
+                Outbound(type = "vmess", tag = "node-a"),
+                Outbound(type = "vmess", tag = "node-b")
+            ),
+            route = RouteConfig(
+                rules = listOf(RouteRule(outbound = "P:HK"))
+            )
+        )
+
+        val targets = RouteGroupSelector.collectRouteGroupTargets(config)
+
+        assertEquals(1, targets.size)
+        assertNull(targets.first().fallbackTag)
     }
 }

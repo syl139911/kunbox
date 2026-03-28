@@ -416,6 +416,37 @@ class ConfigRepository(private val context: Context) {
             )
         }
 
+        internal fun resolveProfileSelectorDefault(
+            nodeIds: List<String>,
+            nodeTagMap: Map<String, String>,
+            rememberedNodeId: String?,
+            savedNodeLatencies: Map<String, Long>
+        ): String? {
+            val candidateTags = nodeIds.mapNotNull { nodeTagMap[it] }.distinct()
+            val bestLatencyTag = nodeIds.asSequence()
+                .mapNotNull { nodeId ->
+                    val tag = nodeTagMap[nodeId] ?: return@mapNotNull null
+                    val latency = savedNodeLatencies[nodeId] ?: return@mapNotNull null
+                    if (latency <= 0) {
+                        return@mapNotNull null
+                    }
+                    tag to latency
+                }
+                .minByOrNull { it.second }
+                ?.first
+
+            val rememberedTag = rememberedNodeId
+                ?.let { nodeTagMap[it] }
+                ?.takeIf { it in candidateTags }
+
+            return when {
+                candidateTags.isEmpty() -> null
+                bestLatencyTag != null -> bestLatencyTag
+                rememberedTag != null -> rememberedTag
+                else -> candidateTags.firstOrNull()
+            }
+        }
+
         internal fun buildDynamicDnsServerTag(detourTag: String): String {
             val normalized = detourTag
                 .lowercase()
@@ -4085,9 +4116,16 @@ class ConfigRepository(private val context: Context) {
         }
         requiredProfileIds.forEach { requiredProfileId ->
             val profileNodes = allNodes.filter { it.sourceProfileId == requiredProfileId }
-            val nodeTags = profileNodes.mapNotNull { nodeTagMap[it.id] }
+            val nodeIds = profileNodes.map { it.id }
+            val nodeTags = nodeIds.mapNotNull { nodeTagMap[it] }.distinct()
             val profileName = _profiles.value.find { it.id == requiredProfileId }?.name ?: "Profile_$requiredProfileId"
             val tag = "P:$profileName"
+            val selectorDefault = resolveProfileSelectorDefault(
+                nodeIds = nodeIds,
+                nodeTagMap = nodeTagMap,
+                rememberedNodeId = getProfileLastSelectedNode(requiredProfileId),
+                savedNodeLatencies = savedNodeLatencies
+            )
 
             if (nodeTags.isNotEmpty()) {
                 val existingIndex = fixedOutbounds.indexOfFirst { it.tag == tag }
@@ -4095,8 +4133,8 @@ class ConfigRepository(private val context: Context) {
                     val newSelector = Outbound(
                         type = "selector",
                         tag = tag,
-                        outbounds = nodeTags.distinct(),
-                        default = nodeTags.firstOrNull(),
+                        outbounds = (nodeTags + "PROXY").distinct(),
+                        default = selectorDefault ?: nodeTags.firstOrNull(),
                         interruptExistConnections = false
                     )
                     fixedOutbounds.add(0, newSelector)

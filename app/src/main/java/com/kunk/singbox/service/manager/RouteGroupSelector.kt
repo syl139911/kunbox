@@ -26,13 +26,13 @@ class RouteGroupSelector(
     companion object {
         private const val TAG = "RouteGroupSelector"
         private const val AUTO_SELECT_INTERVAL_MS = 30L * 60L * 1000L
-        private const val INITIAL_DELAY_MS = 1200L
         private const val LATENCY_TEST_TIMEOUT_MS = 10000L
         private const val MAX_CONCURRENT_TESTS = 4
 
         internal data class RouteGroupTarget(
             val groupTag: String,
-            val candidates: List<String>
+            val candidates: List<String>,
+            val fallbackTag: String?
         )
 
         internal fun collectRouteGroupTargets(config: SingBoxConfig): List<RouteGroupTarget> {
@@ -57,14 +57,22 @@ class RouteGroupSelector(
                         .orEmpty()
                         .map { it.trim() }
                         .filter { it.isNotBlank() }
-                        .filterNot { it.equals("direct", ignoreCase = true) || it.equals("block", ignoreCase = true) }
+                        .filterNot {
+                            it.equals("direct", ignoreCase = true) ||
+                                it.equals("block", ignoreCase = true) ||
+                                it.equals("PROXY", ignoreCase = true)
+                        }
                         .distinct()
+                    val fallbackTag = selector.outbounds
+                        .orEmpty()
+                        .firstOrNull { it.equals("PROXY", ignoreCase = true) }
                     if (candidates.isEmpty()) {
                         null
                     } else {
                         RouteGroupTarget(
                             groupTag = selector.tag,
-                            candidates = candidates
+                            candidates = candidates,
+                            fallbackTag = fallbackTag
                         )
                     }
                 }
@@ -89,10 +97,21 @@ class RouteGroupSelector(
                 .minByOrNull { (_, delay) -> delay }
                 ?.let { it.key to it.value.toLong() }
         }
+
+        internal fun shouldNotifyFallback(
+            currentSelected: String?,
+            fallbackTag: String,
+            switchSucceeded: Boolean,
+            wasFallbackActive: Boolean
+        ): Boolean {
+            val isUsingFallback = currentSelected == fallbackTag || switchSucceeded
+            return isUsingFallback && !wasFallbackActive
+        }
     }
 
     private val gson = Gson()
     private var autoSelectJob: Job? = null
+    private val fallbackActiveGroups = ConcurrentHashMap.newKeySet<String>()
 
     private data class SelectionContext(
         val byTag: Map<String, Outbound>,
@@ -107,6 +126,7 @@ class RouteGroupSelector(
         fun getCommandClient(): CommandClient?
         fun getSelectedOutbound(groupTag: String): String?
         suspend fun urlTestGroup(groupTag: String, expectedTags: Set<String>): Map<String, Int>
+        fun onRouteGroupFallback(groupTag: String, actualSelectedTag: String?)
     }
 
     private var callbacks: Callbacks? = null
@@ -119,8 +139,7 @@ class RouteGroupSelector(
         stop()
 
         autoSelectJob = serviceScope.launch {
-            Log.i(TAG, "Route group auto-select scheduled, initialDelay=${INITIAL_DELAY_MS}ms")
-            delay(INITIAL_DELAY_MS)
+            Log.i(TAG, "Route group auto-select scheduled, initialDelay=0ms")
             while (callbacks?.isRunning == true && callbacks?.isStopping != true) {
                 val targets = runCatching {
                     gson.fromJson(configContent, SingBoxConfig::class.java)
@@ -148,6 +167,7 @@ class RouteGroupSelector(
     fun stop() {
         autoSelectJob?.cancel()
         autoSelectJob = null
+        fallbackActiveGroups.clear()
     }
 
     private suspend fun selectBestForRouteGroups(configContent: String) {
@@ -204,7 +224,11 @@ class RouteGroupSelector(
         )
 
         if (best == null) {
-            Log.w(TAG, "No latency result available for group '${target.groupTag}'")
+            handleFallbackSelection(
+                client = client,
+                target = target,
+                currentSelected = currentSelected
+            )
             return
         }
 
@@ -212,16 +236,59 @@ class RouteGroupSelector(
         Log.i(TAG, "Best node for '${target.groupTag}' is '$bestTag' (${bestDelayMs}ms)")
 
         if (currentSelected != null && currentSelected == bestTag) {
+            fallbackActiveGroups.remove(target.groupTag)
             Log.d(TAG, "Group '${target.groupTag}' already uses lowest-latency node '$bestTag'")
             return
         }
 
-        switchToBestCandidate(
+        val switched = switchToBestCandidate(
             client = client,
             groupTag = target.groupTag,
             currentSelected = currentSelected,
             bestTag = bestTag
         )
+        if (switched) {
+            fallbackActiveGroups.remove(target.groupTag)
+        }
+    }
+
+    private fun handleFallbackSelection(
+        client: CommandClient,
+        target: RouteGroupTarget,
+        currentSelected: String?
+    ) {
+        val fallbackTag = target.fallbackTag
+        if (fallbackTag.isNullOrBlank()) {
+            Log.w(
+                TAG,
+                "No latency result available for group '${target.groupTag}' and no fallback tag configured"
+            )
+            return
+        }
+
+        val wasFallbackActive = fallbackActiveGroups.contains(target.groupTag)
+        val switchSucceeded = if (currentSelected == fallbackTag) {
+            Log.d(TAG, "Group '${target.groupTag}' already uses fallback '$fallbackTag'")
+            true
+        } else {
+            switchToBestCandidate(
+                client = client,
+                groupTag = target.groupTag,
+                currentSelected = currentSelected,
+                bestTag = fallbackTag
+            )
+        }
+        if (!switchSucceeded) {
+            return
+        }
+
+        fallbackActiveGroups.add(target.groupTag)
+        if (shouldNotifyFallback(currentSelected, fallbackTag, switchSucceeded, wasFallbackActive)) {
+            callbacks?.onRouteGroupFallback(
+                groupTag = target.groupTag,
+                actualSelectedTag = callbacks?.getSelectedOutbound(fallbackTag)
+            )
+        }
     }
 
     private suspend fun findBestCandidate(
@@ -249,17 +316,18 @@ class RouteGroupSelector(
         groupTag: String,
         currentSelected: String?,
         bestTag: String
-    ) {
-        runCatching {
+    ): Boolean {
+        return runCatching {
             try {
                 client.selectOutbound(groupTag, bestTag)
             } catch (_: Exception) {
                 client.selectOutbound(groupTag.lowercase(), bestTag)
             }
             Log.i(TAG, "Route group '$groupTag' switched from '${currentSelected ?: "(none)"}' to '$bestTag'")
+            true
         }.onFailure { e ->
             Log.w(TAG, "Failed to switch group '$groupTag' to '$bestTag': ${e.message}", e)
-        }
+        }.getOrDefault(false)
     }
 
     private suspend fun fallbackBestCandidate(

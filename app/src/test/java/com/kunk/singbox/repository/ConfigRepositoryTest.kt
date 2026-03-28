@@ -698,6 +698,103 @@ class ConfigRepositoryTest {
     }
 
     @Test
+    fun testResolveProfileSelectorDefaultPrefersLowestLatencyOverRememberedNode() {
+        val defaultTag = ConfigRepository.resolveProfileSelectorDefault(
+            nodeIds = listOf("node-1", "node-2", "node-3"),
+            nodeTagMap = mapOf(
+                "node-1" to "tag-a",
+                "node-2" to "tag-b",
+                "node-3" to "tag-c"
+            ),
+            rememberedNodeId = "node-2",
+            savedNodeLatencies = mapOf(
+                "node-1" to 20L,
+                "node-2" to 10L,
+                "node-3" to 5L
+            )
+        )
+
+        assertEquals("tag-c", defaultTag)
+    }
+
+    @Test
+    fun testResolveProfileSelectorDefaultIgnoresRememberedNodeOutsideCurrentProfile() {
+        val defaultTag = ConfigRepository.resolveProfileSelectorDefault(
+            nodeIds = listOf("node-1", "node-2"),
+            nodeTagMap = mapOf(
+                "node-1" to "tag-a",
+                "node-2" to "tag-b",
+                "node-3" to "tag-c"
+            ),
+            rememberedNodeId = "node-3",
+            savedNodeLatencies = mapOf(
+                "node-1" to 80L,
+                "node-2" to 30L,
+                "node-3" to 5L
+            )
+        )
+
+        assertEquals("tag-b", defaultTag)
+    }
+
+    @Test
+    fun testResolveProfileSelectorDefaultFallsBackToRememberedNodeWhenLatencyUnavailable() {
+        val defaultTag = ConfigRepository.resolveProfileSelectorDefault(
+            nodeIds = listOf("node-1", "node-2", "node-3"),
+            nodeTagMap = mapOf(
+                "node-1" to "tag-a",
+                "node-2" to "tag-b",
+                "node-3" to "tag-c"
+            ),
+            rememberedNodeId = "node-2",
+            savedNodeLatencies = mapOf(
+                "node-1" to 0L,
+                "node-3" to -1L
+            )
+        )
+
+        assertEquals("tag-b", defaultTag)
+    }
+
+    @Test
+    fun testResolveProfileSelectorDefaultUsesLowestPositiveLatency() {
+        val defaultTag = ConfigRepository.resolveProfileSelectorDefault(
+            nodeIds = listOf("node-1", "node-2", "node-3"),
+            nodeTagMap = mapOf(
+                "node-1" to "tag-a",
+                "node-2" to "tag-b",
+                "node-3" to "tag-c"
+            ),
+            rememberedNodeId = null,
+            savedNodeLatencies = mapOf(
+                "node-1" to 120L,
+                "node-2" to 45L,
+                "node-3" to 60L
+            )
+        )
+
+        assertEquals("tag-b", defaultTag)
+    }
+
+    @Test
+    fun testResolveProfileSelectorDefaultFallsBackToFirstTag() {
+        val defaultTag = ConfigRepository.resolveProfileSelectorDefault(
+            nodeIds = listOf("node-1", "node-2"),
+            nodeTagMap = mapOf(
+                "node-1" to "tag-a",
+                "node-2" to "tag-b"
+            ),
+            rememberedNodeId = null,
+            savedNodeLatencies = mapOf(
+                "node-1" to 0L,
+                "node-2" to -1L
+            )
+        )
+
+        assertEquals("tag-a", defaultTag)
+    }
+
+    @Test
     fun testBuildAppRoutingRulesUsesSemanticRejectForBlockRule() {
         val routeRule = ConfigRepository.toRouteRuleForTest(
             ConfigRepository.OutboundSemantic.Block,

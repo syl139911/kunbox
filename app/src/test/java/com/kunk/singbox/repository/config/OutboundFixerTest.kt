@@ -1,5 +1,6 @@
 package com.kunk.singbox.repository.config
 
+import com.kunk.singbox.model.DomainResolveConfig
 import com.kunk.singbox.model.ObfsConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
@@ -50,9 +51,9 @@ class OutboundFixerTest {
         )
 
         val runtime = OutboundFixer.buildRuntimeHysteriaOutbound(
-            fixed = outbound,
-            tcpKeepAliveInterval = null,
-            connectTimeout = null
+            outbound,
+            null,
+            null
         )
 
         assertEquals("hysteria2", runtime.type)
@@ -67,7 +68,7 @@ class OutboundFixerTest {
     }
 
     @Test
-    fun testBuildRuntimeHysteria2DoesNotAddBootstrapDomainResolverByDefault() {
+    fun testBuildRuntimeHysteria2AddsBootstrapDomainResolverForHostnames() {
         val outbound = Outbound(
             type = "hysteria2",
             tag = "hy2-node",
@@ -77,9 +78,49 @@ class OutboundFixerTest {
         )
 
         val runtime = OutboundFixer.buildRuntimeHysteriaOutbound(
-            fixed = outbound,
-            tcpKeepAliveInterval = null,
-            connectTimeout = null
+            outbound,
+            null,
+            null
+        )
+
+        assertEquals("dns-bootstrap", runtime.domainResolver?.server)
+    }
+
+    @Test
+    fun testBuildRuntimeHysteria2PreservesExistingDomainResolver() {
+        val outbound = Outbound(
+            type = "hysteria2",
+            tag = "hy2-node",
+            server = "hy2.example.com",
+            serverPort = 443,
+            password = "secret",
+            domainResolver = DomainResolveConfig(server = "custom-bootstrap", strategy = "prefer_ipv4")
+        )
+
+        val runtime = OutboundFixer.buildRuntimeHysteriaOutbound(
+            outbound,
+            null,
+            null
+        )
+
+        assertEquals("custom-bootstrap", runtime.domainResolver?.server)
+        assertEquals("prefer_ipv4", runtime.domainResolver?.strategy)
+    }
+
+    @Test
+    fun testBuildRuntimeHysteria2DoesNotAddBootstrapDomainResolverForIpLiteral() {
+        val outbound = Outbound(
+            type = "hysteria2",
+            tag = "hy2-node",
+            server = "1.2.3.4",
+            serverPort = 443,
+            password = "secret"
+        )
+
+        val runtime = OutboundFixer.buildRuntimeHysteriaOutbound(
+            outbound,
+            null,
+            null
         )
 
         assertNull(runtime.domainResolver)
@@ -96,9 +137,9 @@ class OutboundFixerTest {
         )
 
         val runtime = OutboundFixer.buildRuntimeHysteriaOutbound(
-            fixed = outbound,
-            tcpKeepAliveInterval = null,
-            connectTimeout = null
+            outbound,
+            null,
+            null
         )
 
         assertEquals(50, runtime.upMbps)
@@ -116,9 +157,9 @@ class OutboundFixerTest {
         )
 
         val runtime = OutboundFixer.buildRuntimeHysteriaOutbound(
-            fixed = outbound,
-            tcpKeepAliveInterval = "15s",
-            connectTimeout = "5s"
+            outbound,
+            "15s",
+            "5s"
         )
 
         assertNull(runtime.tcpKeepAlive)
