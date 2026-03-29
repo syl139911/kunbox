@@ -294,6 +294,23 @@ class SingBoxService : VpnService() {
                 reason == RecoveryReason.NETWORK_TYPE_CHANGED &&
                 force
         }
+
+        internal fun shouldTriggerRouteGroupImmediateReselect(reason: RecoveryReason): Boolean {
+            return reason == RecoveryReason.NETWORK_TYPE_CHANGED ||
+                reason == RecoveryReason.NETWORK_VALIDATED
+        }
+
+        internal fun shouldConvergeConnectionsAfterImmediateRouteGroupSwitch(reason: RecoveryReason): Boolean {
+            return shouldTriggerRouteGroupImmediateReselect(reason)
+        }
+
+        internal fun shouldRunRouteGroupSwitchConvergence(
+            lastTriggeredAtMs: Long,
+            nowAtMs: Long,
+            debounceMs: Long
+        ): Boolean {
+            return lastTriggeredAtMs <= 0L || nowAtMs - lastTriggeredAtMs >= debounceMs
+        }
     }
 
     private fun tryRegisterRunningServiceForLibbox() {
@@ -412,6 +429,20 @@ class SingBoxService : VpnService() {
                     delay(8000)
                     notificationManager.cancelNotification(notificationId)
                 }
+            }
+
+            override fun onRouteGroupImmediateSwitch(
+                groupTag: String,
+                previousSelectedTag: String,
+                newSelectedTag: String,
+                reason: String
+            ) {
+                this@SingBoxService.convergeConnectionsAfterImmediateRouteGroupSwitch(
+                    groupTag = groupTag,
+                    previousSelectedTag = previousSelectedTag,
+                    newSelectedTag = newSelectedTag,
+                    rawReason = reason
+                )
             }
         })
         Log.i(TAG, "RouteGroupSelector initialized")
@@ -1253,6 +1284,50 @@ class SingBoxService : VpnService() {
         return false
     }
 
+    private fun requestImmediateRouteGroupReselectIfNeeded(request: RecoveryRequest) {
+        if (!shouldTriggerRouteGroupImmediateReselect(request.reason)) {
+            return
+        }
+        routeGroupSelector.requestImmediateReselect(request.rawReason)
+    }
+
+    private fun convergeConnectionsAfterImmediateRouteGroupSwitch(
+        groupTag: String,
+        previousSelectedTag: String,
+        newSelectedTag: String,
+        rawReason: String
+    ) {
+        val reason = RecoveryReason.fromReasonString(rawReason)
+        if (!shouldConvergeConnectionsAfterImmediateRouteGroupSwitch(reason)) {
+            return
+        }
+
+        val now = SystemClock.elapsedRealtime()
+        if (!shouldRunRouteGroupSwitchConvergence(
+                lastTriggeredAtMs = lastConnectionsResetAtMs,
+                nowAtMs = now,
+                debounceMs = connectionsResetDebounceMs
+            )
+        ) {
+            Log.d(
+                TAG,
+                "[RouteGroupConvergence] skipped by debounce, group=$groupTag, " +
+                    "from=$previousSelectedTag, to=$newSelectedTag, reason=$rawReason"
+            )
+            return
+        }
+
+        lastConnectionsResetAtMs = now
+        val closedTrackedConnections = BoxWrapperManager.closeAllTrackedConnections()
+        val resetAllTriggered = BoxWrapperManager.resetAllConnections(true)
+        Log.i(
+            TAG,
+            "[RouteGroupConvergence] group=$groupTag from=$previousSelectedTag to=$newSelectedTag, " +
+                "reason=${reason.name}, closedTracked=$closedTrackedConnections, " +
+                "resetAllTriggered=$resetAllTriggered"
+        )
+    }
+
     @Suppress("LongMethod", "CognitiveComplexMethod")
     private suspend fun executeRecoveryRequest(request: RecoveryRequest) {
         synchronized(this) {
@@ -1323,6 +1398,8 @@ class SingBoxService : VpnService() {
                 skipped = false,
                 outcome = outcomeDetail
             )
+
+            requestImmediateRouteGroupReselectIfNeeded(request)
 
             if (smartResult.level == BoxWrapperManager.RecoveryLevel.PROBE) {
                 scheduleForegroundHardFallbackIfNeeded(request, mode, success)

@@ -993,6 +993,32 @@ class ConfigRepositoryTest {
     }
 
     @Test
+    fun testBuildProfileRouteGroupOutboundsCreatesNestedAutoStructure() {
+        val outbounds = ConfigRepository.buildProfileRouteGroupOutboundsForTest(
+            groupTag = "P:HK",
+            nodeTags = listOf("node-a", "node-b"),
+            selectorDefault = "node-b"
+        )
+
+        assertEquals(2, outbounds.size)
+
+        val autoGroup = outbounds[0]
+        assertEquals("urltest", autoGroup.type)
+        assertEquals("P:HK#AUTO", autoGroup.tag)
+        assertEquals(listOf("node-a", "node-b"), autoGroup.outbounds)
+        assertEquals("node-b", autoGroup.default)
+        assertEquals("https://www.gstatic.com/generate_204", autoGroup.url)
+        assertEquals("10m", autoGroup.interval)
+        assertEquals(50, autoGroup.tolerance)
+
+        val outerGroup = outbounds[1]
+        assertEquals("selector", outerGroup.type)
+        assertEquals("P:HK", outerGroup.tag)
+        assertEquals(listOf("P:HK#AUTO", "PROXY"), outerGroup.outbounds)
+        assertEquals("P:HK#AUTO", outerGroup.default)
+    }
+
+    @Test
     fun testBuildAppRoutingRulesUsesSemanticRejectForBlockRule() {
         val routeRule = ConfigRepository.toRouteRuleForTest(
             ConfigRepository.OutboundSemantic.Block,

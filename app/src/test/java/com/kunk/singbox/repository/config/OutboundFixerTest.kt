@@ -166,4 +166,47 @@ class OutboundFixerTest {
         assertNull(runtime.tcpKeepAliveInterval)
         assertNull(runtime.connectTimeout)
     }
+
+    @Test
+    fun testFixPreservesWhitelistedAutoUrlTest() {
+        val outbound = Outbound(
+            type = "urltest",
+            tag = "P:HK#AUTO",
+            outbounds = listOf("node-a", "node-b"),
+            default = "node-b",
+            url = "https://www.gstatic.com/generate_204",
+            interval = "10m",
+            tolerance = 50
+        )
+
+        val fixed = OutboundFixer.fix(outbound)
+
+        assertEquals("urltest", fixed.type)
+        assertEquals(listOf("node-a", "node-b"), fixed.outbounds)
+        assertEquals("node-b", fixed.default)
+        assertEquals("https://www.gstatic.com/generate_204", fixed.url)
+        assertEquals("10m", fixed.interval)
+        assertEquals(50, fixed.tolerance)
+    }
+
+    @Test
+    fun testFixConvertsNonWhitelistedUrlTestToSelector() {
+        val outbound = Outbound(
+            type = "urltest",
+            tag = "manual-auto",
+            outbounds = listOf("node-a", "node-b"),
+            url = "https://example.com/test",
+            interval = "5m",
+            tolerance = 10
+        )
+
+        val fixed = OutboundFixer.fix(outbound)
+
+        assertEquals("selector", fixed.type)
+        assertEquals(listOf("node-a", "node-b"), fixed.outbounds)
+        assertEquals("node-a", fixed.default)
+        assertNull(fixed.url)
+        assertNull(fixed.interval)
+        assertNull(fixed.tolerance)
+    }
 }

@@ -87,9 +87,13 @@ class ConfigRepository(private val context: Context) {
         val callTimeoutSeconds: Long
     )
 
-    @Suppress("TooManyFunctions")
+    @Suppress("TooManyFunctions", "LargeClass")
     companion object {
         private const val TAG = "ConfigRepository"
+        private const val ROUTE_GROUP_AUTO_TAG_SUFFIX = "#AUTO"
+        private const val ROUTE_GROUP_AUTO_TEST_URL = "https://www.gstatic.com/generate_204"
+        private const val ROUTE_GROUP_AUTO_TEST_INTERVAL = "10m"
+        private const val ROUTE_GROUP_AUTO_TEST_TOLERANCE = 50
         private const val PARALLEL_CONCURRENCY = 8
         private const val SUBSCRIPTION_FAILURE_THRESHOLD = 1
         private const val SUBSCRIPTION_CIRCUIT_BREAKER_WINDOW_MS = 10 * 60 * 1000L
@@ -143,6 +147,60 @@ class ConfigRepository(private val context: Context) {
                 nodeIdCache[key] = id
                 return id
             }
+        }
+
+        internal fun buildRouteGroupAutoTag(groupTag: String): String {
+            return "$groupTag$ROUTE_GROUP_AUTO_TAG_SUFFIX"
+        }
+
+        internal fun buildProfileRouteGroupOutboundsForTest(
+            groupTag: String,
+            nodeTags: List<String>,
+            selectorDefault: String?
+        ): List<Outbound> {
+            return buildProfileRouteGroupOutbounds(
+                groupTag = groupTag,
+                nodeTags = nodeTags,
+                selectorDefault = selectorDefault
+            )
+        }
+
+        private fun buildProfileRouteGroupOutbounds(
+            groupTag: String,
+            nodeTags: List<String>,
+            selectorDefault: String?
+        ): List<Outbound> {
+            val distinctNodeTags = nodeTags
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+            if (distinctNodeTags.isEmpty()) {
+                return emptyList()
+            }
+
+            val autoTag = buildRouteGroupAutoTag(groupTag)
+            val innerDefault = selectorDefault?.takeIf { it in distinctNodeTags }
+                ?: distinctNodeTags.firstOrNull()
+
+            return listOf(
+                Outbound(
+                    type = "urltest",
+                    tag = autoTag,
+                    outbounds = distinctNodeTags,
+                    default = innerDefault,
+                    url = ROUTE_GROUP_AUTO_TEST_URL,
+                    interval = ROUTE_GROUP_AUTO_TEST_INTERVAL,
+                    tolerance = ROUTE_GROUP_AUTO_TEST_TOLERANCE,
+                    interruptExistConnections = false
+                ),
+                Outbound(
+                    type = "selector",
+                    tag = groupTag,
+                    outbounds = listOf(autoTag, "PROXY"),
+                    default = autoTag,
+                    interruptExistConnections = false
+                )
+            )
         }
 
         internal fun buildBootstrapDnsRules(
@@ -4348,16 +4406,15 @@ class ConfigRepository(private val context: Context) {
             )
 
             if (nodeTags.isNotEmpty()) {
-                val existingIndex = fixedOutbounds.indexOfFirst { it.tag == tag }
-                if (existingIndex < 0) {
-                    val newSelector = Outbound(
-                        type = "selector",
-                        tag = tag,
-                        outbounds = (nodeTags + "PROXY").distinct(),
-                        default = selectorDefault ?: nodeTags.firstOrNull(),
-                        interruptExistConnections = false
-                    )
-                    fixedOutbounds.add(0, newSelector)
+                val routeGroupOutbounds = buildProfileRouteGroupOutbounds(
+                    groupTag = tag,
+                    nodeTags = nodeTags,
+                    selectorDefault = selectorDefault
+                )
+                if (routeGroupOutbounds.isNotEmpty()) {
+                    val generatedTags = routeGroupOutbounds.map { it.tag }.toSet()
+                    fixedOutbounds.removeAll { it.tag in generatedTags }
+                    fixedOutbounds.addAll(0, routeGroupOutbounds)
                 }
             }
         }

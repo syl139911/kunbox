@@ -48,6 +48,41 @@ class RouteGroupSelectorTest {
         assertEquals("P:HK", targets.first().groupTag)
         assertEquals(listOf("node-a", "node-b"), targets.first().candidates)
         assertEquals("PROXY", targets.first().fallbackTag)
+        assertEquals("P:HK", targets.first().testGroupTag)
+        assertNull(targets.first().autoGroupTag)
+    }
+
+    @Test
+    fun testCollectRouteGroupTargetsPrefersNestedAutoUrlTestGroup() {
+        val config = SingBoxConfig(
+            outbounds = listOf(
+                Outbound(
+                    type = "selector",
+                    tag = "P:HK",
+                    outbounds = listOf("P:HK#AUTO", "PROXY")
+                ),
+                Outbound(
+                    type = "urltest",
+                    tag = "P:HK#AUTO",
+                    outbounds = listOf("node-a", "node-b")
+                ),
+                Outbound(type = "selector", tag = "PROXY", outbounds = listOf("node-c")),
+                Outbound(type = "vmess", tag = "node-a"),
+                Outbound(type = "vmess", tag = "node-b")
+            ),
+            route = RouteConfig(
+                rules = listOf(RouteRule(outbound = "P:HK"))
+            )
+        )
+
+        val targets = RouteGroupSelector.collectRouteGroupTargets(config)
+
+        assertEquals(1, targets.size)
+        assertEquals("P:HK", targets.first().groupTag)
+        assertEquals("P:HK#AUTO", targets.first().testGroupTag)
+        assertEquals("P:HK#AUTO", targets.first().autoGroupTag)
+        assertEquals(listOf("node-a", "node-b"), targets.first().candidates)
+        assertEquals("PROXY", targets.first().fallbackTag)
     }
 
     @Test
@@ -64,6 +99,20 @@ class RouteGroupSelectorTest {
 
         assertEquals("node-b", best?.first)
         assertEquals(92L, best?.second)
+    }
+
+    @Test
+    fun testSelectBestCandidateMatchesNormalizedAndFingerprintUrlTestKeys() {
+        val best = RouteGroupSelector.selectBestCandidate(
+            candidates = listOf("💙新加坡005｜0.15元/G｜XHTTP｜", "  node a  "),
+            urlTestResults = mapOf(
+                "新加坡005｜0.15元/G｜XHTTP｜" to 64,
+                "node\u00A0a" to 88
+            )
+        )
+
+        assertEquals("💙新加坡005｜0.15元/G｜XHTTP｜", best?.first)
+        assertEquals(64L, best?.second)
     }
 
     @Test
@@ -125,6 +174,88 @@ class RouteGroupSelectorTest {
         )
 
         assertFalse(shouldNotify)
+    }
+
+    @Test
+    fun testAutoSelectStillStartsImmediatelyAndKeepsThirtyMinuteInterval() {
+        assertEquals(0L, RouteGroupSelector.INITIAL_AUTO_SELECT_DELAY_MS)
+        assertEquals(30L * 60L * 1000L, RouteGroupSelector.AUTO_SELECT_INTERVAL_MS)
+    }
+
+    @Test
+    fun testComputeImmediateReselectDelayReturnsZeroWithoutPreviousTrigger() {
+        val delayMs = RouteGroupSelector.computeImmediateReselectDelayMs(
+            lastRequestedAtMs = 0L,
+            nowAtMs = 5_000L
+        )
+
+        assertEquals(0L, delayMs)
+    }
+
+    @Test
+    fun testComputeImmediateReselectDelayReturnsRemainingDebounceWindow() {
+        val delayMs = RouteGroupSelector.computeImmediateReselectDelayMs(
+            lastRequestedAtMs = 10_000L,
+            nowAtMs = 10_400L,
+            debounceMs = 1_500L
+        )
+
+        assertEquals(1_100L, delayMs)
+    }
+
+    @Test
+    fun testComputeImmediateReselectDelayReturnsZeroAfterDebounceElapsed() {
+        val delayMs = RouteGroupSelector.computeImmediateReselectDelayMs(
+            lastRequestedAtMs = 10_000L,
+            nowAtMs = 12_000L,
+            debounceMs = 1_500L
+        )
+
+        assertEquals(0L, delayMs)
+    }
+
+    @Test
+    fun testNetworkImmediateReselectTriggerOnlyMatchesNetworkReasons() {
+        assertTrue(RouteGroupSelector.isNetworkImmediateReselectTrigger("immediate:network_type_changed"))
+        assertTrue(RouteGroupSelector.isNetworkImmediateReselectTrigger("immediate:network_validated"))
+        assertFalse(RouteGroupSelector.isNetworkImmediateReselectTrigger("periodic"))
+        assertFalse(RouteGroupSelector.isNetworkImmediateReselectTrigger("immediate:app_foreground"))
+    }
+
+    @Test
+    fun testShouldTriggerConnectionConvergenceOnlyWhenImmediateSwitchActuallyChangesSelection() {
+        val shouldTrigger = RouteGroupSelector.shouldTriggerConnectionConvergence(
+            trigger = "immediate:network_type_changed",
+            previousSelectedTag = "node-a",
+            newSelectedTag = "node-b"
+        )
+
+        assertTrue(shouldTrigger)
+    }
+
+    @Test
+    fun testShouldNotTriggerConnectionConvergenceWithoutActualSwitchOrNetworkImmediateTrigger() {
+        assertFalse(
+            RouteGroupSelector.shouldTriggerConnectionConvergence(
+                trigger = "immediate:network_type_changed",
+                previousSelectedTag = "node-a",
+                newSelectedTag = "node-a"
+            )
+        )
+        assertFalse(
+            RouteGroupSelector.shouldTriggerConnectionConvergence(
+                trigger = "periodic",
+                previousSelectedTag = "node-a",
+                newSelectedTag = "node-b"
+            )
+        )
+        assertFalse(
+            RouteGroupSelector.shouldTriggerConnectionConvergence(
+                trigger = "immediate:network_validated",
+                previousSelectedTag = null,
+                newSelectedTag = "node-b"
+            )
+        )
     }
 
     @Test

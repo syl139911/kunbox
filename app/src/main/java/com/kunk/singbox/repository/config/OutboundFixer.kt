@@ -10,8 +10,10 @@ import com.kunk.singbox.repository.SettingsRepository
 
 /**
  */
+@Suppress("LargeClass")
 object OutboundFixer {
     private const val TAG = "OutboundFixer"
+    private const val ROUTE_GROUP_AUTO_TAG_SUFFIX = "#AUTO"
     @Volatile private var cachedTcpKeepAliveEnabled: Boolean? = null
     @Volatile private var cachedTcpKeepAliveInterval: String? = null
     @Volatile private var cachedConnectTimeout: String? = null
@@ -56,6 +58,11 @@ object OutboundFixer {
     private val REGEX_IPV6 = Regex("^[0-9a-fA-F:]+$")
     private val REGEX_ED_PARAM_START = Regex("\\?ed=\\d+")
     private val REGEX_ED_PARAM_MID = Regex("&ed=\\d+")
+
+    internal fun shouldKeepUrlTestForRuntime(tag: String?): Boolean {
+        val normalizedTag = tag?.trim().orEmpty()
+        return normalizedTag.startsWith("P:") && normalizedTag.endsWith(ROUTE_GROUP_AUTO_TAG_SUFFIX)
+    }
 
     /**
      */
@@ -104,15 +111,24 @@ object OutboundFixer {
                 newOutbounds = listOf("direct")
             }
 
-            result = result.copy(
-                type = "selector",
-                outbounds = newOutbounds,
-                default = newOutbounds.firstOrNull(),
-                interruptExistConnections = result.interruptExistConnections ?: false,
-                url = null,
-                interval = null,
-                tolerance = null
-            )
+            result = if (shouldKeepUrlTestForRuntime(result.tag)) {
+                result.copy(
+                    type = "urltest",
+                    outbounds = newOutbounds,
+                    default = result.default?.takeIf { it in newOutbounds } ?: newOutbounds.firstOrNull(),
+                    interruptExistConnections = result.interruptExistConnections ?: false
+                )
+            } else {
+                result.copy(
+                    type = "selector",
+                    outbounds = newOutbounds,
+                    default = newOutbounds.firstOrNull(),
+                    interruptExistConnections = result.interruptExistConnections ?: false,
+                    url = null,
+                    interval = null,
+                    tolerance = null
+                )
+            }
         }
 
         // Selector 的 outbounds 不应为空，但为了防止配置错误导致服务无法启动，
@@ -321,13 +337,34 @@ object OutboundFixer {
         val (tcpKeepAliveEnabled, tcpKeepAliveInterval, connectTimeout) = getTcpKeepAliveConfig(context)
 
         return applyCommonDialFields(when (fixed.type) {
-            "selector", "urltest", "url-test" -> Outbound(
+            "selector" -> Outbound(
                 type = "selector",
                 tag = fixed.tag,
                 outbounds = fixed.outbounds,
                 default = fixed.default,
                 interruptExistConnections = fixed.interruptExistConnections
             )
+
+            "urltest", "url-test" -> if (shouldKeepUrlTestForRuntime(fixed.tag)) {
+                Outbound(
+                    type = "urltest",
+                    tag = fixed.tag,
+                    outbounds = fixed.outbounds,
+                    default = fixed.default,
+                    url = fixed.url,
+                    interval = fixed.interval,
+                    tolerance = fixed.tolerance,
+                    interruptExistConnections = fixed.interruptExistConnections
+                )
+            } else {
+                Outbound(
+                    type = "selector",
+                    tag = fixed.tag,
+                    outbounds = fixed.outbounds,
+                    default = fixed.default,
+                    interruptExistConnections = fixed.interruptExistConnections
+                )
+            }
 
             "direct" -> Outbound(type = fixed.type, tag = fixed.tag)
 

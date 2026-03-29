@@ -16,7 +16,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 
 class RouteGroupSelector(
@@ -25,15 +27,25 @@ class RouteGroupSelector(
 ) {
     companion object {
         private const val TAG = "RouteGroupSelector"
-        private const val AUTO_SELECT_INTERVAL_MS = 30L * 60L * 1000L
+        private const val ROUTE_GROUP_AUTO_TAG_SUFFIX = "#AUTO"
+        internal const val INITIAL_AUTO_SELECT_DELAY_MS = 0L
+        internal const val AUTO_SELECT_INTERVAL_MS = 30L * 60L * 1000L
         private const val LATENCY_TEST_TIMEOUT_MS = 10000L
         private const val MAX_CONCURRENT_TESTS = 4
+        internal const val IMMEDIATE_RESELECT_DEBOUNCE_MS = 1500L
 
         internal data class RouteGroupTarget(
             val groupTag: String,
             val candidates: List<String>,
-            val fallbackTag: String?
+            val fallbackTag: String?,
+            val testGroupTag: String,
+            val autoGroupTag: String?
         )
+
+        internal fun isRuntimeAutoGroupTag(tag: String?): Boolean {
+            val normalizedTag = tag?.trim().orEmpty()
+            return normalizedTag.startsWith("P:") && normalizedTag.endsWith(ROUTE_GROUP_AUTO_TAG_SUFFIX)
+        }
 
         internal fun collectRouteGroupTargets(config: SingBoxConfig): List<RouteGroupTarget> {
             val referencedOutbounds = config.route?.rules
@@ -46,6 +58,8 @@ class RouteGroupSelector(
                 return emptyList()
             }
 
+            val outboundsByTag = config.outbounds.orEmpty().associateBy { it.tag }
+
             return config.outbounds
                 .orEmpty()
                 .asSequence()
@@ -53,7 +67,15 @@ class RouteGroupSelector(
                 .filter { referencedOutbounds.contains(it.tag) }
                 .filterNot { it.tag.equals("PROXY", ignoreCase = true) }
                 .mapNotNull { selector ->
-                    val candidates = selector.outbounds
+                    val autoGroupTag = selector.outbounds
+                        .orEmpty()
+                        .map { it.trim() }
+                        .firstOrNull { ref ->
+                            isRuntimeAutoGroupTag(ref) &&
+                                outboundsByTag[ref]?.type in listOf("urltest", "url-test")
+                        }
+                    val candidateSource = autoGroupTag?.let { outboundsByTag[it] } ?: selector
+                    val candidates = candidateSource.outbounds
                         .orEmpty()
                         .map { it.trim() }
                         .filter { it.isNotBlank() }
@@ -72,7 +94,9 @@ class RouteGroupSelector(
                         RouteGroupTarget(
                             groupTag = selector.tag,
                             candidates = candidates,
-                            fallbackTag = fallbackTag
+                            fallbackTag = fallbackTag,
+                            testGroupTag = autoGroupTag ?: selector.tag,
+                            autoGroupTag = autoGroupTag
                         )
                     }
                 }
@@ -83,19 +107,35 @@ class RouteGroupSelector(
             candidates: Collection<String>,
             urlTestResults: Map<String, Int>
         ): Pair<String, Long>? {
-            val candidateSet = candidates
+            val normalizedCandidates = candidates
                 .map { it.trim() }
                 .filter { it.isNotBlank() }
-                .toSet()
+                .distinct()
 
-            if (candidateSet.isEmpty()) {
+            if (normalizedCandidates.isEmpty()) {
                 return null
             }
 
-            return urlTestResults.asSequence()
-                .filter { (tag, delay) -> tag in candidateSet && delay > 0 }
+            return normalizedCandidates.asSequence()
+                .mapNotNull { candidate ->
+                    UrlTestTagMatcher.resolveDelayDetail(urlTestResults, candidate)
+                        ?.takeIf { it.delay > 0 }
+                        ?.let { candidate to it.delay.toLong() }
+                }
                 .minByOrNull { (_, delay) -> delay }
-                ?.let { it.key to it.value.toLong() }
+        }
+
+        internal fun resolveCandidateTag(
+            selectedTag: String?,
+            candidates: Collection<String>
+        ): String? {
+            val normalizedSelected = UrlTestTagMatcher.normalizeTag(selectedTag.orEmpty())
+            if (normalizedSelected.isBlank()) {
+                return null
+            }
+            return candidates.firstOrNull { candidate ->
+                UrlTestTagMatcher.normalizeTag(candidate) == normalizedSelected
+            }
         }
 
         internal fun shouldNotifyFallback(
@@ -107,11 +147,65 @@ class RouteGroupSelector(
             val isUsingFallback = currentSelected == fallbackTag || switchSucceeded
             return isUsingFallback && !wasFallbackActive
         }
+
+        internal fun computeImmediateReselectDelayMs(
+            lastRequestedAtMs: Long,
+            nowAtMs: Long,
+            debounceMs: Long = IMMEDIATE_RESELECT_DEBOUNCE_MS
+        ): Long {
+            if (lastRequestedAtMs <= 0L) {
+                return 0L
+            }
+            return (debounceMs - (nowAtMs - lastRequestedAtMs)).coerceAtLeast(0L)
+        }
+
+        internal fun extractImmediateReselectReason(trigger: String): String? {
+            val normalized = trigger.trim()
+            if (!normalized.startsWith("immediate:", ignoreCase = true)) {
+                return null
+            }
+            return normalized.substringAfter(':').trim().takeIf { it.isNotBlank() }
+        }
+
+        internal fun isNetworkImmediateReselectTrigger(trigger: String): Boolean {
+            val reason = extractImmediateReselectReason(trigger)?.lowercase() ?: return false
+            return reason.contains("network_type_changed") ||
+                reason.contains("typechange") ||
+                reason.contains("network_validated")
+        }
+
+        internal fun shouldTriggerConnectionConvergence(
+            trigger: String,
+            previousSelectedTag: String?,
+            newSelectedTag: String?
+        ): Boolean {
+            val previous = previousSelectedTag?.trim().orEmpty()
+            val current = newSelectedTag?.trim().orEmpty()
+            if (previous.isBlank() || current.isBlank()) {
+                return false
+            }
+            if (previous == current) {
+                return false
+            }
+            return isNetworkImmediateReselectTrigger(trigger)
+        }
     }
 
     private val gson = Gson()
     private var autoSelectJob: Job? = null
+    private var immediateSelectJob: Job? = null
     private val fallbackActiveGroups = ConcurrentHashMap.newKeySet<String>()
+    private val selectionMutex = Mutex()
+    private val immediateReselectLock = Any()
+
+    @Volatile
+    private var latestConfigContent: String? = null
+
+    @Volatile
+    private var pendingImmediateReselectReason: String? = null
+
+    @Volatile
+    private var lastImmediateReselectRequestedAtMs: Long = 0L
 
     private data class SelectionContext(
         val byTag: Map<String, Outbound>,
@@ -127,6 +221,12 @@ class RouteGroupSelector(
         fun getSelectedOutbound(groupTag: String): String?
         suspend fun urlTestGroup(groupTag: String, expectedTags: Set<String>): Map<String, Int>
         fun onRouteGroupFallback(groupTag: String, actualSelectedTag: String?)
+        fun onRouteGroupImmediateSwitch(
+            groupTag: String,
+            previousSelectedTag: String,
+            newSelectedTag: String,
+            reason: String
+        )
     }
 
     private var callbacks: Callbacks? = null
@@ -137,52 +237,183 @@ class RouteGroupSelector(
 
     fun start(configContent: String) {
         stop()
+        latestConfigContent = configContent
 
         autoSelectJob = serviceScope.launch {
-            Log.i(TAG, "Route group auto-select scheduled, initialDelay=0ms")
-            while (callbacks?.isRunning == true && callbacks?.isStopping != true) {
-                val targets = runCatching {
-                    gson.fromJson(configContent, SingBoxConfig::class.java)
-                        ?.let { collectRouteGroupTargets(it) }
-                        .orEmpty()
-                }.getOrDefault(emptyList())
+            runAutoSelectLoop(configContent)
+        }
+    }
 
-                if (targets.isEmpty()) {
-                    Log.d(TAG, "No route-linked selector groups found for auto-select, stop loop")
-                    break
-                }
-
-                runCatching {
-                    selectBestForRouteGroups(configContent)
-                }.onFailure { e ->
-                    Log.w(TAG, "Route group auto-select failed: ${e.message}", e)
-                }
-                Log.d(TAG, "Next route group auto-select in ${AUTO_SELECT_INTERVAL_MS / 60000} minutes")
-                delay(AUTO_SELECT_INTERVAL_MS)
-            }
-            Log.i(TAG, "Route group auto-select loop stopped")
+    fun requestImmediateReselect(reason: String) {
+        if (!canRunImmediateReselect(reason)) {
+            return
+        }
+        val waitMs = enqueueImmediateReselect(reason)
+        if (waitMs == null) {
+            return
+        }
+        immediateSelectJob = serviceScope.launch {
+            runImmediateReselectLoop(waitMs)
         }
     }
 
     fun stop() {
         autoSelectJob?.cancel()
         autoSelectJob = null
+        immediateSelectJob?.cancel()
+        immediateSelectJob = null
+        latestConfigContent = null
+        synchronized(immediateReselectLock) {
+            pendingImmediateReselectReason = null
+            lastImmediateReselectRequestedAtMs = 0L
+        }
         fallbackActiveGroups.clear()
     }
 
-    private suspend fun selectBestForRouteGroups(configContent: String) {
+    private suspend fun runSelection(configContent: String, trigger: String): Boolean {
+        val targets = runCatching {
+            gson.fromJson(configContent, SingBoxConfig::class.java)
+                ?.let { collectRouteGroupTargets(it) }
+                .orEmpty()
+        }.getOrDefault(emptyList())
+
+        if (targets.isEmpty()) {
+            Log.d(TAG, "No route-linked selector groups found for $trigger, stop loop")
+            return false
+        }
+
+        selectionMutex.withLock {
+            runCatching {
+                selectBestForRouteGroups(
+                    configContent = configContent,
+                    targetGroups = targets,
+                    trigger = trigger
+                )
+            }.onFailure { e ->
+                Log.w(TAG, "Route group auto-select failed for $trigger: ${e.message}", e)
+            }
+        }
+        return true
+    }
+
+    private suspend fun runAutoSelectLoop(startupConfigContent: String) {
+        Log.i(TAG, "Route group auto-select scheduled, initialDelay=${INITIAL_AUTO_SELECT_DELAY_MS}ms")
+        if (INITIAL_AUTO_SELECT_DELAY_MS > 0) {
+            delay(INITIAL_AUTO_SELECT_DELAY_MS)
+        }
+
+        val started = runSelection(configContent = startupConfigContent, trigger = "startup")
+        if (!started) {
+            logAutoSelectLoopStopped()
+            return
+        }
+
+        while (callbacks?.isRunning == true && callbacks?.isStopping != true) {
+            Log.d(TAG, "Next route group auto-select in ${AUTO_SELECT_INTERVAL_MS / 60000} minutes")
+            delay(AUTO_SELECT_INTERVAL_MS)
+
+            val latestConfig = latestConfigContent
+            if (latestConfig == null) {
+                logAutoSelectLoopStopped()
+                return
+            }
+            val continued = runSelection(configContent = latestConfig, trigger = "periodic")
+            if (!continued) {
+                logAutoSelectLoopStopped()
+                return
+            }
+        }
+        logAutoSelectLoopStopped()
+    }
+
+    private fun logAutoSelectLoopStopped() {
+        Log.i(TAG, "Route group auto-select loop stopped")
+    }
+
+    private fun canRunImmediateReselect(reason: String): Boolean {
+        if (latestConfigContent.isNullOrBlank()) {
+            Log.d(TAG, "Skip immediate route-group reselect: config not ready, reason=$reason")
+            return false
+        }
+        if (callbacks?.isRunning != true || callbacks?.isStopping == true) {
+            Log.d(TAG, "Skip immediate route-group reselect: service not running, reason=$reason")
+            return false
+        }
+        return true
+    }
+
+    private fun enqueueImmediateReselect(reason: String): Long? {
+        synchronized(immediateReselectLock) {
+            pendingImmediateReselectReason = reason
+            val now = SystemClock.elapsedRealtime()
+            val waitMs = computeImmediateReselectDelayMs(lastImmediateReselectRequestedAtMs, now)
+            lastImmediateReselectRequestedAtMs = now
+
+            if (immediateSelectJob?.isActive == true) {
+                Log.d(TAG, "Immediate route-group reselect merged, reason=$reason")
+                return null
+            }
+            return waitMs
+        }
+    }
+
+    private suspend fun runImmediateReselectLoop(initialDelayMs: Long) {
+        try {
+            var nextDelayMs = initialDelayMs
+            while (callbacks?.isRunning == true && callbacks?.isStopping != true) {
+                if (nextDelayMs > 0) {
+                    delay(nextDelayMs)
+                }
+
+                val triggerReason = pollImmediateReselectReason() ?: return
+                val latest = latestConfigContent
+                if (latest.isNullOrBlank()) {
+                    Log.d(TAG, "Skip immediate route-group reselect: latest config missing")
+                    return
+                }
+
+                runSelection(configContent = latest, trigger = "immediate:$triggerReason")
+
+                val scheduledDelay = resolvePendingImmediateReselectDelay() ?: return
+                nextDelayMs = scheduledDelay
+            }
+        } finally {
+            synchronized(immediateReselectLock) {
+                immediateSelectJob = null
+            }
+        }
+    }
+
+    private fun pollImmediateReselectReason(): String? {
+        return synchronized(immediateReselectLock) {
+            pendingImmediateReselectReason.also {
+                pendingImmediateReselectReason = null
+            }
+        }
+    }
+
+    private fun resolvePendingImmediateReselectDelay(): Long? {
+        return synchronized(immediateReselectLock) {
+            pendingImmediateReselectReason?.let {
+                computeImmediateReselectDelayMs(
+                    lastRequestedAtMs = lastImmediateReselectRequestedAtMs,
+                    nowAtMs = SystemClock.elapsedRealtime()
+                )
+            }
+        }
+    }
+
+    private suspend fun selectBestForRouteGroups(
+        configContent: String,
+        targetGroups: List<RouteGroupTarget>,
+        trigger: String
+    ) {
         val config = runCatching {
             gson.fromJson(configContent, SingBoxConfig::class.java)
         }.getOrNull() ?: return
 
         val outbounds = config.outbounds.orEmpty()
         val byTag = outbounds.associateBy { it.tag }
-        val targetGroups = collectRouteGroupTargets(config)
-
-        if (targetGroups.isEmpty()) {
-            Log.d(TAG, "No route-linked selector groups found for auto-select")
-            return
-        }
 
         val client = waitForCommandClient(LATENCY_TEST_TIMEOUT_MS) ?: return
         val selectionContext = SelectionContext(
@@ -192,7 +423,7 @@ class RouteGroupSelector(
             semaphore = Semaphore(permits = MAX_CONCURRENT_TESTS)
         )
 
-        Log.i(TAG, "Route group auto-select running for ${targetGroups.size} groups")
+        Log.i(TAG, "Route group auto-select running for ${targetGroups.size} groups, trigger=$trigger")
 
         for (target in targetGroups) {
             if (callbacks?.isRunning != true || callbacks?.isStopping == true) {
@@ -201,7 +432,8 @@ class RouteGroupSelector(
             processTargetGroup(
                 client = client,
                 target = target,
-                selectionContext = selectionContext
+                selectionContext = selectionContext,
+                trigger = trigger
             )
         }
     }
@@ -209,13 +441,14 @@ class RouteGroupSelector(
     private suspend fun processTargetGroup(
         client: CommandClient,
         target: RouteGroupTarget,
-        selectionContext: SelectionContext
+        selectionContext: SelectionContext,
+        trigger: String
     ) {
         val currentSelected = callbacks?.getSelectedOutbound(target.groupTag)
         Log.i(
             TAG,
             "Testing route group '${target.groupTag}', current='${currentSelected ?: "(none)"}', " +
-                "candidates=${target.candidates.size}"
+                "testGroup='${target.testGroupTag}', candidates=${target.candidates.size}"
         )
 
         val best = findBestCandidate(
@@ -227,7 +460,8 @@ class RouteGroupSelector(
             handleFallbackSelection(
                 client = client,
                 target = target,
-                currentSelected = currentSelected
+                currentSelected = currentSelected,
+                trigger = trigger
             )
             return
         }
@@ -235,9 +469,11 @@ class RouteGroupSelector(
         val (bestTag, bestDelayMs) = best
         Log.i(TAG, "Best node for '${target.groupTag}' is '$bestTag' (${bestDelayMs}ms)")
 
-        if (currentSelected != null && currentSelected == bestTag) {
+        val desiredSelectedTag = target.autoGroupTag ?: bestTag
+
+        if (currentSelected != null && currentSelected == desiredSelectedTag) {
             fallbackActiveGroups.remove(target.groupTag)
-            Log.d(TAG, "Group '${target.groupTag}' already uses lowest-latency node '$bestTag'")
+            Log.d(TAG, "Group '${target.groupTag}' already uses preferred target '$desiredSelectedTag'")
             return
         }
 
@@ -245,17 +481,25 @@ class RouteGroupSelector(
             client = client,
             groupTag = target.groupTag,
             currentSelected = currentSelected,
-            bestTag = bestTag
+            bestTag = desiredSelectedTag
         )
         if (switched) {
             fallbackActiveGroups.remove(target.groupTag)
+            val selectedAfterSwitch = callbacks?.getSelectedOutbound(target.groupTag) ?: desiredSelectedTag
+            notifyImmediateSwitchIfNeeded(
+                trigger = trigger,
+                groupTag = target.groupTag,
+                previousSelectedTag = currentSelected,
+                newSelectedTag = selectedAfterSwitch
+            )
         }
     }
 
     private fun handleFallbackSelection(
         client: CommandClient,
         target: RouteGroupTarget,
-        currentSelected: String?
+        currentSelected: String?,
+        trigger: String
     ) {
         val fallbackTag = target.fallbackTag
         if (fallbackTag.isNullOrBlank()) {
@@ -283,6 +527,13 @@ class RouteGroupSelector(
         }
 
         fallbackActiveGroups.add(target.groupTag)
+        val selectedAfterSwitch = callbacks?.getSelectedOutbound(target.groupTag) ?: fallbackTag
+        notifyImmediateSwitchIfNeeded(
+            trigger = trigger,
+            groupTag = target.groupTag,
+            previousSelectedTag = currentSelected,
+            newSelectedTag = selectedAfterSwitch
+        )
         if (shouldNotifyFallback(currentSelected, fallbackTag, switchSucceeded, wasFallbackActive)) {
             callbacks?.onRouteGroupFallback(
                 groupTag = target.groupTag,
@@ -291,17 +542,45 @@ class RouteGroupSelector(
         }
     }
 
+    private fun notifyImmediateSwitchIfNeeded(
+        trigger: String,
+        groupTag: String,
+        previousSelectedTag: String?,
+        newSelectedTag: String?
+    ) {
+        if (!shouldTriggerConnectionConvergence(trigger, previousSelectedTag, newSelectedTag)) {
+            return
+        }
+        val reason = extractImmediateReselectReason(trigger) ?: return
+        callbacks?.onRouteGroupImmediateSwitch(
+            groupTag = groupTag,
+            previousSelectedTag = previousSelectedTag!!.trim(),
+            newSelectedTag = newSelectedTag!!.trim(),
+            reason = reason
+        )
+    }
+
     private suspend fun findBestCandidate(
         target: RouteGroupTarget,
         selectionContext: SelectionContext
     ): Pair<String, Long>? {
         val urlTestResults = runCatching {
-            callbacks?.urlTestGroup(target.groupTag, target.candidates.toSet()).orEmpty()
+            callbacks?.urlTestGroup(target.testGroupTag, target.candidates.toSet()).orEmpty()
         }.onFailure { e ->
-            Log.w(TAG, "URL test failed for group '${target.groupTag}': ${e.message}", e)
+            Log.w(TAG, "URL test failed for group '${target.testGroupTag}': ${e.message}", e)
         }.getOrDefault(emptyMap())
 
-        return selectBestCandidate(target.candidates, urlTestResults)
+        val autoSelectedCandidate = target.autoGroupTag
+            ?.let { callbacks?.getSelectedOutbound(it) }
+            ?.let { resolveCandidateTag(it, target.candidates) }
+            ?.let { selectedTag ->
+                UrlTestTagMatcher.resolveDelayDetail(urlTestResults, selectedTag)
+                    ?.takeIf { it.delay > 0 }
+                    ?.let { selectedTag to it.delay.toLong() }
+            }
+
+        return autoSelectedCandidate
+            ?: selectBestCandidate(target.candidates, urlTestResults)
             ?: fallbackBestCandidate(
                 candidates = target.candidates,
                 byTag = selectionContext.byTag,

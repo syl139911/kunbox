@@ -105,6 +105,78 @@ class RecoveryLogicTest {
     }
 
     @Test
+    fun triggerRouteGroupImmediateReselectForNetworkTypeChangedAndValidated() {
+        assertTrue(
+            SingBoxService.shouldTriggerRouteGroupImmediateReselect(
+                SingBoxService.RecoveryReason.NETWORK_TYPE_CHANGED
+            )
+        )
+        assertTrue(
+            SingBoxService.shouldTriggerRouteGroupImmediateReselect(
+                SingBoxService.RecoveryReason.NETWORK_VALIDATED
+            )
+        )
+    }
+
+    @Test
+    fun doesNotTriggerRouteGroupImmediateReselectForOtherReasons() {
+        assertFalse(
+            SingBoxService.shouldTriggerRouteGroupImmediateReselect(
+                SingBoxService.RecoveryReason.APP_FOREGROUND
+            )
+        )
+        assertFalse(
+            SingBoxService.shouldTriggerRouteGroupImmediateReselect(
+                SingBoxService.RecoveryReason.VPN_HEALTH
+            )
+        )
+    }
+
+    @Test
+    fun routeGroupImmediateSwitchConvergenceOnlyAppliesToNetworkReasons() {
+        assertTrue(
+            SingBoxService.shouldConvergeConnectionsAfterImmediateRouteGroupSwitch(
+                SingBoxService.RecoveryReason.NETWORK_TYPE_CHANGED
+            )
+        )
+        assertTrue(
+            SingBoxService.shouldConvergeConnectionsAfterImmediateRouteGroupSwitch(
+                SingBoxService.RecoveryReason.NETWORK_VALIDATED
+            )
+        )
+        assertFalse(
+            SingBoxService.shouldConvergeConnectionsAfterImmediateRouteGroupSwitch(
+                SingBoxService.RecoveryReason.APP_FOREGROUND
+            )
+        )
+    }
+
+    @Test
+    fun routeGroupImmediateSwitchConvergenceHonorsDebounceWindow() {
+        assertTrue(
+            SingBoxService.shouldRunRouteGroupSwitchConvergence(
+                lastTriggeredAtMs = 0L,
+                nowAtMs = 5_000L,
+                debounceMs = 2_000L
+            )
+        )
+        assertFalse(
+            SingBoxService.shouldRunRouteGroupSwitchConvergence(
+                lastTriggeredAtMs = 4_000L,
+                nowAtMs = 5_500L,
+                debounceMs = 2_000L
+            )
+        )
+        assertTrue(
+            SingBoxService.shouldRunRouteGroupSwitchConvergence(
+                lastTriggeredAtMs = 4_000L,
+                nowAtMs = 6_100L,
+                debounceMs = 2_000L
+            )
+        )
+    }
+
+    @Test
     fun allRecoveryReasonValuesHavePositivePriority() {
         val values = SingBoxService.RecoveryReason.values()
         for (reason in values) {
