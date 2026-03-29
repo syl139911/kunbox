@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.11.6](https://github.com/roseforljh/KunBox/compare/v2.11.5...v2.11.6) (2026-03-29)
+
+
+### Bug Fixes
+
+* 优化切网后的分流自动选路与连接收敛 ([c77a9bf](https://github.com/roseforljh/KunBox/commit/c77a9bf46ecfc8b5a7ff0ce948d020c71c3e669f))
+* 优化订阅更新主链路与后台 DNS 预解析 ([7b0efae](https://github.com/roseforljh/KunBox/commit/7b0efae767244271434e04476548911f6d431e7e))
+* 修正 urltest 运行时配置字段回写 ([5aa26bf](https://github.com/roseforljh/KunBox/commit/5aa26bffdce3b957faa6132d384555a00fca0956))
+* 补充订阅更新阶段状态展示 ([4115473](https://github.com/roseforljh/KunBox/commit/4115473d636a2438d207846b4584b7966535cfa6))
+
 ## [2.11.5](https://github.com/roseforljh/KunBox/compare/v2.11.4...v2.11.5) (2026-03-29)
 
 
