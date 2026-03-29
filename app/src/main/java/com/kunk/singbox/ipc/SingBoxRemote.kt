@@ -132,7 +132,10 @@ object SingBoxRemote {
         }
     }
 
-    private fun startPendingRecovery(callback: ((RecoveryResult) -> Unit)?, startTime: Long): RecoveryResult.Recovering {
+    private fun startPendingRecovery(
+        callback: ((RecoveryResult) -> Unit)?,
+        startTime: Long
+    ): RecoveryResult.Recovering {
         pendingRecoveryCallback = callback
         return RecoveryResult.Recovering(
             startTime = startTime,
@@ -186,6 +189,9 @@ object SingBoxRemote {
             mainHandler.post {
                 val ctx = contextRef?.get()
                 if (ctx != null && !SagerConnection_restartingApp) {
+                    if (!hasSystemVpn(ctx)) {
+                        VpnStateStore.clearRuntimeState()
+                    }
                     disconnect(ctx)
                     connect(ctx)
                 }
@@ -207,14 +213,25 @@ object SingBoxRemote {
     }
 
     private fun resolvePersistedState(hasVpnTransport: Boolean): ServiceState {
-        val pending = VpnStateStore.getPending()
-        val isActive = VpnStateStore.getActive()
-        val mode = VpnStateStore.getMode()
+        return resolvePersistedStateFromValues(
+            pending = VpnStateStore.getPending(),
+            isActive = VpnStateStore.getActive(),
+            mode = VpnStateStore.getMode(),
+            hasVpnTransport = hasVpnTransport
+        )
+    }
 
+    @JvmStatic
+    internal fun resolvePersistedStateFromValues(
+        pending: String,
+        isActive: Boolean,
+        mode: VpnStateStore.CoreMode,
+        hasVpnTransport: Boolean
+    ): ServiceState {
         return when {
             pending == "starting" -> ServiceState.STARTING
             pending == "stopping" -> ServiceState.STOPPING
-            isActive -> ServiceState.RUNNING
+            isActive && hasVpnTransport -> ServiceState.RUNNING
             mode == VpnStateStore.CoreMode.PROXY && hasVpnTransport -> ServiceState.RUNNING
             else -> ServiceState.STOPPED
         }
@@ -342,17 +359,15 @@ object SingBoxRemote {
             bound = false
 
             val ctx = contextRef?.get()
-
-            val mmkvActive = VpnStateStore.getActive()
             val systemVpn = ctx != null && hasSystemVpn(ctx)
-            if (systemVpn || mmkvActive) {
+            if (systemVpn) {
                 Log.i(
                     TAG,
-                    "Service disconnected but VPN likely active " +
-                        "(systemVpn=$systemVpn, mmkvActive=$mmkvActive), keeping state and reconnecting"
+                    "Service disconnected but system VPN present, keeping state and reconnecting"
                 )
                 scheduleReconnect()
             } else {
+                VpnStateStore.clearRuntimeState()
                 updateState(ServiceState.STOPPED, "", "", false)
             }
         }

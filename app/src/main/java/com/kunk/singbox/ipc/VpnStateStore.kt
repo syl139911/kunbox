@@ -214,4 +214,17 @@ object VpnStateStore {
         mmkv.removeValueForKey(KEY_LAST_TUN_SETTINGS_HASH)
         mmkv.removeValueForKey(KEY_LAST_MANUAL_STOP_AT_MS)
     }
+
+    /**
+     * Clears only transient runtime state (active, pending, activeLabel, lastError).
+     * Preserves manuallyStopped and all config hashes to maintain manual-stop semantics
+     * and avoid unnecessary re-computation of settings.
+     */
+    fun clearRuntimeState() {
+        Log.i(TAG, "Clearing transient runtime state")
+        mmkv.removeValueForKey(KEY_VPN_ACTIVE)
+        mmkv.removeValueForKey(KEY_VPN_PENDING)
+        mmkv.removeValueForKey(KEY_VPN_ACTIVE_LABEL)
+        mmkv.removeValueForKey(KEY_VPN_LAST_ERROR)
+    }
 }
