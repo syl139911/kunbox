@@ -728,7 +728,7 @@
     <string name="subscription_update_stage_requesting">请求中</string>
     <string name="subscription_update_stage_parsing">解析中</string>
     <string name="subscription_update_stage_saving">保存中</string>
-    <string name="subscription_update_stage_dns_background">后台 DNS 处理中</string>
+    <string name="subscription_update_stage_dns_background">后台 DNS 预解析中</string>
     <string name="ruleset_update_network_error">更新失败，请检查网络</string>
 
     <!-- App Groups -->

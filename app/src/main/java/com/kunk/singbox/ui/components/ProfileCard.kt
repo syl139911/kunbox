@@ -93,6 +93,16 @@ fun ProfileCard(
     val noExpiryMsg = stringResource(R.string.profile_card_no_expiry)
     val neverUpdatedMsg = stringResource(R.string.profile_card_never_updated)
     val unlimitedTrafficMsg = stringResource(R.string.profile_card_traffic_unlimited)
+    val stageContainerColor = if (updateStage?.isBackground == true) {
+        MaterialTheme.colorScheme.secondaryContainer
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    val stageTextColor = if (updateStage?.isBackground == true) {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
 
     fun formatDate(timestamp: Long): String {
         if (timestamp <= 0) return noExpiryMsg
@@ -219,10 +229,10 @@ fun ProfileCard(
                     Text(
                         text = stringResource(updateStage.labelRes),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = stageTextColor,
                         modifier = Modifier
                             .background(
-                                MaterialTheme.colorScheme.primaryContainer,
+                                stageContainerColor,
                                 RoundedCornerShape(6.dp)
                             )
                             .padding(horizontal = 6.dp, vertical = 2.dp)

@@ -478,7 +478,8 @@ fun ProfilesScreen(
                         type = profile.type.name,
                         isSelected = profile.id == activeProfileId,
                         isEnabled = profile.enabled,
-                        isUpdating = profile.updateStatus == UpdateStatus.Updating,
+                        isUpdating = profile.updateStatus == UpdateStatus.Updating &&
+                            profile.updateStage?.isBackground != true,
                         updateStatus = profile.updateStatus,
                         updateStage = profile.updateStage,
                         expireDate = profile.expireDate,

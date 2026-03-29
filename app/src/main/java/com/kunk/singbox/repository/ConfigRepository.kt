@@ -45,6 +45,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -484,6 +485,7 @@ class ConfigRepository(private val context: Context) {
             scope: CoroutineScope,
             profileId: String,
             enabled: Boolean,
+            updateRunId: Long? = null,
             onStarted: () -> Unit = {},
             onFinished: () -> Unit = {},
             preResolve: suspend () -> Boolean
@@ -492,25 +494,44 @@ class ConfigRepository(private val context: Context) {
                 return null
             }
 
+            val updateRunSuffix = updateRunId?.let { ", run=$it" }.orEmpty()
+
             Log.d(
                 TAG,
                 "Subscription update main flow finished for profile $profileId; " +
-                    "scheduling background DNS pre-resolve"
+                    "scheduling background DNS pre-resolve$updateRunSuffix"
             )
             return scope.launch {
                 onStarted()
-                Log.d(TAG, "Background DNS pre-resolve started for profile $profileId")
+                Log.d(TAG, "Background DNS pre-resolve started for profile $profileId$updateRunSuffix")
                 val success = runCatching { preResolve() }
                     .getOrElse { e ->
-                        Log.w(TAG, "Background DNS pre-resolve crashed for profile $profileId", e)
+                        Log.w(TAG, "Background DNS pre-resolve crashed for profile $profileId$updateRunSuffix", e)
                         false
                     }
                 if (success) {
-                    Log.d(TAG, "Background DNS pre-resolve completed for profile $profileId")
+                    Log.d(TAG, "Background DNS pre-resolve completed for profile $profileId$updateRunSuffix")
                 } else {
-                    Log.d(TAG, "Background DNS pre-resolve failed for profile $profileId")
+                    Log.d(TAG, "Background DNS pre-resolve failed for profile $profileId$updateRunSuffix")
                 }
                 onFinished()
+            }
+        }
+
+        internal fun setProfileUpdateStageIfCurrent(
+            profilesState: MutableStateFlow<List<ProfileUi>>,
+            activeUpdateRuns: Map<String, Long>,
+            profileId: String,
+            runId: Long,
+            stage: SubscriptionUpdateStage?
+        ) {
+            profilesState.update { profiles ->
+                if (activeUpdateRuns[profileId] != runId) {
+                    return@update profiles
+                }
+                profiles.map { profile ->
+                    if (profile.id == profileId) profile.copy(updateStage = stage) else profile
+                }
             }
         }
 
@@ -1133,11 +1154,13 @@ class ConfigRepository(private val context: Context) {
         }
     private val profileNodes = ConcurrentHashMap<String, List<NodeUi>>()
     private val profileResetJobs = ConcurrentHashMap<String, kotlinx.coroutines.Job>()
+    private val profileUpdateRuns = ConcurrentHashMap<String, Long>()
     private val inFlightLatencyTests = ConcurrentHashMap<String, Deferred<Long>>()
     private val savedNodeLatencies = ConcurrentHashMap<String, Long>()
     @Volatile private var saveProfilesJob: kotlinx.coroutines.Job? = null
     private val saveDebounceMs = 300L
     private val saveProfilesMutex = Mutex()
+    private val profileUpdateRunCounter = AtomicLong(0L)
 
     private val allNodesUiActiveCount = AtomicInteger(0)
     @Volatile private var allNodesLoadedForUi: Boolean = false
@@ -1331,12 +1354,39 @@ class ConfigRepository(private val context: Context) {
         }
     }
 
-    private fun setProfileUpdateStage(profileId: String, stage: SubscriptionUpdateStage?) {
-        _profiles.update { list ->
-            list.map { profile ->
-                if (profile.id == profileId) profile.copy(updateStage = stage) else profile
+    private fun beginProfileUpdateRun(profileId: String): Long {
+        val runId = profileUpdateRunCounter.incrementAndGet()
+        profileUpdateRuns[profileId] = runId
+        return runId
+    }
+
+    private fun updateProfileForCurrentRun(
+        profileId: String,
+        runId: Long,
+        transform: (ProfileUi) -> ProfileUi
+    ) {
+        _profiles.update { profiles ->
+            if (profileUpdateRuns[profileId] != runId) {
+                return@update profiles
+            }
+            profiles.map { profile ->
+                if (profile.id == profileId) transform(profile) else profile
             }
         }
+    }
+
+    private fun setProfileUpdateStage(
+        profileId: String,
+        runId: Long,
+        stage: SubscriptionUpdateStage?
+    ) {
+        setProfileUpdateStageIfCurrent(
+            profilesState = _profiles,
+            activeUpdateRuns = profileUpdateRuns,
+            profileId = profileId,
+            runId = runId,
+            stage = stage
+        )
     }
 
     private suspend fun preResolveDomainsForProfileBestEffort(
@@ -3186,58 +3236,49 @@ class ConfigRepository(private val context: Context) {
             return SubscriptionUpdateResult.Failed(profile.name, "Subscription URL is empty")
         }
 
-        _profiles.update { list ->
-            list.map {
-                if (it.id == profileId) {
-                    it.copy(
-                        updateStatus = UpdateStatus.Updating,
-                        updateStage = SubscriptionUpdateStage.Requesting
-                    )
-                } else {
-                    it
-                }
-            }
+        val updateRunId = beginProfileUpdateRun(profileId)
+        profileResetJobs.remove(profileId)?.cancel()
+        updateProfileForCurrentRun(profileId, updateRunId) {
+            it.copy(
+                updateStatus = UpdateStatus.Updating,
+                updateStage = SubscriptionUpdateStage.Requesting
+            )
         }
 
         val result = try {
-            importFromSubscriptionUpdate(profile)
+            importFromSubscriptionUpdate(profile, updateRunId)
         } catch (e: Exception) {
             SubscriptionUpdateResult.Failed(profile.name, e.message ?: "Subscription update failed")
         }
-        _profiles.update { list ->
-            list.map {
-                if (it.id == profileId) {
-                    it.copy(
-                        updateStatus = if (result is SubscriptionUpdateResult.Failed) UpdateStatus.Failed else UpdateStatus.Success,
-                        lastUpdated = if (result is SubscriptionUpdateResult.Failed) it.lastUpdated else System.currentTimeMillis(),
-                        updateStage = when {
-                            result is SubscriptionUpdateResult.Failed -> null
-                            profile.dnsPreResolve -> it.updateStage
-                            else -> null
-                        }
-                    )
+        updateProfileForCurrentRun(profileId, updateRunId) {
+            it.copy(
+                updateStatus = if (result is SubscriptionUpdateResult.Failed) {
+                    UpdateStatus.Failed
                 } else {
-                    it
+                    UpdateStatus.Success
+                },
+                lastUpdated = if (result is SubscriptionUpdateResult.Failed) {
+                    it.lastUpdated
+                } else {
+                    System.currentTimeMillis()
+                },
+                updateStage = when {
+                    result is SubscriptionUpdateResult.Failed -> null
+                    it.updateStage?.isBackground == true -> it.updateStage
+                    else -> null
                 }
-            }
+            )
         }
-        profileResetJobs.remove(profileId)?.cancel()
         val resetJob = scope.launch {
             kotlinx.coroutines.delay(2000)
-            _profiles.update { list ->
-                list.map {
-                    if (it.id == profileId && it.updateStatus != UpdateStatus.Updating) {
-                        it.copy(
-                            updateStatus = UpdateStatus.Idle,
-                            updateStage = if (it.updateStage == SubscriptionUpdateStage.DnsBackground) {
-                                SubscriptionUpdateStage.DnsBackground
-                            } else {
-                                null
-                            }
-                        )
-                    } else {
-                        it
-                    }
+            updateProfileForCurrentRun(profileId, updateRunId) {
+                if (it.updateStatus == UpdateStatus.Updating) {
+                    it
+                } else {
+                    it.copy(
+                        updateStatus = UpdateStatus.Idle,
+                        updateStage = it.updateStage?.takeIf(SubscriptionUpdateStage::isBackground)
+                    )
                 }
             }
         }
@@ -3251,7 +3292,8 @@ class ConfigRepository(private val context: Context) {
 
     @Suppress("LongMethod", "CognitiveComplexMethod")
     private suspend fun importFromSubscriptionUpdate(
-        profile: ProfileUi
+        profile: ProfileUi,
+        updateRunId: Long
     ): SubscriptionUpdateResult = withContext(Dispatchers.IO) {
         try {
             val oldNodes = profileNodes[profile.id] ?: emptyList()
@@ -3264,7 +3306,7 @@ class ConfigRepository(private val context: Context) {
             val fetchResult = fetchAndParseSubscription(
                 url = profileUrl,
                 onProgress = {},
-                onStageChanged = { stage -> setProfileUpdateStage(profile.id, stage) }
+                onStageChanged = { stage -> setProfileUpdateStage(profile.id, updateRunId, stage) }
             )
                 ?: return@withContext SubscriptionUpdateResult.Failed(profile.name, "Failed to fetch subscription")
 
@@ -3276,7 +3318,7 @@ class ConfigRepository(private val context: Context) {
             val newNodeNames = newNodes.map { it.name }.toSet()
             val addedNodes = newNodeNames - oldNodeNames
             val removedNodes = oldNodeNames - newNodeNames
-            setProfileUpdateStage(profile.id, SubscriptionUpdateStage.Saving)
+            setProfileUpdateStage(profile.id, updateRunId, SubscriptionUpdateStage.Saving)
             writeConfigFileOrThrow(profile.id, deduplicatedConfig)
 
             cacheConfig(profile.id, deduplicatedConfig)
@@ -3304,22 +3346,22 @@ class ConfigRepository(private val context: Context) {
                 profileName = profile.name,
                 addedNodes = addedNodes,
                 removedNodes = removedNodes,
-                totalCount = newNodes.size
+                totalCount = newNodes.size,
+                dnsMovedToBackground = launchSubscriptionDnsPreResolve(
+                    scope = scope,
+                    profileId = profile.id,
+                    enabled = profile.dnsPreResolve,
+                    updateRunId = updateRunId,
+                    onStarted = {
+                        setProfileUpdateStage(profile.id, updateRunId, SubscriptionUpdateStage.DnsBackground)
+                    },
+                    onFinished = {
+                        setProfileUpdateStage(profile.id, updateRunId, null)
+                    }
+                ) {
+                    preResolveDomainsForProfileBestEffort(profile.id, deduplicatedConfig, profile.dnsServer)
+                } != null
             )
-
-            launchSubscriptionDnsPreResolve(
-                scope = scope,
-                profileId = profile.id,
-                enabled = profile.dnsPreResolve,
-                onStarted = {
-                    setProfileUpdateStage(profile.id, SubscriptionUpdateStage.DnsBackground)
-                },
-                onFinished = {
-                    setProfileUpdateStage(profile.id, null)
-                }
-            ) {
-                preResolveDomainsForProfileBestEffort(profile.id, deduplicatedConfig, profile.dnsServer)
-            }
 
             updateResult
         } catch (e: Exception) {
@@ -3331,19 +3373,22 @@ class ConfigRepository(private val context: Context) {
         profileName: String,
         addedNodes: Set<String>,
         removedNodes: Set<String>,
-        totalCount: Int
+        totalCount: Int,
+        dnsMovedToBackground: Boolean
     ): SubscriptionUpdateResult {
         return if (addedNodes.isNotEmpty() || removedNodes.isNotEmpty()) {
             SubscriptionUpdateResult.SuccessWithChanges(
                 profileName = profileName,
                 addedCount = addedNodes.size,
                 removedCount = removedNodes.size,
-                totalCount = totalCount
+                totalCount = totalCount,
+                dnsMovedToBackground = dnsMovedToBackground
             )
         } else {
             SubscriptionUpdateResult.SuccessNoChanges(
                 profileName = profileName,
-                totalCount = totalCount
+                totalCount = totalCount,
+                dnsMovedToBackground = dnsMovedToBackground
             )
         }
     }

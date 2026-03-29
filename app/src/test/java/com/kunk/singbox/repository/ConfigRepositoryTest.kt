@@ -13,8 +13,11 @@ import com.kunk.singbox.model.RuleSetOutboundMode
 import com.kunk.singbox.model.RuleSetType
 import com.kunk.singbox.model.RuleType
 import com.kunk.singbox.model.BatchUpdateResult
+import com.kunk.singbox.model.ProfileType
+import com.kunk.singbox.model.ProfileUi
 import com.kunk.singbox.model.SubscriptionUpdateStage
 import com.kunk.singbox.model.SubscriptionUpdateResult
+import com.kunk.singbox.model.UpdateStatus
 import com.kunk.singbox.utils.parser.Base64Parser
 import com.kunk.singbox.utils.parser.ClashYamlParser
 import com.kunk.singbox.utils.parser.NodeLinkParser
@@ -25,6 +28,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -56,6 +60,35 @@ class ConfigRepositoryTest {
     ): List<RuleSet> {
         val validTags = validRuleSets.mapNotNull { it.tag }.toSet()
         return ConfigRepository.filterAppliedRemoteRuleSetsForTest(ruleSets, validTags)
+    }
+
+    private fun createUpdatingProfile(profileId: String): ProfileUi {
+        return ProfileUi(
+            id = profileId,
+            name = "Test Profile",
+            type = ProfileType.Subscription,
+            url = "https://example.com/sub",
+            lastUpdated = 0,
+            enabled = true,
+            updateStatus = UpdateStatus.Updating,
+            updateStage = SubscriptionUpdateStage.Requesting
+        )
+    }
+
+    private fun applyStageForRun(
+        profiles: MutableStateFlow<List<ProfileUi>>,
+        activeRuns: Map<String, Long>,
+        profileId: String,
+        runId: Long,
+        stage: SubscriptionUpdateStage?
+    ) {
+        ConfigRepository.setProfileUpdateStageIfCurrent(
+            profilesState = profiles,
+            activeUpdateRuns = activeRuns,
+            profileId = profileId,
+            runId = runId,
+            stage = stage
+        )
     }
 
     @Test
@@ -362,6 +395,48 @@ class ConfigRepositoryTest {
             assertNotNull(job)
             assertTrue(job?.isCompleted == true)
             assertFalse(job?.isCancelled == true)
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun testLaunchSubscriptionDnsPreResolveStaleRunCannotClearNewUpdateStage() {
+        val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+        val profileId = "profile-3"
+        val profiles = MutableStateFlow(listOf(createUpdatingProfile(profileId)))
+        val activeRuns = mutableMapOf(profileId to 1L)
+        val oldStarted = CompletableDeferred<Unit>()
+        val releaseOld = CompletableDeferred<Unit>()
+
+        try {
+            val oldJob = ConfigRepository.launchSubscriptionDnsPreResolve(
+                scope = scope,
+                profileId = profileId,
+                enabled = true,
+                updateRunId = 1L,
+                onStarted = {
+                    applyStageForRun(profiles, activeRuns, profileId, 1L, SubscriptionUpdateStage.DnsBackground)
+                    oldStarted.complete(Unit)
+                },
+                onFinished = {
+                    applyStageForRun(profiles, activeRuns, profileId, 1L, null)
+                }
+            ) {
+                releaseOld.await()
+                true
+            }
+
+            runBlocking { oldStarted.await() }
+            assertEquals(SubscriptionUpdateStage.DnsBackground, profiles.value.single().updateStage)
+
+            activeRuns[profileId] = 2L
+            applyStageForRun(profiles, activeRuns, profileId, 2L, SubscriptionUpdateStage.Requesting)
+
+            releaseOld.complete(Unit)
+            runBlocking { oldJob?.join() }
+
+            assertEquals(SubscriptionUpdateStage.Requesting, profiles.value.single().updateStage)
         } finally {
             scope.cancel()
         }

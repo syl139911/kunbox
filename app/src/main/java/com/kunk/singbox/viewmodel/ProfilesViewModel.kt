@@ -106,8 +106,6 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
     fun updateProfile(profileId: String) {
         viewModelScope.launch {
             _updateStatus.value = getApplication<Application>().getString(R.string.common_loading)
-            val profile = profiles.value.find { it.id == profileId }
-
             val result = configRepository.updateProfile(profileId)
 
             _updateStatus.value = when (result) {
@@ -120,7 +118,7 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                         changes.joinToString("/"),
                         result.totalCount
                     )
-                    if (profile?.dnsPreResolve == true) {
+                    if (result.dnsMovedToBackground) {
                         getApplication<Application>().getString(
                             R.string.subscription_update_success_background_dns,
                             message
@@ -134,7 +132,7 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                         R.string.subscription_update_success_no_changes,
                         result.totalCount
                     )
-                    if (profile?.dnsPreResolve == true) {
+                    if (result.dnsMovedToBackground) {
                         getApplication<Application>().getString(
                             R.string.subscription_update_success_background_dns,
                             message

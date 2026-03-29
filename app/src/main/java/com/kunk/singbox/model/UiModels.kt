@@ -28,11 +28,14 @@ data class ProfileUi(
 )
 
 @Keep
-enum class SubscriptionUpdateStage(@StringRes val labelRes: Int) {
+enum class SubscriptionUpdateStage(
+    @StringRes val labelRes: Int,
+    val isBackground: Boolean = false
+) {
     Requesting(R.string.subscription_update_stage_requesting),
     Parsing(R.string.subscription_update_stage_parsing),
     Saving(R.string.subscription_update_stage_saving),
-    DnsBackground(R.string.subscription_update_stage_dns_background)
+    DnsBackground(R.string.subscription_update_stage_dns_background, isBackground = true)
 }
 
 @Keep
@@ -59,14 +62,16 @@ sealed class SubscriptionUpdateResult {
         val profileName: String,
         val addedCount: Int,
         val removedCount: Int,
-        val totalCount: Int
+        val totalCount: Int,
+        val dnsMovedToBackground: Boolean = false
     ) : SubscriptionUpdateResult()
 
     /**
      */
     data class SuccessNoChanges(
         val profileName: String,
-        val totalCount: Int
+        val totalCount: Int,
+        val dnsMovedToBackground: Boolean = false
     ) : SubscriptionUpdateResult()
 
     /**
