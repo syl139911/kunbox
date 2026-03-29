@@ -80,6 +80,7 @@ class ConfigRepository(private val context: Context) {
         val isRemembered: Boolean
     )
 
+    @Suppress("TooManyFunctions")
     companion object {
         private const val TAG = "ConfigRepository"
         private const val PARALLEL_CONCURRENCY = 8
@@ -582,6 +583,47 @@ class ConfigRepository(private val context: Context) {
             return DomainResolveConfig(server = "dns-bootstrap")
         }
 
+        private fun buildSpecialDnsServerOrNull(
+            trimmed: String,
+            tag: String,
+            detour: String?,
+            domainStrategy: String?,
+            domainResolver: DomainResolveConfig?
+        ): DnsServer? {
+            val type = when {
+                trimmed.equals("local", ignoreCase = true) -> "local"
+                trimmed.equals("fakeip", ignoreCase = true) -> "fakeip"
+                else -> null
+            }
+            return type?.let {
+                DnsServer(
+                    tag = tag,
+                    type = it,
+                    domainResolver = domainResolver,
+                    domainStrategy = domainStrategy,
+                    detour = detour
+                )
+            }
+        }
+
+        private fun dnsServerTypeFromScheme(scheme: String?): String {
+            return when (scheme) {
+                "https" -> "https"
+                "h3" -> "h3"
+                "tls" -> "tls"
+                "quic" -> "quic"
+                "tcp" -> "tcp"
+                "udp" -> "udp"
+                "dhcp" -> "dhcp"
+                null -> "udp"
+                else -> "udp"
+            }
+        }
+
+        private fun shouldUseParsedDnsHost(scheme: String?): Boolean {
+            return scheme == null || scheme in setOf("https", "h3", "tls", "quic", "tcp", "udp", "dhcp")
+        }
+
         internal fun buildDnsServer(
             address: String,
             tag: String,
@@ -590,23 +632,8 @@ class ConfigRepository(private val context: Context) {
             domainResolver: DomainResolveConfig? = null
         ): DnsServer {
             val trimmed = address.trim()
-            if (trimmed.equals("local", ignoreCase = true)) {
-                return DnsServer(
-                    tag = tag,
-                    type = "local",
-                    domainResolver = domainResolver,
-                    domainStrategy = domainStrategy,
-                    detour = detour
-                )
-            }
-            if (trimmed.equals("fakeip", ignoreCase = true)) {
-                return DnsServer(
-                    tag = tag,
-                    type = "fakeip",
-                    domainResolver = domainResolver,
-                    domainStrategy = domainStrategy,
-                    detour = detour
-                )
+            buildSpecialDnsServerOrNull(trimmed, tag, detour, domainStrategy, domainResolver)?.let {
+                return it
             }
 
             val uri = try {
@@ -627,24 +654,8 @@ class ConfigRepository(private val context: Context) {
             val port = if (uri.port > 0) uri.port else null
             val path = uri.path?.takeIf { it.isNotBlank() && it != "/" }
 
-            val type = when (scheme) {
-                "https" -> "https"
-                "h3" -> "h3"
-                "tls" -> "tls"
-                "quic" -> "quic"
-                "tcp" -> "tcp"
-                "udp" -> "udp"
-                "dhcp" -> "dhcp"
-                null -> "udp"
-                else -> "udp"
-            }
-            val server = if (scheme == null || scheme == "https" || scheme == "h3" || scheme == "tls" ||
-                scheme == "quic" || scheme == "tcp" || scheme == "udp" || scheme == "dhcp"
-            ) {
-                host
-            } else {
-                trimmed
-            }
+            val type = dnsServerTypeFromScheme(scheme)
+            val server = if (shouldUseParsedDnsHost(scheme)) host else trimmed
 
             return DnsServer(
                 tag = tag,
@@ -3210,22 +3221,27 @@ class ConfigRepository(private val context: Context) {
 
     private fun validateTextRuleSet(file: File, tag: String, inspectionText: String): Boolean {
         val trimmed = inspectionText.trim()
-        if (trimmed.isEmpty()) {
-            Log.w(TAG, "Rule set text content is blank, ignoring: $tag")
-            return false
-        }
-        if (looksLikeHtmlSubscriptionPage(contentType = null, body = trimmed)) {
-            Log.e(TAG, "Rule set file appears to be HTML, ignoring: $tag")
-            return false
-        }
-
         val validTextRuleSet = when {
             trimmed.startsWith("{") || trimmed.startsWith("[") -> isValidRuleSetJson(trimmed)
             else -> isValidRuleSetStructuredText(trimmed)
         }
-        if (validTextRuleSet) {
-            return true
+        return when {
+            trimmed.isEmpty() -> {
+                Log.w(TAG, "Rule set text content is blank, ignoring: $tag")
+                false
+            }
+
+            looksLikeHtmlSubscriptionPage(contentType = null, body = trimmed) -> {
+                Log.e(TAG, "Rule set file appears to be HTML, ignoring: $tag")
+                false
+            }
+
+            validTextRuleSet -> true
+            else -> shouldAcceptRuleSetTextByFallback(file, tag, trimmed)
         }
+    }
+
+    private fun shouldAcceptRuleSetTextByFallback(file: File, tag: String, trimmed: String): Boolean {
         if (file.length() < RULE_SET_MIN_SIZE_BYTES) {
             Log.w(TAG, "Rule set text file too small, ignoring: $tag (${file.length()} bytes)")
             return false
@@ -3542,6 +3558,12 @@ class ConfigRepository(private val context: Context) {
             getEffectiveTunStack(settings.tunStack)
         )
 
+    @Suppress(
+        "LongMethod",
+        "CyclomaticComplexMethod",
+        "CognitiveComplexMethod",
+        "NestedBlockDepth"
+    )
     private fun buildRunDns(
         settings: AppSettings,
         validRuleSets: List<RuleSetConfig>,
@@ -4829,61 +4851,5 @@ class ConfigRepository(private val context: Context) {
 
     private fun isIpAddress(address: String?): Boolean {
         return isIpAddressValue(address)
-    }
-
-    private fun extractHost(url: String): String {
-        return extractHostFromAddress(url) ?: url
-    }
-
-    /**
-     * Parses a legacy DNS address string into new-format DnsServer fields.
-     * Returns a DnsServer with type/server/serverPort/path set, plus any extra fields passed via [extra].
-     *
-     * Supported formats:
-     * - "local"                         → type="local"
-     * - "fakeip"                        → type="fakeip"
-     * - "dhcp://..."                    → type="dhcp"
-     * - "quic://host"                   → type="quic", server=host
-     * - "tls://host"                    → type="tls",  server=host
-     * - "https://host/path"             → type="https", server=host, path=/path
-     * - "h3://host/path"               → type="h3",   server=host, path=/path
-     * - "tcp://host"                    → type="tcp",  server=host
-     * - pure IP or hostname             → type="udp",  server=address
-     * - "udp://host"                    → type="udp",  server=host
-     */
-    @Suppress("CyclomaticComplexMethod", "ReturnCount")
-    private fun parseDnsAddress(address: String): DnsServer {
-        val trimmed = address.trim()
-
-        if (trimmed.equals("local", ignoreCase = true)) {
-            return DnsServer(type = "local")
-        }
-        if (trimmed.equals("fakeip", ignoreCase = true)) {
-            return DnsServer(type = "fakeip")
-        }
-
-        val uri = try {
-            java.net.URI(trimmed)
-        } catch (_: Exception) {
-            // Fallback: treat as UDP with raw address
-            return DnsServer(type = "udp", server = trimmed)
-        }
-
-        val scheme = uri.scheme?.lowercase()
-        val host = uri.host?.removePrefix("[")?.removeSuffix("]") ?: trimmed
-        val port = if (uri.port > 0) uri.port else null
-        val path = uri.path?.takeIf { it.isNotBlank() && it != "/" }
-
-        return when (scheme) {
-            "https" -> DnsServer(type = "https", server = host, serverPort = port, path = path)
-            "h3" -> DnsServer(type = "h3", server = host, serverPort = port, path = path)
-            "tls" -> DnsServer(type = "tls", server = host, serverPort = port)
-            "quic" -> DnsServer(type = "quic", server = host, serverPort = port)
-            "tcp" -> DnsServer(type = "tcp", server = host, serverPort = port)
-            "udp" -> DnsServer(type = "udp", server = host, serverPort = port)
-            "dhcp" -> DnsServer(type = "dhcp", server = host)
-            null -> DnsServer(type = "udp", server = trimmed)
-            else -> DnsServer(type = "udp", server = trimmed)
-        }
     }
 }
