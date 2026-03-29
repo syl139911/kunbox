@@ -271,6 +271,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
         testingJob = viewModelScope.launch {
             _isTesting.value = true
 
+            val originalSortType = sortType.value
             val currentOrder = nodes.value.map { it.id }
             setCustomNodeOrder(currentOrder)
             setSortType(NodeSortType.CUSTOM)
@@ -297,7 +298,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     _testProgress.value = Pair(completedCount, totalCount)
                 }
-                setSortType(NodeSortType.LATENCY)
+                setSortType(originalSortType)
                 val context = getApplication<Application>()
                 val summary = if (ipv6OnlyCount > 0) {
                     context.getString(R.string.nodes_test_complete_stats_v6, successCount, timeoutCount, ipv6OnlyCount)
