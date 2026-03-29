@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.11.7](https://github.com/roseforljh/KunBox/compare/v2.11.6...v2.11.7) (2026-03-29)
+
+
+### Bug Fixes
+
+* preserve node sort preference after latency tests ([372f5af](https://github.com/roseforljh/KunBox/commit/372f5af83f197911a87fa2494376e023ef7f27c2))
+* 优化订阅更新等待与阶段反馈 ([553d930](https://github.com/roseforljh/KunBox/commit/553d930ab4335b339c3bc9be1377ca3a91d86e6d))
+* 修正订阅 HTML 误判导致的节点丢失 ([8fcd8f0](https://github.com/roseforljh/KunBox/commit/8fcd8f0cb2126b22aba613c1cde7330bfaa1adf9))
+
 ## [2.11.6](https://github.com/roseforljh/KunBox/compare/v2.11.5...v2.11.6) (2026-03-29)
 
 
