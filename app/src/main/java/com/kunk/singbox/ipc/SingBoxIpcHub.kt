@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.withLock
 import kotlinx.coroutines.runBlocking
 
+@Suppress("TooManyFunctions")
 object SingBoxIpcHub {
     private const val TAG = "SingBoxIpcHub"
 
@@ -97,6 +98,7 @@ object SingBoxIpcHub {
             serviceRef?.clear()
             serviceRef = null
         }
+        VpnStateStore.clearRuntimeState()
         Log.w(TAG, "SingBoxIpcService binder died")
         runCatching {
             logRepo.addLog("WARN [IPC] SingBoxIpcService binder died")
@@ -172,12 +174,6 @@ object SingBoxIpcHub {
 
     fun unregisterCallback(callback: ISingBoxServiceCallback) {
         callbacks.unregister(callback)
-    }
-
-    private fun scheduleBroadcastIfNeeded() {
-        broadcastLock.withLock {
-            scheduleBroadcastIfNeededLocked()
-        }
     }
 
     private fun scheduleBroadcastIfNeededLocked() {
