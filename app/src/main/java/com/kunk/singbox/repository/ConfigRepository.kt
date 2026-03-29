@@ -155,20 +155,53 @@ class ConfigRepository(private val context: Context) {
 
         internal fun buildProfileRouteGroupOutboundsForTest(
             groupTag: String,
-            nodeTags: List<String>,
-            selectorDefault: String?
+            nodeTags: List<String>
         ): List<Outbound> {
             return buildProfileRouteGroupOutbounds(
                 groupTag = groupTag,
-                nodeTags = nodeTags,
-                selectorDefault = selectorDefault
+                nodeTags = nodeTags
             )
+        }
+
+        internal fun applySelectorSafeOutboundsForTest(outbounds: List<Outbound>): List<Outbound> {
+            return sanitizeSelectorSafeOutbounds(outbounds)
+        }
+
+        private fun sanitizeSelectorSafeOutbounds(outbounds: List<Outbound>): List<Outbound> {
+            val allOutboundTags = outbounds.map { it.tag }.toSet()
+            return outbounds.map { outbound ->
+                if (outbound.type == "selector" || outbound.type == "urltest" || outbound.type == "url-test") {
+                    sanitizeSelectorLikeOutbound(outbound, allOutboundTags)
+                } else {
+                    outbound
+                }
+            }
+        }
+
+        private fun sanitizeSelectorLikeOutbound(outbound: Outbound, allOutboundTags: Set<String>): Outbound {
+            val validRefs = outbound.outbounds?.filter { allOutboundTags.contains(it) } ?: emptyList()
+            val safeRefs = if (validRefs.isEmpty()) listOf("direct") else validRefs
+
+            if (safeRefs.size != (outbound.outbounds?.size ?: 0)) {
+                Log.w(TAG, "Filtered invalid refs in ${outbound.tag}: ${outbound.outbounds} -> $safeRefs")
+            }
+
+            return if (outbound.type == "selector") {
+                val currentDefault = outbound.default
+                val safeDefault = if (currentDefault != null && safeRefs.contains(currentDefault)) {
+                    currentDefault
+                } else {
+                    safeRefs.firstOrNull()
+                }
+                outbound.copy(outbounds = safeRefs, default = safeDefault)
+            } else {
+                outbound.copy(outbounds = safeRefs, default = null)
+            }
         }
 
         private fun buildProfileRouteGroupOutbounds(
             groupTag: String,
-            nodeTags: List<String>,
-            selectorDefault: String?
+            nodeTags: List<String>
         ): List<Outbound> {
             val distinctNodeTags = nodeTags
                 .map { it.trim() }
@@ -179,15 +212,11 @@ class ConfigRepository(private val context: Context) {
             }
 
             val autoTag = buildRouteGroupAutoTag(groupTag)
-            val innerDefault = selectorDefault?.takeIf { it in distinctNodeTags }
-                ?: distinctNodeTags.firstOrNull()
-
             return listOf(
                 Outbound(
                     type = "urltest",
                     tag = autoTag,
                     outbounds = distinctNodeTags,
-                    default = innerDefault,
                     url = ROUTE_GROUP_AUTO_TEST_URL,
                     interval = ROUTE_GROUP_AUTO_TEST_INTERVAL,
                     tolerance = ROUTE_GROUP_AUTO_TEST_TOLERANCE,
@@ -4408,8 +4437,7 @@ class ConfigRepository(private val context: Context) {
             if (nodeTags.isNotEmpty()) {
                 val routeGroupOutbounds = buildProfileRouteGroupOutbounds(
                     groupTag = tag,
-                    nodeTags = nodeTags,
-                    selectorDefault = selectorDefault
+                    nodeTags = nodeTags
                 )
                 if (routeGroupOutbounds.isNotEmpty()) {
                     val generatedTags = routeGroupOutbounds.map { it.tag }.toSet()
@@ -4485,28 +4513,7 @@ class ConfigRepository(private val context: Context) {
             }
         }
 
-        val allOutboundTags = detourNormalizedOutbounds.map { it.tag }.toSet()
-        val selectorSafeOutbounds = detourNormalizedOutbounds.map { outbound ->
-            if (outbound.type == "selector" || outbound.type == "urltest" || outbound.type == "url-test") {
-                val validRefs = outbound.outbounds?.filter { allOutboundTags.contains(it) } ?: emptyList()
-                val safeRefs = if (validRefs.isEmpty()) listOf("direct") else validRefs
-
-                if (safeRefs.size != (outbound.outbounds?.size ?: 0)) {
-                    Log.w(TAG, "Filtered invalid refs in ${outbound.tag}: ${outbound.outbounds} -> $safeRefs")
-                }
-
-                val currentDefault = outbound.default
-                val safeDefault = if (currentDefault != null && safeRefs.contains(currentDefault)) {
-                    currentDefault
-                } else {
-                    safeRefs.firstOrNull()
-                }
-
-                outbound.copy(outbounds = safeRefs, default = safeDefault)
-            } else {
-                outbound
-            }
-        }
+        val selectorSafeOutbounds = applySelectorSafeOutbounds(detourNormalizedOutbounds)
 
         val finalTags = selectorSafeOutbounds.map { it.tag }.toSet()
         val safeOutbounds = selectorSafeOutbounds.map { outbound ->
@@ -4528,6 +4535,10 @@ class ConfigRepository(private val context: Context) {
             nodeTagResolver = nodeTagResolver,
             nodeTagMap = nodeTagMap
         )
+    }
+
+    private fun applySelectorSafeOutbounds(outbounds: List<Outbound>): List<Outbound> {
+        return sanitizeSelectorSafeOutbounds(outbounds)
     }
 
     private fun buildQuicBlockRule(settings: AppSettings): List<RouteRule> {

@@ -5,6 +5,7 @@ import com.kunk.singbox.model.AppGroup
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.CustomRule
 import com.kunk.singbox.model.DomainResolveConfig
+import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.OutboundTag
 import com.kunk.singbox.model.RuleSet
 import com.kunk.singbox.model.RuleSetConfig
@@ -996,8 +997,7 @@ class ConfigRepositoryTest {
     fun testBuildProfileRouteGroupOutboundsCreatesNestedAutoStructure() {
         val outbounds = ConfigRepository.buildProfileRouteGroupOutboundsForTest(
             groupTag = "P:HK",
-            nodeTags = listOf("node-a", "node-b"),
-            selectorDefault = "node-b"
+            nodeTags = listOf("node-a", "node-b")
         )
 
         assertEquals(2, outbounds.size)
@@ -1006,7 +1006,7 @@ class ConfigRepositoryTest {
         assertEquals("urltest", autoGroup.type)
         assertEquals("P:HK#AUTO", autoGroup.tag)
         assertEquals(listOf("node-a", "node-b"), autoGroup.outbounds)
-        assertEquals("node-b", autoGroup.default)
+        assertNull(autoGroup.default)
         assertEquals("https://www.gstatic.com/generate_204", autoGroup.url)
         assertEquals("10m", autoGroup.interval)
         assertEquals(50, autoGroup.tolerance)
@@ -1016,6 +1016,36 @@ class ConfigRepositoryTest {
         assertEquals("P:HK", outerGroup.tag)
         assertEquals(listOf("P:HK#AUTO", "PROXY"), outerGroup.outbounds)
         assertEquals("P:HK#AUTO", outerGroup.default)
+    }
+
+    @Test
+    fun testApplySelectorSafeOutboundsKeepsUrlTestDefaultNull() {
+        val safeOutbounds = ConfigRepository.applySelectorSafeOutboundsForTest(
+            listOf(
+                Outbound(
+                    type = "urltest",
+                    tag = "P:HK#AUTO",
+                    outbounds = listOf("node-a", "missing-node"),
+                    default = "node-a"
+                ),
+                Outbound(type = "direct", tag = "direct"),
+                Outbound(type = "shadowsocks", tag = "node-a"),
+                Outbound(
+                    type = "selector",
+                    tag = "P:HK",
+                    outbounds = listOf("P:HK#AUTO", "missing-selector-ref"),
+                    default = "missing-selector-ref"
+                )
+            )
+        )
+
+        val autoGroup = safeOutbounds.first { it.tag == "P:HK#AUTO" }
+        assertEquals(listOf("node-a"), autoGroup.outbounds)
+        assertNull(autoGroup.default)
+
+        val selectorGroup = safeOutbounds.first { it.tag == "P:HK" }
+        assertEquals(listOf("P:HK#AUTO"), selectorGroup.outbounds)
+        assertEquals("P:HK#AUTO", selectorGroup.default)
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class OutboundFixerTest {
@@ -168,7 +169,7 @@ class OutboundFixerTest {
     }
 
     @Test
-    fun testFixPreservesWhitelistedAutoUrlTest() {
+    fun testFixPreservesWhitelistedAutoUrlTestWithoutDefault() {
         val outbound = Outbound(
             type = "urltest",
             tag = "P:HK#AUTO",
@@ -183,10 +184,49 @@ class OutboundFixerTest {
 
         assertEquals("urltest", fixed.type)
         assertEquals(listOf("node-a", "node-b"), fixed.outbounds)
-        assertEquals("node-b", fixed.default)
+        assertNull(fixed.default)
         assertEquals("https://www.gstatic.com/generate_204", fixed.url)
         assertEquals("10m", fixed.interval)
         assertEquals(50, fixed.tolerance)
+    }
+
+    @Test
+    fun testBuildForRuntimeKeepsWhitelistedUrlTestWithoutDefault() {
+        val outbound = Outbound(
+            type = "urltest",
+            tag = "P:HK#AUTO",
+            outbounds = listOf("node-a", "node-b"),
+            default = "node-b",
+            url = "https://www.gstatic.com/generate_204",
+            interval = "10m",
+            tolerance = 50
+        )
+
+        val runtime = OutboundFixer.buildForRuntimeWithDialConfigForTest(outbound)
+
+        assertEquals("urltest", runtime?.type)
+        assertEquals(listOf("node-a", "node-b"), runtime?.outbounds)
+        assertNull(runtime?.default)
+        assertEquals("https://www.gstatic.com/generate_204", runtime?.url)
+        assertEquals("10m", runtime?.interval)
+        assertEquals(50, runtime?.tolerance)
+    }
+
+    @Test
+    fun testFixPreservesOuterSelectorDefaultForRouteGroup() {
+        val outbound = Outbound(
+            type = "selector",
+            tag = "P:HK",
+            outbounds = listOf("P:HK#AUTO", "PROXY"),
+            default = "P:HK#AUTO"
+        )
+
+        val fixed = OutboundFixer.fix(outbound)
+
+        assertEquals("selector", fixed.type)
+        assertEquals(listOf("P:HK#AUTO", "PROXY"), fixed.outbounds)
+        assertEquals("P:HK#AUTO", fixed.default)
+        assertFalse(OutboundFixer.shouldKeepUrlTestForRuntime(fixed.tag))
     }
 
     @Test

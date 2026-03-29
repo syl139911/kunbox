@@ -80,3 +80,4 @@ OPENWORLD_MIGRATION_PLAN.md
 .factory/settings.json
 .gstack/
 \.sisyphus
+.kotlin/

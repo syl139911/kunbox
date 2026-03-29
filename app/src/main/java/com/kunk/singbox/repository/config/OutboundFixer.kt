@@ -115,7 +115,7 @@ object OutboundFixer {
                 result.copy(
                     type = "urltest",
                     outbounds = newOutbounds,
-                    default = result.default?.takeIf { it in newOutbounds } ?: newOutbounds.firstOrNull(),
+                    default = null,
                     interruptExistConnections = result.interruptExistConnections ?: false
                 )
             } else {
@@ -336,6 +336,36 @@ object OutboundFixer {
 
         val (tcpKeepAliveEnabled, tcpKeepAliveInterval, connectTimeout) = getTcpKeepAliveConfig(context)
 
+        return buildForRuntimeWithDialConfig(
+            fixed = fixed,
+            tcpKeepAliveEnabled = tcpKeepAliveEnabled,
+            tcpKeepAliveInterval = tcpKeepAliveInterval,
+            connectTimeout = connectTimeout
+        )
+    }
+
+    internal fun buildForRuntimeWithDialConfigForTest(
+        outbound: Outbound,
+        tcpKeepAliveEnabled: Boolean = false,
+        tcpKeepAliveInterval: String? = null,
+        connectTimeout: String? = null
+    ): Outbound? {
+        val fixed = normalizeLegacyTransport(applyNaiveRuntimeCompatibility(fix(outbound)))
+        return buildForRuntimeWithDialConfig(
+            fixed = fixed,
+            tcpKeepAliveEnabled = tcpKeepAliveEnabled,
+            tcpKeepAliveInterval = tcpKeepAliveInterval,
+            connectTimeout = connectTimeout
+        )
+    }
+
+    @Suppress("LongMethod")
+    private fun buildForRuntimeWithDialConfig(
+        fixed: Outbound,
+        tcpKeepAliveEnabled: Boolean,
+        tcpKeepAliveInterval: String?,
+        connectTimeout: String?
+    ): Outbound? {
         return applyCommonDialFields(when (fixed.type) {
             "selector" -> Outbound(
                 type = "selector",
@@ -350,7 +380,7 @@ object OutboundFixer {
                     type = "urltest",
                     tag = fixed.tag,
                     outbounds = fixed.outbounds,
-                    default = fixed.default,
+                    default = null,
                     url = fixed.url,
                     interval = fixed.interval,
                     tolerance = fixed.tolerance,
