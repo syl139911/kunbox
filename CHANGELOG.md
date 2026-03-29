@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.11.4](https://github.com/roseforljh/KunBox/compare/v2.11.3...v2.11.4) (2026-03-29)
+
+
+### Bug Fixes
+
+* 仅自动更新已应用的规则集 ([b678542](https://github.com/roseforljh/KunBox/commit/b6785421aae78c7ee9686efdfc67a4bd5f9e220d))
+* 修复 DNS detour 与状态同步问题 ([dd84f6b](https://github.com/roseforljh/KunBox/commit/dd84f6b20cc054c4071fa2f8217d1a10135a2123))
+* 修复 PROFILE/NODE 分流下 DNS detour 对齐 ([a99f047](https://github.com/roseforljh/KunBox/commit/a99f047bbd6abd99b62082d10dadd366ce77bcb4))
+* 针对分流的一些修复 ([5492fb7](https://github.com/roseforljh/KunBox/commit/5492fb7c97a4d0fdd3642d0e6e1f5b03e7bbd44f))
+
 ## [2.11.3](https://github.com/roseforljh/KunBox/compare/v2.11.2...v2.11.3) (2026-03-20)
 
 
