@@ -2,6 +2,7 @@ package com.kunk.singbox.utils.dns
 
 import org.junit.Assert.*
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 /**
  * DnsResolver 单元测试
@@ -75,5 +76,16 @@ class DnsResolverTest {
         val result = DnsResolveResult(ip = "192.168.1.1", source = "direct")
         assertTrue(result.isSuccess)
         assertEquals("direct", result.source)
+    }
+
+    @Test
+    fun testResolveBatchReturnsEmptyMapWhenInputsAreOnlyIps() = runBlocking {
+        val resolver = DnsResolver()
+
+        val results = resolver.resolveBatch(
+            domains = listOf("1.1.1.1", "8.8.8.8", "::1", "1.1.1.1")
+        )
+
+        assertTrue(results.isEmpty())
     }
 }

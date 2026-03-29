@@ -11,12 +11,22 @@ import com.kunk.singbox.model.RuleSetConfig
 import com.kunk.singbox.model.RuleSetOutboundMode
 import com.kunk.singbox.model.RuleSetType
 import com.kunk.singbox.model.RuleType
+import com.kunk.singbox.model.BatchUpdateResult
+import com.kunk.singbox.model.SubscriptionUpdateStage
+import com.kunk.singbox.model.SubscriptionUpdateResult
 import com.kunk.singbox.utils.parser.Base64Parser
 import com.kunk.singbox.utils.parser.ClashYamlParser
 import com.kunk.singbox.utils.parser.NodeLinkParser
 import com.kunk.singbox.utils.parser.SingBoxParser
 import com.kunk.singbox.utils.parser.SubscriptionManager
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -24,6 +34,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.ConnectException
 import java.net.SocketTimeoutException
+import java.util.concurrent.TimeUnit
 
 @Suppress("LargeClass")
 class ConfigRepositoryTest {
@@ -199,6 +210,159 @@ class ConfigRepositoryTest {
         )
 
         assertEquals(original, result)
+    }
+
+    @Test
+    fun testBuildSubscriptionAttemptUserAgentsKeepsRememberedUserAgentFirst() {
+        val userAgents = ConfigRepository.buildSubscriptionAttemptUserAgents(
+            preferredUserAgent = "sing-box/1.13.1",
+            circuitBrokenUserAgents = setOf("Clash/1.18.0")
+        )
+
+        assertEquals("sing-box/1.13.1", userAgents.first())
+        assertTrue(!userAgents.contains("Clash/1.18.0"))
+    }
+
+    @Test
+    fun testResolveSubscriptionUpdateBudgetSecondsFallsBackToDefaultWhenNonPositive() {
+        val budgetSeconds = ConfigRepository.resolveSubscriptionUpdateBudgetSeconds(0)
+
+        assertEquals(AppSettings().subscriptionUpdateTimeout.toLong(), budgetSeconds)
+    }
+
+    @Test
+    fun testResolveSubscriptionAttemptTimeoutBudgetUsesFullRemainingBudget() {
+        val budget = ConfigRepository.resolveSubscriptionAttemptTimeoutBudget(
+            totalBudgetSeconds = 30,
+            elapsedMs = 0
+        )
+
+        assertNotNull(budget)
+        assertEquals(30L, budget?.connectTimeoutSeconds)
+        assertEquals(30L, budget?.readTimeoutSeconds)
+        assertEquals(30L, budget?.writeTimeoutSeconds)
+        assertEquals(30L, budget?.callTimeoutSeconds)
+    }
+
+    @Test
+    fun testResolveSubscriptionAttemptTimeoutBudgetRoundsUpRemainingBudget() {
+        val budget = ConfigRepository.resolveSubscriptionAttemptTimeoutBudget(
+            totalBudgetSeconds = 30,
+            elapsedMs = 29_100
+        )
+
+        assertNotNull(budget)
+        assertEquals(1L, budget?.connectTimeoutSeconds)
+        assertEquals(1L, budget?.readTimeoutSeconds)
+        assertEquals(1L, budget?.writeTimeoutSeconds)
+        assertEquals(1L, budget?.callTimeoutSeconds)
+    }
+
+    @Test
+    fun testResolveSubscriptionAttemptTimeoutBudgetReturnsNullWhenBudgetExhausted() {
+        val budget = ConfigRepository.resolveSubscriptionAttemptTimeoutBudget(
+            totalBudgetSeconds = 30,
+            elapsedMs = 30_000
+        )
+
+        assertNull(budget)
+    }
+
+    @Test
+    fun testResolveSubscriptionUpdateStageMapsKnownStages() {
+        assertEquals(
+            SubscriptionUpdateStage.Requesting,
+            ConfigRepository.resolveSubscriptionUpdateStage("requesting")
+        )
+        assertEquals(
+            SubscriptionUpdateStage.Parsing,
+            ConfigRepository.resolveSubscriptionUpdateStage("parsing")
+        )
+        assertEquals(
+            SubscriptionUpdateStage.Saving,
+            ConfigRepository.resolveSubscriptionUpdateStage("saving")
+        )
+        assertEquals(
+            SubscriptionUpdateStage.DnsBackground,
+            ConfigRepository.resolveSubscriptionUpdateStage("dns_background")
+        )
+        assertNull(ConfigRepository.resolveSubscriptionUpdateStage("unknown"))
+    }
+
+    @Test
+    fun testLaunchSubscriptionDnsPreResolveReturnsWithoutWaitingForResolution() {
+        val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+
+        try {
+            val startNs = System.nanoTime()
+            val job = ConfigRepository.launchSubscriptionDnsPreResolve(
+                scope = scope,
+                profileId = "profile-1",
+                enabled = true
+            ) {
+                started.complete(Unit)
+                release.await()
+                true
+            }
+            val elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs)
+
+            runBlocking { started.await() }
+
+            assertNotNull(job)
+            assertTrue(elapsedMs < 200)
+            assertTrue(job?.isActive == true)
+
+            release.complete(Unit)
+            runBlocking { job?.join() }
+
+            assertTrue(job?.isCompleted == true)
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun testLaunchSubscriptionDnsPreResolveSwallowsBackgroundFailure() {
+        val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+        try {
+            val job = ConfigRepository.launchSubscriptionDnsPreResolve(
+                scope = scope,
+                profileId = "profile-2",
+                enabled = true
+            ) {
+                throw SocketTimeoutException("dns timeout")
+            }
+
+            runBlocking { job?.join() }
+
+            assertNotNull(job)
+            assertTrue(job?.isCompleted == true)
+            assertFalse(job?.isCancelled == true)
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun testBatchUpdateResultAggregatesMixedSubscriptionResults() {
+        val result = BatchUpdateResult(
+            successWithChanges = 1,
+            successNoChanges = 2,
+            failed = 1,
+            details = listOf(
+                SubscriptionUpdateResult.SuccessWithChanges("A", 1, 0, 3),
+                SubscriptionUpdateResult.SuccessNoChanges("B", 2),
+                SubscriptionUpdateResult.SuccessNoChanges("C", 2),
+                SubscriptionUpdateResult.Failed("D", "timeout")
+            )
+        )
+
+        assertEquals(4, result.totalCount)
+        assertEquals(3, result.successCount)
+        assertEquals(4, result.details.size)
     }
 
     @Test
@@ -420,6 +584,30 @@ class ConfigRepositoryTest {
         assertEquals(certificatePem, anytls?.tls?.certificate)
         assertEquals(caPem, anytls?.tls?.ca)
         assertEquals(keyPem, anytls?.tls?.key)
+    }
+
+    @Test
+    fun testSubscriptionManagerParsesYamlImportWithMultipleNodes() {
+        val yaml = """
+            proxies:
+              - name: "hk-regression"
+                type: ss
+                server: hk.example.com
+                port: 443
+                cipher: aes-128-gcm
+                password: pass-a
+              - name: "us-regression"
+                type: trojan
+                server: us.example.com
+                port: 443
+                password: pass-b
+        """.trimIndent()
+
+        val config = subscriptionManager.parse(yaml)
+
+        assertNotNull(config)
+        assertEquals(2, config?.outbounds?.size)
+        assertEquals(listOf("hk-regression", "us-regression"), config?.outbounds?.map { it.tag })
     }
 
     @Test
