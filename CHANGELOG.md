@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.11.5](https://github.com/roseforljh/KunBox/compare/v2.11.4...v2.11.5) (2026-03-29)
+
+
+### Bug Fixes
+
+* clear ipc hub binder stale state ([8a5e242](https://github.com/roseforljh/KunBox/commit/8a5e24254b2fa5acc72281db21c78f5217957ee0))
+* clear stale vpn runtime state ([54607e8](https://github.com/roseforljh/KunBox/commit/54607e85e44885b17197687cb1150ddca19a41cb))
+* stabilize vpn handover recovery ([2cfa995](https://github.com/roseforljh/KunBox/commit/2cfa9950b27c06309e3c669e4600cdb914cf958c))
+* 内核同步官方1.13.4 ([f1c8ac9](https://github.com/roseforljh/KunBox/commit/f1c8ac99fb8d54033be149dc478d3c981bccf74e))
+
 ## [2.11.4](https://github.com/roseforljh/KunBox/compare/v2.11.3...v2.11.4) (2026-03-29)
 
 
