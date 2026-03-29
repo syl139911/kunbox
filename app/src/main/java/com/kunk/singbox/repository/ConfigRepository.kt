@@ -332,14 +332,19 @@ class ConfigRepository(private val context: Context) {
                 ?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
         }
 
+        @Suppress("UnusedParameter")
         internal fun looksLikeHtmlSubscriptionPage(contentType: String?, body: String): Boolean {
-            val normalizedContentType = contentType.orEmpty().lowercase()
-            if ("text/html" in normalizedContentType) {
-                return true
-            }
             val trimmed = body.trimStart()
+            if (!trimmed.startsWith("<")) {
+                return false
+            }
+
             return trimmed.startsWith("<!DOCTYPE html>", ignoreCase = true) ||
-                trimmed.startsWith("<html", ignoreCase = true)
+                trimmed.startsWith("<html", ignoreCase = true) ||
+                trimmed.startsWith("<head", ignoreCase = true) ||
+                trimmed.startsWith("<body", ignoreCase = true) ||
+                trimmed.startsWith("<meta", ignoreCase = true) ||
+                trimmed.startsWith("<title", ignoreCase = true)
         }
 
         internal fun extractSubscriptionHost(url: String): String? {
@@ -387,6 +392,13 @@ class ConfigRepository(private val context: Context) {
             }
             val message = exception.message.orEmpty().lowercase()
             return "failed to connect" in message || "timeout" in message
+        }
+
+        internal fun shouldStopSubscriptionFallback(
+            httpStatusCode: Int? = null,
+            looksLikeHtmlInfoPage: Boolean = false
+        ): Boolean {
+            return looksLikeHtmlInfoPage || httpStatusCode == 429
         }
 
         internal fun resolveSubscriptionUpdateBudgetSeconds(configuredTimeoutSeconds: Int): Long {
@@ -1755,6 +1767,12 @@ class ConfigRepository(private val context: Context) {
         val userInfo: SubscriptionUserInfo?
     )
 
+    private data class SubscriptionAttemptResult(
+        val fetchResult: FetchResult? = null,
+        val shouldStopFallback: Boolean = false,
+        val terminalError: Exception? = null
+    )
+
     private fun parseTrafficString(value: String): Long {
         val trimmed = value.trim().uppercase()
         val match = REGEX_TRAFFIC.find(trimmed) ?: return 0L
@@ -1973,22 +1991,23 @@ class ConfigRepository(private val context: Context) {
         contentType: String?,
         responseBody: String,
         subscriptionUserInfoHeader: String?
-    ): FetchResult? {
-        if (looksLikeHtmlSubscriptionPage(contentType, responseBody)) {
+    ): SubscriptionAttemptResult {
+        val isHtmlInfoPage = looksLikeHtmlSubscriptionPage(contentType, responseBody)
+        if (shouldStopSubscriptionFallback(looksLikeHtmlInfoPage = isHtmlInfoPage)) {
             logHtmlSubscriptionPage(userAgent, responseBody)
-            return null
+            return SubscriptionAttemptResult(shouldStopFallback = true)
         }
 
         val config = subscriptionManager.parse(responseBody)
         if (config == null || config.outbounds.isNullOrEmpty()) {
             Log.w(TAG, "Failed to parse subscription response with UA '$userAgent'")
-            return null
+            return SubscriptionAttemptResult()
         }
 
         val headerUserInfo = parseSubscriptionUserInfo(subscriptionUserInfoHeader, responseBody)
         val outboundUserInfo = parseUserInfoFromOutbounds(config.outbounds)
         val userInfo = mergeUserInfo(headerUserInfo, outboundUserInfo)
-        return FetchResult(config, userInfo)
+        return SubscriptionAttemptResult(fetchResult = FetchResult(config, userInfo))
     }
 
     private fun buildSubscriptionRequest(url: String, userAgent: String): Request {
@@ -2030,17 +2049,17 @@ class ConfigRepository(private val context: Context) {
     }
 
     private fun logSubscriptionParseResult(
-        fetchResult: FetchResult?,
+        attemptResult: SubscriptionAttemptResult,
         contentType: String?,
         context: SubscriptionAttemptContext,
         costMs: Long
     ) {
-        val message = if (fetchResult != null) {
-            "Subscription request succeeded"
-        } else {
-            "Subscription response unusable"
+        val message = when {
+            attemptResult.fetchResult != null -> "Subscription request succeeded"
+            attemptResult.shouldStopFallback -> "Subscription response stopped further fallback"
+            else -> "Subscription response unusable"
         }
-        val level = if (fetchResult != null) Log.INFO else Log.WARN
+        val level = if (attemptResult.fetchResult != null) Log.INFO else Log.WARN
         logSubscriptionAttempt(
             level = level,
             message = message,
@@ -2050,27 +2069,50 @@ class ConfigRepository(private val context: Context) {
         )
     }
 
+    private fun logSubscriptionFallbackStopped(
+        context: SubscriptionAttemptContext,
+        costMs: Long,
+        reason: String
+    ) {
+        logSubscriptionAttempt(
+            level = Log.WARN,
+            message = "Stopping remaining User-Agent fallbacks",
+            context = context,
+            costMs = costMs,
+            extra = reason
+        )
+    }
+
     private fun executeSubscriptionAttempt(
         client: OkHttpClient,
         url: String,
         context: SubscriptionAttemptContext,
         onProgress: (String) -> Unit,
         onStageChanged: (SubscriptionUpdateStage) -> Unit
-    ): FetchResult? {
+    ): SubscriptionAttemptResult {
         val startedAt = System.currentTimeMillis()
         val request = buildSubscriptionRequest(url, context.userAgent)
 
         client.newCall(request).execute().use { response ->
             val costMs = System.currentTimeMillis() - startedAt
             if (!response.isSuccessful) {
+                val shouldStopFallback = shouldStopSubscriptionFallback(httpStatusCode = response.code)
+                val error = Exception("HTTP ${response.code}: ${response.message}")
                 logSubscriptionAttempt(
                     level = Log.WARN,
-                    message = "Subscription request failed",
+                    message = if (shouldStopFallback) {
+                        "Subscription request hit terminal response"
+                    } else {
+                        "Subscription request failed"
+                    },
                     context = context,
                     costMs = costMs,
                     extra = "code=${response.code}"
                 )
-                throw Exception("HTTP ${response.code}: ${response.message}")
+                if (!shouldStopFallback) {
+                    throw error
+                }
+                return SubscriptionAttemptResult(shouldStopFallback = true, terminalError = error)
             }
 
             val responseBody = response.body?.string()
@@ -2088,18 +2130,18 @@ class ConfigRepository(private val context: Context) {
             onProgress("Parsing subscription response...")
 
             val contentType = response.header("Content-Type")
-            val fetchResult = parseSubscriptionResponse(
+            val attemptResult = parseSubscriptionResponse(
                 userAgent = context.userAgent,
                 contentType = contentType,
                 responseBody = responseBody,
                 subscriptionUserInfoHeader = response.header("Subscription-Userinfo")
             )
-            logSubscriptionParseResult(fetchResult, contentType, context, costMs)
-            return fetchResult
+            logSubscriptionParseResult(attemptResult, contentType, context, costMs)
+            return attemptResult
         }
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod", "LoopWithTooManyJumpStatements")
     private fun fetchAndParseSubscription(
         url: String,
         onProgress: (String) -> Unit = {},
@@ -2134,17 +2176,27 @@ class ConfigRepository(private val context: Context) {
                     userAgent = userAgent,
                     isRemembered = rememberedUserAgent.equals(userAgent, ignoreCase = true)
                 )
-                val fetchResult = executeSubscriptionAttempt(
+                val attemptResult = executeSubscriptionAttempt(
                     client = getSubscriptionProxyClient(timeoutBudget) ?: getSubscriptionClient(timeoutBudget),
                     url = url,
                     context = attemptContext,
                     onProgress = onProgress,
                     onStageChanged = onStageChanged
                 )
+                val fetchResult = attemptResult.fetchResult
                 if (fetchResult != null) {
                     rememberSuccessfulSubscriptionUserAgent(url, userAgent)
                     clearSubscriptionUserAgentFailure(host, userAgent)
                     return fetchResult
+                }
+                if (attemptResult.shouldStopFallback) {
+                    lastError = attemptResult.terminalError
+                    logSubscriptionFallbackStopped(
+                        context = attemptContext,
+                        costMs = System.currentTimeMillis() - startedAt,
+                        reason = attemptResult.terminalError?.message ?: "html_info_page"
+                    )
+                    break
                 }
             } catch (e: Exception) {
                 lastError = e

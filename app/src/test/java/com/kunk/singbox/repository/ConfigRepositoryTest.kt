@@ -147,13 +147,23 @@ class ConfigRepositoryTest {
     }
 
     @Test
-    fun testLooksLikeHtmlSubscriptionPageByContentType() {
+    fun testLooksLikeHtmlSubscriptionPageDoesNotTrustContentTypeAloneForYamlBody() {
         val result = ConfigRepository.looksLikeHtmlSubscriptionPage(
             contentType = "text/html; charset=utf-8",
             body = "mixed-port: 7890"
         )
 
-        assertTrue(result)
+        assertFalse(result)
+    }
+
+    @Test
+    fun testLooksLikeHtmlSubscriptionPageDoesNotTrustContentTypeAloneForBase64Body() {
+        val result = ConfigRepository.looksLikeHtmlSubscriptionPage(
+            contentType = "text/html; charset=utf-8",
+            body = "c3M6Ly9ZV1Z6TFRFeU9DMW5ZMjA9QDEyNy4wLjAuMTo0NDMjVEVTVA=="
+        )
+
+        assertFalse(result)
     }
 
     @Test
@@ -161,6 +171,16 @@ class ConfigRepositoryTest {
         val result = ConfigRepository.looksLikeHtmlSubscriptionPage(
             contentType = null,
             body = "<!DOCTYPE html><html><body>订阅信息</body></html>"
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun testLooksLikeHtmlSubscriptionPageByHtmlTagPrefixEvenWhenContentTypeIsTextHtml() {
+        val result = ConfigRepository.looksLikeHtmlSubscriptionPage(
+            contentType = "text/html; charset=utf-8",
+            body = "<html><body>订阅信息</body></html>"
         )
 
         assertTrue(result)
@@ -405,6 +425,33 @@ class ConfigRepositoryTest {
         )
 
         assertTrue(!result)
+    }
+
+    @Test
+    fun testShouldStopSubscriptionFallbackForHtmlInfoPage() {
+        val result = ConfigRepository.shouldStopSubscriptionFallback(
+            looksLikeHtmlInfoPage = true
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun testShouldStopSubscriptionFallbackForHttp429() {
+        val result = ConfigRepository.shouldStopSubscriptionFallback(
+            httpStatusCode = 429
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun testShouldNotStopSubscriptionFallbackForOrdinaryParseFailureOrOtherHttpErrors() {
+        val parseFailureResult = ConfigRepository.shouldStopSubscriptionFallback()
+        val serverErrorResult = ConfigRepository.shouldStopSubscriptionFallback(httpStatusCode = 503)
+
+        assertFalse(parseFailureResult)
+        assertFalse(serverErrorResult)
     }
 
     @Test
