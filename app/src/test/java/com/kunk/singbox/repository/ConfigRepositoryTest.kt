@@ -7,6 +7,7 @@ import com.kunk.singbox.model.CustomRule
 import com.kunk.singbox.model.DomainResolveConfig
 import com.kunk.singbox.model.OutboundTag
 import com.kunk.singbox.model.RuleSet
+import com.kunk.singbox.model.RuleSetConfig
 import com.kunk.singbox.model.RuleSetOutboundMode
 import com.kunk.singbox.model.RuleSetType
 import com.kunk.singbox.model.RuleType
@@ -35,6 +36,14 @@ class ConfigRepositoryTest {
             Base64Parser { nodeLinkParser.parse(it) }
         )
     )
+
+    private fun invokeAppliedRemoteRuleSetFilter(
+        ruleSets: List<RuleSet>,
+        validRuleSets: List<RuleSetConfig>
+    ): List<RuleSet> {
+        val validTags = validRuleSets.mapNotNull { it.tag }.toSet()
+        return ConfigRepository.filterAppliedRemoteRuleSetsForTest(ruleSets, validTags)
+    }
 
     @Test
     fun testStableNodeIdConsistency() {
@@ -803,5 +812,58 @@ class ConfigRepositoryTest {
 
         assertEquals("reject", routeRule.action)
         assertNull(routeRule.outbound)
+    }
+
+    @Test
+    fun testAppliedRemoteRuleSetFilterIncludesEnabledRemoteRuleSet() {
+        val ruleSet = RuleSet(tag = "remote-enabled", type = RuleSetType.REMOTE, enabled = true)
+
+        val filtered = invokeAppliedRemoteRuleSetFilter(
+            ruleSets = listOf(ruleSet),
+            validRuleSets = listOf(RuleSetConfig(tag = "remote-enabled"))
+        )
+
+        assertEquals(listOf("remote-enabled"), filtered.map { it.tag })
+    }
+
+    @Test
+    fun testAppliedRemoteRuleSetFilterExcludesDisabledRemoteRuleSet() {
+        val ruleSet = RuleSet(tag = "remote-disabled", type = RuleSetType.REMOTE, enabled = false)
+
+        val filtered = invokeAppliedRemoteRuleSetFilter(
+            ruleSets = listOf(ruleSet),
+            validRuleSets = listOf(RuleSetConfig(tag = "remote-disabled"))
+        )
+
+        assertTrue(filtered.isEmpty())
+    }
+
+    @Test
+    fun testAppliedRemoteRuleSetFilterExcludesRemoteRuleSetOutsideValidTags() {
+        val ruleSet = RuleSet(tag = "remote-missing", type = RuleSetType.REMOTE, enabled = true)
+
+        val filtered = invokeAppliedRemoteRuleSetFilter(
+            ruleSets = listOf(ruleSet),
+            validRuleSets = listOf(RuleSetConfig(tag = "another-tag"))
+        )
+
+        assertTrue(filtered.isEmpty())
+    }
+
+    @Test
+    fun testAppliedRemoteRuleSetFilterExcludesLocalRuleSet() {
+        val ruleSet = RuleSet(
+            tag = "local-enabled",
+            type = RuleSetType.LOCAL,
+            path = "/tmp/local-enabled.srs",
+            enabled = true
+        )
+
+        val filtered = invokeAppliedRemoteRuleSetFilter(
+            ruleSets = listOf(ruleSet),
+            validRuleSets = listOf(RuleSetConfig(tag = "local-enabled"))
+        )
+
+        assertTrue(filtered.isEmpty())
     }
 }

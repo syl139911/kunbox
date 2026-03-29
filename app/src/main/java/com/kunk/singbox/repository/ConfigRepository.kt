@@ -328,6 +328,23 @@ class ConfigRepository(private val context: Context) {
             return resolveCustomRuleOutboundMode(rule.outboundMode, rule.outbound)
         }
 
+        private fun filterAppliedRemoteRuleSets(
+            ruleSets: List<RuleSet>,
+            validTags: Set<String>
+        ): List<RuleSet> {
+            return ruleSets.filter { ruleSet ->
+                ruleSet.enabled && ruleSet.type == RuleSetType.REMOTE && ruleSet.tag in validTags
+            }
+        }
+
+        @JvmStatic
+        internal fun filterAppliedRemoteRuleSetsForTest(
+            ruleSets: List<RuleSet>,
+            validTags: Set<String>
+        ): List<RuleSet> {
+            return filterAppliedRemoteRuleSets(ruleSets, validTags)
+        }
+
         private fun toRouteRule(semantic: OutboundSemantic, selectorTag: String): RouteRule {
             return when (semantic) {
                 OutboundSemantic.Direct -> RouteRule(outbound = "direct")
@@ -3291,6 +3308,13 @@ class ConfigRepository(private val context: Context) {
         }.filterNotNull().toMutableList()
 
         return rules
+    }
+
+    internal fun getAppliedRemoteRuleSets(settings: AppSettings): List<RuleSet> {
+        val validTags = buildCustomRuleSets(settings)
+            .mapNotNull { it.tag }
+            .toSet()
+        return filterAppliedRemoteRuleSets(settings.ruleSets, validTags)
     }
 
     private fun buildCustomDomainRules(
