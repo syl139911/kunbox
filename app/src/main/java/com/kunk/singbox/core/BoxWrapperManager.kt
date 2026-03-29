@@ -37,7 +37,7 @@ object BoxWrapperManager {
         return try {
             commandServer = server
             _isPaused.value = false
-            _hasSelector.value = runCatching { Libbox.hasSelector() }.getOrDefault(false)
+            _hasSelector.value = LibboxCompat.hasSelector()
             Log.i(TAG, "BoxWrapperManager initialized, hasSelector=${_hasSelector.value}")
             true
         } catch (e: Exception) {
@@ -65,7 +65,7 @@ object BoxWrapperManager {
     fun selectOutbound(nodeTag: String): Boolean {
         if (!isAvailable()) return false
         return try {
-            val result = Libbox.selectOutboundByTag(nodeTag)
+            val result = LibboxCompat.selectOutboundByTag(nodeTag)
             if (result) {
                 Log.i(TAG, "selectOutbound($nodeTag) success")
             } else {
@@ -83,7 +83,7 @@ object BoxWrapperManager {
     fun getSelectedOutbound(): String? {
         if (!isAvailable()) return null
         return try {
-            Libbox.getSelectedOutbound().takeIf { it.isNotBlank() }
+            LibboxCompat.getSelectedOutbound()
         } catch (e: Exception) {
             Log.w(TAG, "getSelectedOutbound failed: ${e.message}")
             null
@@ -95,7 +95,7 @@ object BoxWrapperManager {
     fun listOutbounds(): List<String> {
         if (!isAvailable()) return emptyList()
         return try {
-            Libbox.listOutboundsString()
+            LibboxCompat.listOutboundsString()
                 ?.split("\n")
                 ?.filter { it.isNotBlank() }
                 ?: emptyList()
@@ -109,11 +109,7 @@ object BoxWrapperManager {
      */
     fun hasSelector(): Boolean {
         if (!isAvailable()) return false
-        return try {
-            Libbox.hasSelector()
-        } catch (e: Exception) {
-            false
-        }
+        return LibboxCompat.hasSelector()
     }
 
     /**
@@ -121,7 +117,8 @@ object BoxWrapperManager {
     fun pause(): Boolean {
         if (!isAvailable()) return false
         return try {
-            Libbox.pauseService()
+            val invoked = LibboxCompat.pauseService()
+            if (!invoked) return false
             _isPaused.value = true
             Log.i(TAG, "pause() success")
             true
@@ -136,7 +133,8 @@ object BoxWrapperManager {
     fun resume(): Boolean {
         if (!isAvailable()) return false
         return try {
-            Libbox.resumeService()
+            val invoked = LibboxCompat.resumeService()
+            if (!invoked) return false
             _isPaused.value = false
             lastResumeTimestamp = System.currentTimeMillis()
             Log.i(TAG, "resume() success")
@@ -150,7 +148,7 @@ object BoxWrapperManager {
     fun isPausedNow(): Boolean {
         if (!isAvailable()) return false
         return try {
-            Libbox.isPaused()
+            LibboxCompat.isPaused()
         } catch (e: Exception) {
             _isPaused.value
         }
@@ -373,7 +371,7 @@ object BoxWrapperManager {
     fun getUploadTotal(): Long {
         if (!isAvailable()) return -1L
         return try {
-            Libbox.getTrafficTotalUplink()
+            LibboxCompat.getTrafficTotalUplink()
         } catch (e: Exception) {
             Log.w(TAG, "getUploadTotal failed: ${e.message}")
             -1L
@@ -385,7 +383,7 @@ object BoxWrapperManager {
     fun getDownloadTotal(): Long {
         if (!isAvailable()) return -1L
         return try {
-            Libbox.getTrafficTotalDownlink()
+            LibboxCompat.getTrafficTotalDownlink()
         } catch (e: Exception) {
             Log.w(TAG, "getDownloadTotal failed: ${e.message}")
             -1L
@@ -397,7 +395,7 @@ object BoxWrapperManager {
     fun resetTraffic(): Boolean {
         if (!isAvailable()) return false
         return try {
-            val result = Libbox.resetTrafficStats()
+            val result = LibboxCompat.resetTrafficStats()
             Log.i(TAG, "resetTraffic() result=$result")
             result
         } catch (e: Exception) {
@@ -657,16 +655,7 @@ object BoxWrapperManager {
     fun getTrafficByOutbound(): Map<String, Pair<Long, Long>> {
         if (!isAvailable()) return emptyMap()
         return try {
-            val iterator = Libbox.getTrafficByOutbound() ?: return emptyMap()
-            val result = mutableMapOf<String, Pair<Long, Long>>()
-            while (iterator.hasNext()) {
-                val item = iterator.next() ?: continue
-                val tag = item.tag
-                if (!tag.isNullOrBlank()) {
-                    result[tag] = Pair(item.upload, item.download)
-                }
-            }
-            result
+            LibboxCompat.getTrafficByOutbound()
         } catch (e: Exception) {
             Log.w(TAG, "getTrafficByOutbound failed: ${e.message}")
             emptyMap()

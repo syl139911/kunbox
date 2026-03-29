@@ -152,8 +152,9 @@ KunBox-Android/
 │   ├── utils/parser/      # Protocol parsers (NodeLinkParser, ClashYamlParser)
 │   └── viewmodel/         # ViewModel layer
 │
-├── Kkunbox/               # Sing-box core source and build scripts
-│   └── buildScript/       # libbox compilation scripts
+├── .kernel-sync-local/    # Local-only sing-box sync workspace and one-click script
+│   ├── sync-kernel.ps1    # Re-sync the latest official stable upstream, build and replace libbox.aar
+│   └── upstream-sing-box/ # Official sing-box worktree + KunBox patch application target
 │
 └── config/detekt/         # Code quality check configuration
 ```
@@ -232,41 +233,46 @@ Then execute:
 .\gradlew assembleRelease
 ```
 
-### Compile libbox Core (Optional)
+### Sync libbox Core (Local-only)
 
-If you need to modify the underlying core code, compile libbox:
+KunBox now uses the local workspace `.kernel-sync-local/` for kernel sync. This directory is **not committed to git**. By default, the script resolves the latest official stable `SagerNet/sing-box` tag automatically and explicitly skips GitHub prerelease entries plus tags with `alpha`, `beta`, or `rc` suffixes.
 
-```powershell
-# Compile from local source (requires Go 1.24+)
-.\Kkunbox\buildScript\tasks\build_libbox.ps1 -UseLocalSource
+The sync workspace now reuses safe caches by default. Instead of `git clean -fdx`, the script hard-resets the upstream worktree, removes only known generated garbage, fails explicitly if leftover tracked or untracked files still exist, reuses a fixed verification temp directory, and keeps only the newest 3 `libbox.aar.backup-before-replace.*` backups.
 
-# Compile from remote repository
-.\Kkunbox\buildScript\tasks\build_libbox.ps1
-```
-
-After compilation, `libbox.aar` will be automatically placed in the `app/libs/` directory.
-
-### Sync Upstream Kernel
-
-KunBox uses a fixed branch `kunbox-extensions` to manage kernel extensions. This branch is based on an official sing-box tag, with KunBox extension commits stacked on top.
-
-To sync to a new upstream version:
+Run the one-click script from the repository root:
 
 ```powershell
-cd Kkunbox\singbox-core
-
-# 1. Fetch latest upstream tags
-git fetch upstream --tags
-
-# 2. Rebase onto the new version tag (e.g. v1.13.0)
-git rebase v1.13.0
-
-# 3. Go back to project root and rebuild the kernel
-cd ..\..
-.\Kkunbox\buildScript\tasks\build_libbox.ps1 -UseLocalSource -AutoReplace
+.\.kernel-sync-local\sync-kernel.ps1
 ```
 
-> **Note**: KunBox extension commits are automatically preserved on top of the branch during rebase. If conflicts occur, resolve them manually and run `git rebase --continue`.
+If you need to pin a specific official tag manually, pass it explicitly:
+
+```powershell
+.\.kernel-sync-local\sync-kernel.ps1 -Tag v1.13.4
+```
+
+At the time of writing, the latest official stable release still resolves to `v1.13.4`, but that value is no longer hardcoded as the default logic.
+
+The script performs these stages in order:
+
+1. Check Git, Go, Java 17, Android SDK, Android NDK, `gomobile`, and `gobind`
+2. Resolve and print the target official tag, then ensure `.kernel-sync-local/upstream-sing-box` exists, hard-reset it to that tag, and run targeted garbage cleanup instead of wiping the whole cache
+3. Prefer the matching local KunBox patch for the target tag, or fall back to the current available minimal KunBox patch if no exact filename exists
+4. Build `libbox.aar`
+5. Verify the built AAR still exports:
+   - `getKunBoxVersion`
+   - `resetAllConnections`
+   - `recoverNetworkAuto`
+   - `checkNetworkRecoveryNeeded`
+   - `closeAllTrackedConnections`
+   - `getConnectionCount`
+   - `closeIdleConnections`
+6. Backup and replace `app/libs/libbox.aar`, then trim old backups down to the newest 3 copies
+7. Run `assembleDebug`, `testDebugUnitTest`, and `detekt`
+
+The targeted cleanup removes obvious garbage such as stale `tmp-sync-kernel-*`, `tmp-libbox-*-check`, `libbox-sources.jar`, `libbox-legacy-sources.jar`, and `libbox-legacy.aar`, and also deletes untracked files that were created by a previous patch application. After a successful sync it also removes the temporary upstream `libbox.aar` copy.
+
+If the script cannot resolve a stable official tag, cannot find any `patches/kunbox-*.patch`, detects leftover dirty files after targeted cleanup, or the selected patch stops on `git apply --check` / patch application, AAR method checks, or Gradle verification, treat that as a real coupling break. Missing an exact `kunbox-<tag>.patch` filename alone is no longer a blocker. Fix the Kotlin compatibility layer or the kernel export layer at the reported failure point, then rerun the script.
 
 ### Run Tests
 

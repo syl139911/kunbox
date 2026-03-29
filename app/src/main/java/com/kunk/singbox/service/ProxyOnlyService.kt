@@ -15,6 +15,7 @@ import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import com.kunk.singbox.MainActivity
+import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.core.SingBoxCore
 import com.kunk.singbox.ipc.SingBoxIpcHub
 import com.kunk.singbox.ipc.VpnStateStore
@@ -190,7 +191,10 @@ class ProxyOnlyService : Service() {
                 if (uid > 0) {
                     ConnectionOwner().apply {
                         userId = uid
-                        androidPackageName = packageManager.getPackagesForUid(uid)?.firstOrNull().orEmpty()
+                        LibboxCompat.setConnectionOwnerPackageName(
+                            owner = this,
+                            packageName = packageManager.getPackagesForUid(uid)?.firstOrNull().orEmpty()
+                        )
                     }
                 } else {
                     ConnectionOwner()
@@ -439,8 +443,8 @@ class ProxyOnlyService : Service() {
                 serviceScope.launch {
                     try {
 
-                        if (Libbox.isPaused()) {
-                            Libbox.resumeService()
+                        if (LibboxCompat.isPaused()) {
+                            LibboxCompat.resumeService()
                         }
                         Log.i(TAG, "[PrepareRestart] Step 1/2: Ensured core is awake")
 

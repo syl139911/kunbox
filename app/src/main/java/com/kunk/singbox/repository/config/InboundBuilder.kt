@@ -22,8 +22,7 @@ object InboundBuilder {
                     tag = "mixed-in",
                     listen = if (settings.allowLan) "0.0.0.0" else "127.0.0.1",
                     listenPort = settings.proxyPort,
-                    reuseAddr = true,
-                    sniff = true
+                    reuseAddr = true
                 )
             )
         }
@@ -40,8 +39,7 @@ object InboundBuilder {
                     strictRoute = false,
                     stack = effectiveTunStack.name.lowercase(),
                     endpointIndependentNat = settings.endpointIndependentNat,
-                    gso = null,
-                    sniff = true
+                    gso = null
                 )
             )
         } else if (settings.proxyPort <= 0) {
@@ -51,8 +49,7 @@ object InboundBuilder {
                     tag = "mixed-in",
                     listen = "127.0.0.1",
                     listenPort = 2080,
-                    reuseAddr = true,
-                    sniff = true
+                    reuseAddr = true
                 )
             )
         }

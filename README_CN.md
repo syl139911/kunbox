@@ -152,8 +152,9 @@ KunBox-Android/
 │   ├── utils/parser/      # 协议解析器 (NodeLinkParser, ClashYamlParser)
 │   └── viewmodel/         # ViewModel 层
 │
-├── Kkunbox/               # Sing-box 核心源码与构建脚本
-│   └── buildScript/       # libbox 编译脚本
+├── .kernel-sync-local/    # 仅本地使用的 sing-box 同步工作区与一键脚本
+│   ├── sync-kernel.ps1    # 对齐官方最新稳定版、构建并替换 libbox.aar
+│   └── upstream-sing-box/ # 官方 sing-box 工作树与 KunBox 补丁应用目标
 │
 └── config/detekt/         # 代码质量检查配置
 ```
@@ -232,41 +233,46 @@ KEY_PASSWORD=your_key_password
 .\gradlew assembleRelease
 ```
 
-### 编译 libbox 核心 (可选)
+### 同步 libbox 内核（仅本地工作区）
 
-如需修改底层核心代码，需要编译 libbox：
+KunBox 现在统一使用 `.kernel-sync-local/` 做内核同步。该目录**不要提交到 git**。脚本默认会自动解析官方 `SagerNet/sing-box` 最新稳定版，并明确排除 GitHub `prerelease` 条目以及带有 `alpha`、`beta`、`rc` 后缀的 tag。
 
-```powershell
-# 从本地源码编译 (需要 Go 1.24+)
-.\Kkunbox\buildScript\tasks\build_libbox.ps1 -UseLocalSource
+同步工作区现在默认复用安全缓存。不再执行 `git clean -fdx` 粗暴清空全部未跟踪内容，而是先对上游工作树做 `reset --hard`，再只清理已知垃圾；如果定向清理后仍残留 tracked / untracked 变更，会直接报错退出。脚本同时复用固定校验临时目录，并把 `libbox.aar.backup-before-replace.*` 收敛为最近 3 份。
 
-# 从远程仓库编译
-.\Kkunbox\buildScript\tasks\build_libbox.ps1
-```
-
-编译完成后，`libbox.aar` 将自动放置到 `app/libs/` 目录。
-
-### 同步官方内核
-
-KunBox 使用固定分支 `kunbox-extensions` 管理内核扩展。该分支基于 sing-box 官方 tag，顶部叠加了 KunBox 扩展 commits。
-
-同步到新版本的流程：
+在仓库根目录直接执行：
 
 ```powershell
-cd Kkunbox\singbox-core
-
-# 1. 拉取上游最新 tags
-git fetch upstream --tags
-
-# 2. Rebase 到新版本 tag（例如 v1.13.0）
-git rebase v1.13.0
-
-# 3. 回到项目根目录，重新编译内核
-cd ..\..
-.\Kkunbox\buildScript\tasks\build_libbox.ps1 -UseLocalSource -AutoReplace
+.\.kernel-sync-local\sync-kernel.ps1
 ```
 
-> **说明**：rebase 时 KunBox 的扩展 commits 会自动保留在分支顶部。如遇冲突需手动解决后 `git rebase --continue`。
+如需手动锁定某个官方 tag，可显式传参：
+
+```powershell
+.\.kernel-sync-local\sync-kernel.ps1 -Tag v1.13.4
+```
+
+当前检查时官方最新稳定版仍是 `v1.13.4`，但它不再是脚本里的固定默认逻辑。
+
+脚本会依次完成：
+
+1. 检查 Git、Go、Java 17、Android SDK、Android NDK、`gomobile`、`gobind`
+2. 解析并打印目标官方 tag，然后确保 `.kernel-sync-local/upstream-sing-box` 存在，强制对齐到该 tag，并执行定向垃圾清理而不是清空整个缓存
+3. 优先应用目标 tag 对应的本地 KunBox 扩展补丁；若不存在同名文件，则回退到当前可用的最小 KunBox 补丁继续尝试
+4. 构建 `libbox.aar`
+5. 校验新 AAR 至少仍导出：
+   - `getKunBoxVersion`
+   - `resetAllConnections`
+   - `recoverNetworkAuto`
+   - `checkNetworkRecoveryNeeded`
+   - `closeAllTrackedConnections`
+   - `getConnectionCount`
+   - `closeIdleConnections`
+6. 备份并替换 `app/libs/libbox.aar`，同时把历史备份裁剪到最近 3 份
+7. 运行 `assembleDebug`、`testDebugUnitTest`、`detekt`
+
+定向清理会处理历史 `tmp-sync-kernel-*`、`tmp-libbox-*-check`、`libbox-sources.jar`、`libbox-legacy-sources.jar`、`libbox-legacy.aar` 等明显垃圾，并清理上一次补丁应用遗留的未跟踪新增文件；同步成功后还会移除上游目录里临时生成的 `libbox.aar`。
+
+如果脚本无法解析稳定版 tag、找不到任何 `patches/kunbox-*.patch`、在定向清理后仍检测到脏文件，或在 `git apply --check`、补丁应用、AAR 方法校验、Gradle 验证阶段报错，中断都是预期行为。仅仅缺少同名 `patches/kunbox-<tag>.patch` 已不再是前置阻塞。请按报错点修复 Kotlin 兼容层或内核导出层耦合，再重新执行脚本。
 
 ### 运行测试
 

@@ -11,6 +11,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.system.OsConstants
 import android.util.Log
+import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.RoutingMode
 import io.nekohasekai.libbox.ConnectionOwner
@@ -272,7 +273,7 @@ class PlatformInterfaceImpl(
             }
             return ConnectionOwner().apply {
                 userId = uid
-                androidPackageName = packageName
+                LibboxCompat.setConnectionOwnerPackageName(this, packageName)
                 userName = packageName
             }
         }

@@ -75,6 +75,7 @@ singbox-core/
 app/.idea/
 nul
 Kkunbox/
+.kernel-sync-local/
 OPENWORLD_MIGRATION_PLAN.md
 .factory/settings.json
 .gstack/
