@@ -273,6 +273,27 @@ class SingBoxService : VpnService() {
 
         fun getConnectionOwnerStatsSnapshot() = ServiceStateHolder.getConnectionOwnerStatsSnapshot()
         fun resetConnectionOwnerStats() = ServiceStateHolder.resetConnectionOwnerStats()
+
+        internal fun chooseHigherPriorityRecovery(
+            a: RecoveryRequest,
+            b: RecoveryRequest
+        ): RecoveryRequest {
+            return when {
+                a.force != b.force -> if (a.force) a else b
+                a.reason.priority != b.reason.priority -> if (a.reason.priority >= b.reason.priority) a else b
+                else -> if (a.requestedAtMs >= b.requestedAtMs) a else b
+            }
+        }
+
+        internal fun shouldDowngradeForceForHysteria2(
+            profile: RecoveryProfile,
+            reason: RecoveryReason,
+            force: Boolean
+        ): Boolean {
+            return profile == RecoveryProfile.HYSTERIA2 &&
+                reason == RecoveryReason.NETWORK_TYPE_CHANGED &&
+                force
+        }
     }
 
     private fun tryRegisterRunningServiceForLibbox() {
@@ -1105,7 +1126,7 @@ class SingBoxService : VpnService() {
                 pendingRecoveryRequest = if (current == null) {
                     request.copy(merged = true)
                 } else {
-                    chooseHigherPriorityRecovery(current, request.copy(merged = true))
+                    mergeRecoveryRequests(current, request)
                 }
                 recoveryMergedCount.incrementAndGet()
                 logRecoveryEvent(
@@ -1123,7 +1144,7 @@ class SingBoxService : VpnService() {
             pendingMergeRequest = if (existingMerge == null) {
                 request
             } else {
-                chooseHigherPriorityRecovery(existingMerge, request.copy(merged = true))
+                mergeRecoveryRequests(existingMerge, request)
             }
 
             val hadExisting = existingMerge != null
@@ -1155,12 +1176,12 @@ class SingBoxService : VpnService() {
         }
     }
 
-    private fun chooseHigherPriorityRecovery(a: RecoveryRequest, b: RecoveryRequest): RecoveryRequest {
-        return when {
-            a.force != b.force -> if (a.force) a else b
-            a.reason.priority != b.reason.priority -> if (a.reason.priority >= b.reason.priority) a else b
-            else -> if (a.requestedAtMs >= b.requestedAtMs) a else b
-        }
+    private fun mergeRecoveryRequests(
+        existing: RecoveryRequest,
+        incoming: RecoveryRequest
+    ): RecoveryRequest {
+        val winning = chooseHigherPriorityRecovery(existing, incoming)
+        return if (winning.merged) winning else winning.copy(merged = true)
     }
 
     private data class RecoveryDebounceContext(
@@ -1232,21 +1253,22 @@ class SingBoxService : VpnService() {
         return false
     }
 
+    @Suppress("LongMethod", "CognitiveComplexMethod")
     private suspend fun executeRecoveryRequest(request: RecoveryRequest) {
         synchronized(this) {
             recoveryInFlight = true
         }
         try {
             val recoveryProfile = getRecoveryProfile()
-            val adjustedRequest = when {
-                recoveryProfile == RecoveryProfile.HYSTERIA2 && request.reason == RecoveryReason.NETWORK_TYPE_CHANGED && request.force -> {
-                    request.copy(force = false)
-                }
-                else -> request
-            }
-            val context = buildRecoveryDebounceContext(adjustedRequest)
-            if (shouldSkipByGlobalDebounce(adjustedRequest, context)) return
-            if (shouldSkipBySourceDebounce(adjustedRequest, context)) return
+            val forceDowngraded = shouldDowngradeForceForHysteria2(
+                profile = recoveryProfile,
+                reason = request.reason,
+                force = request.force
+            )
+            val executionForce = if (forceDowngraded) false else request.force
+            val context = buildRecoveryDebounceContext(request)
+            if (shouldSkipByGlobalDebounce(request, context)) return
+            if (shouldSkipBySourceDebounce(request, context)) return
 
             recoveryLastTriggeredAtMs.set(context.now)
             recoveryReasonLastAtMs[context.reasonKey] = context.now
@@ -1254,8 +1276,8 @@ class SingBoxService : VpnService() {
 
             val smartResult = BoxWrapperManager.smartRecover(
                 context = this@SingBoxService,
-                source = adjustedRequest.rawReason,
-                skipProbe = adjustedRequest.force
+                source = request.rawReason,
+                skipProbe = executionForce
             )
 
             val mode = when (smartResult.level) {
@@ -1288,22 +1310,22 @@ class SingBoxService : VpnService() {
                 if (smartResult.closedConnections > 0) {
                     append(",closed=${smartResult.closedConnections}")
                 }
-                if (adjustedRequest.force != request.force) {
+                if (forceDowngraded) {
                     append(",force_downgraded=true")
                 }
                 append(",rate=$successRate)")
             }
             logRecoveryEvent(
                 event = "executed",
-                request = adjustedRequest,
+                request = request,
                 mode = mode,
-                merged = adjustedRequest.merged,
+                merged = request.merged,
                 skipped = false,
                 outcome = outcomeDetail
             )
 
             if (smartResult.level == BoxWrapperManager.RecoveryLevel.PROBE) {
-                scheduleForegroundHardFallbackIfNeeded(adjustedRequest, mode, success)
+                scheduleForegroundHardFallbackIfNeeded(request, mode, success)
             }
         } finally {
             val nextRequest = synchronized(this) {
@@ -1625,7 +1647,7 @@ class SingBoxService : VpnService() {
     private val lastPrepareRestartAtMs = AtomicLong(0L)
     private val prepareRestartDebounceMs: Long = 1500L
 
-    private enum class RecoveryReason(
+    internal enum class RecoveryReason(
         val priority: Int,
         val sourceDebounceMs: Long,
         val isFastLane: Boolean
@@ -1636,10 +1658,27 @@ class SingBoxService : VpnService() {
         VPN_HEALTH(priority = 70, sourceDebounceMs = 30000L, isFastLane = false),
         APP_FOREGROUND(priority = 50, sourceDebounceMs = 1500L, isFastLane = true),
         SCREEN_ON(priority = 50, sourceDebounceMs = 1500L, isFastLane = true),
-        UNKNOWN(priority = 10, sourceDebounceMs = 3000L, isFastLane = false)
+        UNKNOWN(priority = 10, sourceDebounceMs = 3000L, isFastLane = false);
+
+        companion object {
+            @JvmStatic
+            fun fromReasonString(reason: String): RecoveryReason {
+                val normalized = reason.trim().lowercase()
+                return when {
+                    normalized.contains("network_type_changed") ||
+                        normalized.contains("typechange") -> NETWORK_TYPE_CHANGED
+                    normalized.contains("doze_exit") -> DOZE_EXIT
+                    normalized.contains("network_validated") -> NETWORK_VALIDATED
+                    normalized.contains("vpnhealth") || normalized.contains("vpn_health") -> VPN_HEALTH
+                    normalized.contains("app_foreground") -> APP_FOREGROUND
+                    normalized.contains("screen_on") -> SCREEN_ON
+                    else -> UNKNOWN
+                }
+            }
+        }
     }
 
-    private enum class RecoveryProfile {
+    internal enum class RecoveryProfile {
         DEFAULT,
         HYSTERIA2
     }
@@ -1677,7 +1716,7 @@ class SingBoxService : VpnService() {
         val outcome: String
     )
 
-    private data class RecoveryRequest(
+    internal data class RecoveryRequest(
         val reason: RecoveryReason,
         val rawReason: String,
         val force: Boolean,

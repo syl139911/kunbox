@@ -421,6 +421,14 @@ class PlatformInterfaceImpl(
         }
     }
 
+    private fun isUsableInitialNetwork(network: Network?): Boolean {
+        if (network == null) return false
+        val caps = connectivityManager?.getNetworkCapabilities(network)
+        val isVpn = caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+        val hasInternet = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        return !isVpn && hasInternet
+    }
+
     override fun startDefaultInterfaceMonitor(listener: InterfaceUpdateListener?) {
         currentInterfaceListener = listener
 
@@ -431,17 +439,16 @@ class PlatformInterfaceImpl(
         connectivityManager = callbacks.getConnectivityManager()
 
         var initialNetwork: Network? = com.kunk.singbox.utils.DefaultNetworkListener.underlyingNetwork
+        if (initialNetwork != null && !isUsableInitialNetwork(initialNetwork)) {
+            Log.w(TAG, "startDefaultInterfaceMonitor: cached underlyingNetwork is invalid, ignoring")
+            initialNetwork = null
+        }
 
         if (initialNetwork == null) {
             val lastKnown = callbacks.getLastKnownNetwork()
-            if (lastKnown != null) {
-                val caps = connectivityManager?.getNetworkCapabilities(lastKnown)
-                val isVpn = caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
-                val hasInternet = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-                if (!isVpn && hasInternet) {
-                    initialNetwork = lastKnown
-                    Log.i(TAG, "startDefaultInterfaceMonitor: using preserved lastKnownNetwork: $lastKnown")
-                }
+            if (isUsableInitialNetwork(lastKnown)) {
+                initialNetwork = lastKnown
+                Log.i(TAG, "startDefaultInterfaceMonitor: using preserved lastKnownNetwork: $lastKnown")
             }
         }
 
