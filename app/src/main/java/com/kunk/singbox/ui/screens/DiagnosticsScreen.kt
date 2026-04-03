@@ -60,6 +60,7 @@ fun DiagnosticsScreen(
     val isRunConfigLoading by viewModel.isRunConfigLoading.collectAsState()
     val isAppRoutingDiagLoading by viewModel.isAppRoutingDiagLoading.collectAsState()
     val isConnOwnerStatsLoading by viewModel.isConnOwnerStatsLoading.collectAsState()
+    val isNodeLineQueryLoading by viewModel.isNodeLineQueryLoading.collectAsState()
 
     if (showResultDialog) {
         ConfirmDialog(
@@ -129,6 +130,17 @@ fun DiagnosticsScreen(
                     icon = Icons.Rounded.Refresh,
                     onClick = { viewModel.resetConnectionOwnerStats() },
                     enabled = true
+                )
+                SettingItem(
+                    title = stringResource(R.string.diagnostics_node_line_query),
+                    subtitle = if (isNodeLineQueryLoading) {
+                        stringResource(R.string.diagnostics_node_line_query_loading)
+                    } else {
+                        stringResource(R.string.diagnostics_node_line_query_subtitle)
+                    },
+                    icon = Icons.Rounded.Route,
+                    onClick = { viewModel.runNodeLineQuery() },
+                    enabled = !isNodeLineQueryLoading
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

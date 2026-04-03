@@ -36,6 +36,11 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
     private val gson = Gson()
     private val configRepository = ConfigRepository.getInstance(application)
     private val settingsRepository = SettingsRepository.getInstance(application)
+    private val nodeLineQueryRunner = DiagnosticsNodeLineQueryRunner(
+        application = application,
+        configRepository = configRepository,
+        settingsRepository = settingsRepository
+    )
 
     private val _resultTitle = MutableStateFlow("")
     val resultTitle = _resultTitle.asStateFlow()
@@ -66,6 +71,9 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _isConnOwnerStatsLoading = MutableStateFlow(false)
     val isConnOwnerStatsLoading = _isConnOwnerStatsLoading.asStateFlow()
+
+    private val _isNodeLineQueryLoading = MutableStateFlow(false)
+    val isNodeLineQueryLoading = _isNodeLineQueryLoading.asStateFlow()
 
     fun dismissDialog() {
         _showResultDialog.value = false
@@ -481,6 +489,22 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
         _resultTitle.value = "Connection Owner Stats"
         _resultMessage.value = "findConnectionOwner stats reset."
         _showResultDialog.value = true
+    }
+
+    fun runNodeLineQuery() {
+        if (_isNodeLineQueryLoading.value) return
+        viewModelScope.launch {
+            _isNodeLineQueryLoading.value = true
+            _resultTitle.value = getApplication<Application>().getString(R.string.diagnostics_node_line_query)
+            try {
+                _resultMessage.value = withContext(Dispatchers.IO) { nodeLineQueryRunner.buildReport() }
+            } catch (e: Exception) {
+                _resultMessage.value = "节点线路查询失败: ${e.message}"
+            } finally {
+                _isNodeLineQueryLoading.value = false
+                _showResultDialog.value = true
+            }
+        }
     }
 
     private data class MatchResult(val rule: String, val outbound: String)

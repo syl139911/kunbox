@@ -526,6 +526,9 @@
     <string name="diagnostics_conn_owner_loading">正在读取...</string>
     <string name="diagnostics_reset_conn_owner">重置连接归属统计</string>
     <string name="diagnostics_reset_conn_owner_subtitle">清零计数器（便于复现问题）</string>
+    <string name="diagnostics_node_line_query">节点线路查询</string>
+    <string name="diagnostics_node_line_query_subtitle">查看当前全局节点的线路与出口观测</string>
+    <string name="diagnostics_node_line_query_loading">正在查询...</string>
     <string name="diagnostics_connectivity">连通性检查</string>
     <string name="diagnostics_connectivity_subtitle">连接测试 (www.google.com)</string>
     <string name="diagnostics_connectivity_loading">正在检查...</string>

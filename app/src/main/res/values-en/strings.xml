@@ -511,6 +511,9 @@
     <string name="diagnostics_conn_owner_loading">Reading...</string>
     <string name="diagnostics_reset_conn_owner">Reset Connection Owner Stats</string>
     <string name="diagnostics_reset_conn_owner_subtitle">Reset counter (for debugging)</string>
+    <string name="diagnostics_node_line_query">Node Line Query</string>
+    <string name="diagnostics_node_line_query_subtitle">View current global node route and exit observation</string>
+    <string name="diagnostics_node_line_query_loading">Querying...</string>
     <string name="diagnostics_connectivity">Connectivity Check</string>
     <string name="diagnostics_connectivity_subtitle">Connection test (www.google.com)</string>
     <string name="diagnostics_connectivity_loading">Checking...</string>
