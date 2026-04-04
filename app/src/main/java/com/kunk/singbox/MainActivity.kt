@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // 不在 onCreate 中无条件取消后台配置/规则集自动更新，避免用户频繁打开应用导致定时任务失效
-        // cancelRuleSetUpdateWork()
+        // // cancelRuleSetUpdateWork()
     }
 }
 

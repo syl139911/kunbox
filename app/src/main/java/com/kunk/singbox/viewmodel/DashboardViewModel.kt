@@ -534,10 +534,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             SingBoxRemote.instantRecovery(context)
 
             // 统一前台恢复入口：由 AppLifecycleObserver -> IPC -> :bg 网关处理
-            // 这里不再主动 rebind，避免与生命周期通知竞争导致重复恢复/状态抖动
-            if (VpnStateStore.getActive()) {
-                SingBoxRemote.notifyAppLifecycle(isForeground = true)
-            }
+            // 注意：这里不再主动调用 SingBoxRemote.notifyAppLifecycle(true)
+            // 因为 AppLifecycleObserver.onStart 已经负责了生命周期的同步，
+            // 避免产生重复的前台通知导致网络恢复抖动
 
             // 立即从 MMKV 状态更新 UI（不等 IPC）
             val isActive = VpnStateStore.getActive()
