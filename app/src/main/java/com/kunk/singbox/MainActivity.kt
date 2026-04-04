@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,15 +50,12 @@ import com.kunk.singbox.utils.LocaleHelper
 import com.kunk.singbox.utils.DeepLinkHandler
 import com.kunk.singbox.ipc.SingBoxRemote
 import com.kunk.singbox.service.VpnTileService
-import com.kunk.singbox.ui.components.AppNotificationHost
 import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.AppNavBar
 import com.kunk.singbox.ui.navigation.AppNavigation
 import com.kunk.singbox.ui.theme.SingBoxTheme
 import android.content.ComponentName
 import android.service.quicksettings.TileService
-import androidx.work.WorkManager
-import com.kunk.singbox.worker.RuleSetUpdateWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import android.app.Activity
@@ -104,11 +99,8 @@ class MainActivity : ComponentActivity() {
             SingBoxApp()
         }
 
-        cancelRuleSetUpdateWork()
-    }
-
-    private fun cancelRuleSetUpdateWork() {
-        WorkManager.getInstance(this).cancelUniqueWork(RuleSetUpdateWorker.WORK_NAME)
+        // 不在 onCreate 中无条件取消后台配置/规则集自动更新，避免用户频繁打开应用导致定时任务失效
+        // cancelRuleSetUpdateWork()
     }
 }
 
@@ -145,11 +137,18 @@ fun SingBoxApp() {
         dashboardViewModel.refreshState()
     }
 
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        SingBoxRemote.notifyAppLifecycle(true)
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        SingBoxRemote.notifyAppLifecycle(false)
+    }
+
     LaunchedEffect(settings?.appLanguage) {
-        settings?.appLanguage?.let { language ->
-            val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            prefs.edit().putString("app_language_cache", language.name).apply()
-        }
+        val language = settings?.appLanguage ?: return@LaunchedEffect
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        prefs.edit().putString("app_language_cache", language.name).apply()
     }
 
     val isVpnRunningForUpdate by SingBoxRemote.isRunning.collectAsState()
@@ -254,15 +253,9 @@ fun SingBoxApp() {
 
             if (!SingBoxRemote.isRunning.value && !SingBoxRemote.isStarting.value) return@collectLatest
 
-            AppNotificationManager.showInAppMessage(
-                message = context.getString(R.string.settings_restart_needed),
-                duration = SnackbarDuration.Short,
-                actionLabel = context.getString(R.string.main_restart),
-                onAction = {
-                    if (isRunning || isStarting) {
-                        dashboardViewModel.restartVpn()
-                    }
-                }
+            AppNotificationManager.showMessage(
+                context = context,
+                message = context.getString(R.string.settings_restart_needed)
             )
         }
     }
@@ -296,9 +289,6 @@ fun SingBoxApp() {
 
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
-                snackbarHost = {
-                    AppNotificationHost(bottomOffset = if (showBottomBar) 64.dp else 16.dp)
-                },
                 bottomBar = {
                     AnimatedVisibility(
                         visible = showBottomBar,

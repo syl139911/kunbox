@@ -204,18 +204,21 @@ object SingBoxRemote {
 
     private val deathRecipient = object : IBinder.DeathRecipient {
         override fun binderDied() {
-            Log.w(TAG, "Binder died, performing immediate reconnect")
+            Log.w(TAG, "Binder died, delegating to backoff reconnect")
             service = null
             callbackRegistered = false
+            bound = false
 
             mainHandler.post {
                 val ctx = contextRef?.get()
                 if (ctx != null && !SagerConnection_restartingApp) {
                     if (!hasSystemVpn(ctx)) {
                         VpnStateStore.clearRuntimeState()
+                        updateState(ServiceState.STOPPED, "", "", false)
+                    } else {
+                        // 统一走指数退避重连逻辑，避免极端情况下的重连风暴
+                        scheduleReconnect()
                     }
-                    disconnect(ctx)
-                    connect(ctx)
                 }
             }
         }
@@ -740,7 +743,6 @@ object SingBoxRemote {
         pendingLifecycleVersion = (version) and Long.MAX_VALUE
         pendingAppLifecycle = isForeground
         resetPendingLifecycleRetryState()
-        pendingLifecycleRetryVersion = version
 
         val s = service
         if (s != null && connectionActive && bound) {
