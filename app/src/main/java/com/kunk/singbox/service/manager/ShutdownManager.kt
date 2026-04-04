@@ -44,6 +44,7 @@ class ShutdownManager(
         fun cancelVpnHealthJob()
         fun cancelRemoteStateUpdateJob()
         fun cancelRouteGroupAutoSelectJob()
+        fun cancelAutoFailoverJob()
 
         fun stopForeignVpnMonitor()
         fun tryClearRunningServiceForLibbox()
@@ -102,6 +103,7 @@ class ShutdownManager(
         callbacks.cancelVpnHealthJob()
         callbacks.cancelRemoteStateUpdateJob()
         callbacks.cancelRouteGroupAutoSelectJob()
+        callbacks.cancelAutoFailoverJob()
 
         VpnKeepaliveWorker.cancel(context)
         Log.i(TAG, "VPN keepalive worker cancelled")

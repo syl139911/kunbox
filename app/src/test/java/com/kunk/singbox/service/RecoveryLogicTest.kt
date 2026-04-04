@@ -341,4 +341,117 @@ class RecoveryLogicTest {
         assertFalse(adjustedForce)
         assertEquals(SingBoxService.RecoveryReason.NETWORK_TYPE_CHANGED, reason)
     }
+
+    @Test
+    fun networkTypeChangedSchedulesFallbackOnlyAfterSuccessfulExecution() {
+        val request = makeRequest(SingBoxService.RecoveryReason.NETWORK_TYPE_CHANGED)
+        val foregroundRequest = makeRequest(SingBoxService.RecoveryReason.APP_FOREGROUND)
+
+        assertTrue(SingBoxService.shouldScheduleNetworkTypeChangedFallback(request, success = true))
+        assertFalse(SingBoxService.shouldScheduleNetworkTypeChangedFallback(request, success = false))
+        assertFalse(SingBoxService.shouldScheduleNetworkTypeChangedFallback(foregroundRequest, success = true))
+    }
+
+    @Test
+    fun networkTypeChangedStrongSignalRequiresProbeAndNoPendingKernelRecovery() {
+        assertTrue(
+            SingBoxService.hasStrongNetworkTypeChangedRecoverySignal(
+                probeSucceeded = true,
+                networkRecoveryNeeded = false
+            )
+        )
+        assertFalse(
+            SingBoxService.hasStrongNetworkTypeChangedRecoverySignal(
+                probeSucceeded = false,
+                networkRecoveryNeeded = false
+            )
+        )
+        assertFalse(
+            SingBoxService.hasStrongNetworkTypeChangedRecoverySignal(
+                probeSucceeded = true,
+                networkRecoveryNeeded = true
+            )
+        )
+    }
+
+    @Test
+    fun networkTypeChangedFallbackSkipsWhenServiceStateIsNotRunnable() {
+        assertTrue(
+            SingBoxService.shouldSkipNetworkTypeChangedFallbackByState(
+                isRunning = false,
+                isStarting = false,
+                isStopping = false,
+                isManuallyStopped = false
+            )
+        )
+        assertTrue(
+            SingBoxService.shouldSkipNetworkTypeChangedFallbackByState(
+                isRunning = true,
+                isStarting = true,
+                isStopping = false,
+                isManuallyStopped = false
+            )
+        )
+        assertTrue(
+            SingBoxService.shouldSkipNetworkTypeChangedFallbackByState(
+                isRunning = true,
+                isStarting = false,
+                isStopping = true,
+                isManuallyStopped = false
+            )
+        )
+        assertFalse(
+            SingBoxService.shouldSkipNetworkTypeChangedFallbackByState(
+                isRunning = true,
+                isStarting = false,
+                isStopping = false,
+                isManuallyStopped = false
+            )
+        )
+    }
+
+    @Test
+    fun networkTypeChangedFallbackEscalatesSoftRecoveryFirst() {
+        assertEquals(
+            SingBoxService.NetworkTypeChangedFallbackAction.ESCALATE_HARD,
+            SingBoxService.determineNetworkTypeChangedFallbackAction(
+                com.kunk.singbox.core.BoxWrapperManager.RecoveryMode.SOFT
+            )
+        )
+    }
+
+    @Test
+    fun networkTypeChangedFallbackRestartsAfterHardRecoveryStillLooksHalfDead() {
+        assertEquals(
+            SingBoxService.NetworkTypeChangedFallbackAction.RESTART_VPN,
+            SingBoxService.determineNetworkTypeChangedFallbackAction(
+                com.kunk.singbox.core.BoxWrapperManager.RecoveryMode.HARD
+            )
+        )
+    }
+
+    @Test
+    fun networkTypeChangedFallbackDebounceHonorsWindow() {
+        assertTrue(
+            SingBoxService.shouldRunNetworkTypeChangedFallback(
+                lastTriggeredAtMs = 0L,
+                nowAtMs = 5_000L,
+                debounceMs = 2_000L
+            )
+        )
+        assertFalse(
+            SingBoxService.shouldRunNetworkTypeChangedFallback(
+                lastTriggeredAtMs = 4_500L,
+                nowAtMs = 5_500L,
+                debounceMs = 2_000L
+            )
+        )
+        assertTrue(
+            SingBoxService.shouldRunNetworkTypeChangedFallback(
+                lastTriggeredAtMs = 2_000L,
+                nowAtMs = 4_500L,
+                debounceMs = 2_000L
+            )
+        )
+    }
 }

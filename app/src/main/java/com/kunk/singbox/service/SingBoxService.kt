@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -242,6 +243,11 @@ class SingBoxService : VpnService() {
         const val EXTRA_SETTING_KEY = ServiceStateHolder.EXTRA_SETTING_KEY
         const val EXTRA_SETTING_VALUE_BOOL = ServiceStateHolder.EXTRA_SETTING_VALUE_BOOL
         const val EXTRA_PREPARE_RESTART_REASON = ServiceStateHolder.EXTRA_PREPARE_RESTART_REASON
+        private const val AUTO_FAILOVER_MEANINGFUL_TRAFFIC_BPS = 1024L
+        private const val AUTO_FAILOVER_STARTUP_GRACE_MS = 30_000L
+        private const val AUTO_FAILOVER_NETWORK_GRACE_MS = 4_000L
+        private const val AUTO_FAILOVER_PROBE_TIMEOUT_MS = 5_000L
+        private const val AUTO_FAILOVER_PROBE_RETRY_DELAY_MS = 2_500L
 
         var instance: SingBoxService?
             get() = ServiceStateHolder.instance
@@ -310,6 +316,47 @@ class SingBoxService : VpnService() {
             debounceMs: Long
         ): Boolean {
             return lastTriggeredAtMs <= 0L || nowAtMs - lastTriggeredAtMs >= debounceMs
+        }
+
+        internal fun shouldScheduleNetworkTypeChangedFallback(
+            request: RecoveryRequest,
+            success: Boolean
+        ): Boolean {
+            return request.reason == RecoveryReason.NETWORK_TYPE_CHANGED && success
+        }
+
+        internal fun hasStrongNetworkTypeChangedRecoverySignal(
+            probeSucceeded: Boolean,
+            networkRecoveryNeeded: Boolean
+        ): Boolean {
+            return probeSucceeded && !networkRecoveryNeeded
+        }
+
+        internal fun shouldRunNetworkTypeChangedFallback(
+            lastTriggeredAtMs: Long,
+            nowAtMs: Long,
+            debounceMs: Long
+        ): Boolean {
+            return lastTriggeredAtMs <= 0L || nowAtMs - lastTriggeredAtMs >= debounceMs
+        }
+
+        internal fun shouldSkipNetworkTypeChangedFallbackByState(
+            isRunning: Boolean,
+            isStarting: Boolean,
+            isStopping: Boolean,
+            isManuallyStopped: Boolean
+        ): Boolean {
+            return !isRunning || isStarting || isStopping || isManuallyStopped
+        }
+
+        internal fun determineNetworkTypeChangedFallbackAction(
+            mode: BoxWrapperManager.RecoveryMode
+        ): NetworkTypeChangedFallbackAction {
+            return if (mode == BoxWrapperManager.RecoveryMode.SOFT) {
+                NetworkTypeChangedFallbackAction.ESCALATE_HARD
+            } else {
+                NetworkTypeChangedFallbackAction.RESTART_VPN
+            }
         }
     }
 
@@ -550,6 +597,8 @@ class SingBoxService : VpnService() {
         override fun onStarted(configContent: String) {
             Log.i(TAG, "KunBox VPN started successfully")
             notificationManager.setSuppressUpdates(false)
+            autoFailoverServiceStartedAtMs = System.currentTimeMillis()
+            isProxyIdleForAutoFailover = false
 
             // BoxWrapperManager 在 libbox 启动后初始化，避免 hasSelector() 超时
             commandManager.getCommandServer()?.let { server ->
@@ -722,6 +771,12 @@ class SingBoxService : VpnService() {
         }
         override fun cancelRouteGroupAutoSelectJob() {
             routeGroupSelector.stop()
+        }
+        override fun cancelAutoFailoverJob() {
+            autoFailoverJob?.cancel()
+            autoFailoverJob = null
+            isProxyIdleForAutoFailover = false
+            autoFailoverServiceStartedAtMs = 0L
         }
 
         // 资源清理
@@ -990,9 +1045,18 @@ class SingBoxService : VpnService() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceSupervisorJob)
     private val cleanupSupervisorJob = SupervisorJob()
     private val cleanupScope = CoroutineScope(Dispatchers.IO + cleanupSupervisorJob)
+    private val autoFailoverSupervisorJob = SupervisorJob()
+    private val autoFailoverDispatcher = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "vpn-auto-failover").apply {
+            isDaemon = true
+            priority = Thread.NORM_PRIORITY - 1
+        }
+    }.asCoroutineDispatcher()
+    private val autoFailoverScope = CoroutineScope(autoFailoverDispatcher + autoFailoverSupervisorJob)
     @Volatile private var isStopping: Boolean = false
     @Volatile private var stopSelfRequested: Boolean = false
     @Volatile private var cleanupJob: Job? = null
+    @Volatile private var autoFailoverJob: Job? = null
     @Volatile private var pendingStartConfigPath: String? = null
     @Volatile private var pendingCleanCache: Boolean = false
 
@@ -1015,10 +1079,15 @@ class SingBoxService : VpnService() {
 
 // TrafficMonitor 实例 - 统一管理流量监控和卡死检测
     private val trafficMonitor = TrafficMonitor(serviceScope)
+    @Volatile private var lastMeaningfulTrafficAtMs: Long = 0L
+    @Volatile private var isProxyIdleForAutoFailover: Boolean = false
+    @Volatile private var autoFailoverServiceStartedAtMs: Long = 0L
+    @Volatile private var lastAutoFailoverNetworkEventAtMs: Long = 0L
     private val trafficListener = object : TrafficMonitor.Listener {
         override fun onTrafficUpdate(snapshot: TrafficMonitor.TrafficSnapshot) {
             currentUploadSpeed = snapshot.uploadSpeed
             currentDownloadSpeed = snapshot.downloadSpeed
+            handleTrafficUpdateForAutoFailover(snapshot)
             if (showNotificationSpeed) {
                 requestNotificationUpdate(force = false)
             }
@@ -1053,9 +1122,12 @@ class SingBoxService : VpnService() {
                     trafficMonitor.resetStallCounter()
                 }
             }
+
+            submitAutoFailoverSuspicion("traffic_stall:$consecutiveCount")
         }
 
         override fun onProxyIdle(idleDurationMs: Long) {
+            isProxyIdleForAutoFailover = true
             val idleSeconds = idleDurationMs / 1000
 
             // 条件化恢复：避免在“无连接/无需恢复”时触发重置导致抖动。
@@ -1108,6 +1180,12 @@ class SingBoxService : VpnService() {
     private fun requestCoreNetworkReset(reason: String, force: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
         val parsedReason = parseRecoveryReason(reason)
+        if (
+            parsedReason == RecoveryReason.NETWORK_TYPE_CHANGED ||
+            parsedReason == RecoveryReason.NETWORK_VALIDATED
+        ) {
+            lastAutoFailoverNetworkEventAtMs = System.currentTimeMillis()
+        }
         val request = RecoveryRequest(
             reason = parsedReason,
             rawReason = reason,
@@ -1130,6 +1208,225 @@ class SingBoxService : VpnService() {
             normalized.contains("screen_on") -> RecoveryReason.SCREEN_ON
             else -> RecoveryReason.UNKNOWN
         }
+    }
+
+    private fun handleTrafficUpdateForAutoFailover(snapshot: TrafficMonitor.TrafficSnapshot) {
+        val totalSpeed = snapshot.uploadSpeed + snapshot.downloadSpeed
+        if (totalSpeed < AUTO_FAILOVER_MEANINGFUL_TRAFFIC_BPS) {
+            return
+        }
+        lastMeaningfulTrafficAtMs = System.currentTimeMillis()
+        isProxyIdleForAutoFailover = false
+    }
+
+    private fun submitAutoFailoverSuspicion(trigger: String) {
+        if (autoFailoverJob?.isActive == true) {
+            Log.d(TAG, "[AutoFailover] suspicion ignored, job already running: $trigger")
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        val context = NodeAutoFailoverPolicy.TriggerContext(
+            isVpnRunning = isRunning,
+            isManuallyStopped = isManuallyStopped,
+            isAutoFailoverInFlight = autoFailoverJob?.isActive == true,
+            isRecoveryInFlight = recoveryInFlight,
+            inStartupGracePeriod = isAutoFailoverStartupGracePeriod(now),
+            inNetworkChangeGracePeriod = isAutoFailoverNetworkGracePeriod(now),
+            isProxyIdle = isProxyIdleForAutoFailover,
+            lastMeaningfulTrafficAtMs = lastMeaningfulTrafficAtMs,
+            nowAtMs = now,
+            lastAutoFailoverAtMs = VpnStateStore.getLastAutoFailoverAtMs(),
+            budgetWindowStartAtMs = VpnStateStore.getAutoFailoverWindowStartAtMs(),
+            budgetCount = VpnStateStore.getAutoFailoverCountInWindow()
+        )
+
+        if (!NodeAutoFailoverPolicy.shouldStartProbe(context)) {
+            Log.d(TAG, "[AutoFailover] suspicion ignored by policy: $trigger")
+            return
+        }
+
+        autoFailoverJob = autoFailoverScope.launch {
+            runAutoFailoverProbeSequence(trigger)
+        }
+    }
+
+    private fun isAutoFailoverStartupGracePeriod(nowAtMs: Long): Boolean {
+        val startedAtMs = autoFailoverServiceStartedAtMs
+        if (startedAtMs <= 0L || nowAtMs < startedAtMs) {
+            return false
+        }
+        return nowAtMs - startedAtMs < AUTO_FAILOVER_STARTUP_GRACE_MS
+    }
+
+    private fun isAutoFailoverNetworkGracePeriod(nowAtMs: Long): Boolean {
+        val eventAtMs = lastAutoFailoverNetworkEventAtMs
+        if (eventAtMs <= 0L || nowAtMs < eventAtMs) {
+            return false
+        }
+        return nowAtMs - eventAtMs < AUTO_FAILOVER_NETWORK_GRACE_MS
+    }
+
+    private suspend fun runAutoFailoverProbeSequence(trigger: String) {
+        try {
+            val currentTag = resolveCurrentProxyOutboundTag()
+            if (currentTag.isNullOrBlank()) {
+                Log.d(TAG, "[AutoFailover] skip, no current PROXY selection: $trigger")
+                return
+            }
+
+            val firstEvaluation = runAutoFailoverProbeRound(currentTag)
+            when {
+                firstEvaluation.outcome == NodeAutoFailoverPolicy.ProbeOutcome.CURRENT_HEALTHY -> {
+                    Log.i(TAG, "[AutoFailover] current node healthy on first probe: $currentTag")
+                }
+
+                firstEvaluation.outcome !=
+                    NodeAutoFailoverPolicy.ProbeOutcome.CURRENT_FAILED_WITH_ALTERNATIVE -> {
+                    Log.i(
+                        TAG,
+                        "[AutoFailover] probe did not find a healthy alternative: ${firstEvaluation.outcome}"
+                    )
+                }
+
+                else -> {
+                    handleSecondAutoFailoverProbe(
+                        currentTag = currentTag,
+                        firstEvaluation = firstEvaluation,
+                        trigger = trigger
+                    )
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "[AutoFailover] probe sequence failed: $trigger", e)
+        } finally {
+            autoFailoverJob = null
+        }
+    }
+
+    private suspend fun handleSecondAutoFailoverProbe(
+        currentTag: String,
+        firstEvaluation: NodeAutoFailoverPolicy.ProbeEvaluation,
+        trigger: String
+    ) {
+        delay(AUTO_FAILOVER_PROBE_RETRY_DELAY_MS)
+        val secondEvaluation = runAutoFailoverProbeRound(currentTag)
+        when {
+            secondEvaluation.outcome !=
+                NodeAutoFailoverPolicy.ProbeOutcome.CURRENT_FAILED_WITH_ALTERNATIVE -> {
+                Log.i(
+                    TAG,
+                    "[AutoFailover] second probe recovered or no alternative: ${secondEvaluation.outcome}"
+                )
+            }
+
+            secondEvaluation.alternativeTag.isNullOrBlank() && firstEvaluation.alternativeTag.isNullOrBlank() -> {
+                Log.i(TAG, "[AutoFailover] second probe has no target alternative")
+            }
+
+            else -> {
+                val targetTag = secondEvaluation.alternativeTag
+                    ?: firstEvaluation.alternativeTag.orEmpty()
+                performAutoFailoverSwitch(currentTag, targetTag, trigger)
+            }
+        }
+    }
+
+    private suspend fun runAutoFailoverProbeRound(
+        currentTag: String
+    ): NodeAutoFailoverPolicy.ProbeEvaluation {
+        val results = commandManager.urlTestGroup(
+            groupTag = "PROXY",
+            timeoutMs = AUTO_FAILOVER_PROBE_TIMEOUT_MS
+        )
+        val quarantined = loadActiveAutoFailoverQuarantine(System.currentTimeMillis())
+        val evaluation = NodeAutoFailoverPolicy.evaluateProbe(
+            currentTag = currentTag,
+            urlTestResults = results,
+            quarantinedTags = quarantined.map { it.tag }.toSet()
+        )
+        Log.i(
+            TAG,
+            "[AutoFailover] probe current=$currentTag outcome=${evaluation.outcome} " +
+                "alt=${evaluation.alternativeTag ?: "(none)"} delays=${results.size}"
+        )
+        return evaluation
+    }
+
+    private suspend fun performAutoFailoverSwitch(
+        currentTag: String,
+        targetTag: String,
+        trigger: String
+    ) {
+        val now = System.currentTimeMillis()
+        val currentQuarantine = loadActiveAutoFailoverQuarantine(now).toMutableList()
+        currentQuarantine.add(NodeAutoFailoverPolicy.createQuarantineRecord(currentTag, now))
+        val cleanedQuarantine = NodeAutoFailoverPolicy.cleanupExpiredQuarantine(currentQuarantine, now)
+        val budgetState = NodeAutoFailoverPolicy.registerFailoverAttempt(
+            windowStartAtMs = VpnStateStore.getAutoFailoverWindowStartAtMs(),
+            count = VpnStateStore.getAutoFailoverCountInWindow(),
+            nowAtMs = now
+        )
+
+        VpnStateStore.setLastAutoFailoverAtMs(now)
+        VpnStateStore.setAutoFailoverWindowStartAtMs(budgetState.windowStartAtMs)
+        VpnStateStore.setAutoFailoverCountInWindow(budgetState.count)
+        VpnStateStore.setAutoFailoverQuarantinedTags(NodeAutoFailoverPolicy.encodeQuarantine(cleanedQuarantine))
+        VpnStateStore.setLastAutoFailoverNodeTag(currentTag)
+
+        val success = hotSwitchNode(targetTag)
+        if (success) {
+            val configRepository = ConfigRepository.getInstance(this@SingBoxService)
+            val node = configRepository.getNodeByName(targetTag)
+            val displayName = node?.name ?: targetTag
+            VpnStateStore.setActiveLabel(displayName)
+            realTimeNodeName = displayName
+            runCatching {
+                node?.id?.let { configRepository.setActiveNodeIdOnly(it) }
+                configRepository.syncActiveNodeFromProxySelection(displayName)
+            }
+            trafficMonitor.resetStallCounter()
+            stallRefreshAttempts = 0
+            isProxyIdleForAutoFailover = false
+            requestNotificationUpdate(force = true)
+            requestRemoteStateUpdate(force = true)
+            routeGroupSelector.requestImmediateReselect("vpn_health_auto_failover")
+            LogRepository.getInstance().addLog(
+                "INFO: Auto failover switched from $currentTag to $displayName (trigger=$trigger)"
+            )
+            Log.i(TAG, "[AutoFailover] switched from $currentTag to $displayName, trigger=$trigger")
+            return
+        }
+
+        Log.w(TAG, "[AutoFailover] hot switch failed, falling back to restart: $targetTag")
+        val configPath = pendingHotSwitchFallbackConfigPath ?: File(filesDir, "running_config.json").absolutePath
+        val restartIntent = Intent(this@SingBoxService, SingBoxService::class.java).apply {
+            action = ACTION_START
+            putExtra(EXTRA_CONFIG_PATH, configPath)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(restartIntent)
+        } else {
+            startService(restartIntent)
+        }
+    }
+
+    private fun loadActiveAutoFailoverQuarantine(nowAtMs: Long): List<NodeAutoFailoverPolicy.QuarantinedNode> {
+        val records = NodeAutoFailoverPolicy.decodeQuarantine(VpnStateStore.getAutoFailoverQuarantinedTags())
+        val cleaned = NodeAutoFailoverPolicy.cleanupExpiredQuarantine(records, nowAtMs)
+        if (cleaned.size != records.size) {
+            VpnStateStore.setAutoFailoverQuarantinedTags(NodeAutoFailoverPolicy.encodeQuarantine(cleaned))
+        }
+        return cleaned
+    }
+
+    private fun resolveCurrentProxyOutboundTag(): String? {
+        return commandManager.getSelectedOutbound("PROXY")
+            ?.takeIf { it.isNotBlank() }
+            ?: SelectorManager.getSelectedOutbound()?.takeIf { it.isNotBlank() }
+            ?: BoxWrapperManager.getSelectedOutbound()?.takeIf { it.isNotBlank() }
     }
 
     @Suppress("CognitiveComplexMethod", "LongMethod")
@@ -1409,6 +1706,7 @@ class SingBoxService : VpnService() {
             if (smartResult.level == BoxWrapperManager.RecoveryLevel.PROBE) {
                 scheduleForegroundHardFallbackIfNeeded(request, mode, success)
             }
+            scheduleNetworkTypeChangedFallbackIfNeeded(request, mode, success)
         } finally {
             val nextRequest = synchronized(this) {
                 recoveryInFlight = false
@@ -1606,6 +1904,170 @@ class SingBoxService : VpnService() {
         }
     }
 
+    private suspend fun collectNetworkTypeChangedRecoverySignal(): NetworkTypeChangedRecoverySignal {
+        val probeSucceeded = runCatching {
+            ProbeManager.probeFirstSuccessViaVpn(
+                context = this@SingBoxService,
+                timeoutMs = 1500L
+            )
+        }.getOrNull() != null
+
+        val networkRecoveryNeeded = runCatching {
+            !BoxWrapperManager.isAvailable() || BoxWrapperManager.isNetworkRecoveryNeeded()
+        }.getOrDefault(true)
+
+        return NetworkTypeChangedRecoverySignal(
+            probeSucceeded = probeSucceeded,
+            networkRecoveryNeeded = networkRecoveryNeeded,
+            strongSignal = hasStrongNetworkTypeChangedRecoverySignal(
+                probeSucceeded = probeSucceeded,
+                networkRecoveryNeeded = networkRecoveryNeeded
+            )
+        )
+    }
+
+    private fun evaluateNetworkTypeChangedFallbackState(
+        mode: BoxWrapperManager.RecoveryMode,
+        signal: NetworkTypeChangedRecoverySignal
+    ): NetworkTypeChangedFallbackState {
+        val signalOutcome = "probe_ok=${signal.probeSucceeded},network_recovery_needed=${signal.networkRecoveryNeeded}"
+        val fallbackState = buildNetworkTypeChangedStateSkip()
+            ?: if (signal.strongSignal) {
+                NetworkTypeChangedFallbackState(
+                    shouldSkip = true,
+                    event = "network_type_changed_fallback_skipped_recovered",
+                    outcome = signalOutcome
+                )
+            } else {
+                buildTriggeredNetworkTypeChangedFallbackState(mode, signalOutcome)
+            }
+        return fallbackState
+    }
+
+    private fun buildTriggeredNetworkTypeChangedFallbackState(
+        mode: BoxWrapperManager.RecoveryMode,
+        signalOutcome: String
+    ): NetworkTypeChangedFallbackState {
+        val action = determineNetworkTypeChangedFallbackAction(mode)
+        val now = SystemClock.elapsedRealtime()
+        val debounceMs = resolveNetworkTypeChangedFallbackDebounceMs(action)
+        val lastActionAtMs = resolveLastNetworkTypeChangedFallbackAtMs(action)
+        return if (!shouldRunNetworkTypeChangedFallback(lastActionAtMs, now, debounceMs)) {
+            NetworkTypeChangedFallbackState(
+                shouldSkip = true,
+                event = "network_type_changed_fallback_skipped_debounce",
+                outcome = "$signalOutcome,action=${action.name},debounce=${debounceMs}ms"
+            )
+        } else {
+            recordNetworkTypeChangedFallbackAt(action, now)
+            NetworkTypeChangedFallbackState(
+                shouldSkip = false,
+                event = "network_type_changed_fallback_triggered",
+                outcome = "$signalOutcome,action=${action.name}",
+                action = action
+            )
+        }
+    }
+
+    private fun buildNetworkTypeChangedStateSkip(): NetworkTypeChangedFallbackState? {
+        val stateSkipOutcome = "state_running=$isRunning," +
+            "isStarting=$isStarting,isStopping=$isStopping,isManuallyStopped=$isManuallyStopped"
+        val shouldSkipByState = shouldSkipNetworkTypeChangedFallbackByState(
+            isRunning = isRunning,
+            isStarting = isStarting,
+            isStopping = isStopping,
+            isManuallyStopped = isManuallyStopped
+        )
+        return if (shouldSkipByState) {
+            NetworkTypeChangedFallbackState(
+                shouldSkip = true,
+                event = "network_type_changed_fallback_skipped_state",
+                outcome = stateSkipOutcome
+            )
+        } else {
+            null
+        }
+    }
+
+    private fun resolveLastNetworkTypeChangedFallbackAtMs(
+        action: NetworkTypeChangedFallbackAction
+    ): Long {
+        return if (action == NetworkTypeChangedFallbackAction.ESCALATE_HARD) {
+            lastNetworkTypeChangedHardFallbackAtMs.get()
+        } else {
+            lastNetworkTypeChangedRestartAtMs.get()
+        }
+    }
+
+    private fun resolveNetworkTypeChangedFallbackDebounceMs(
+        action: NetworkTypeChangedFallbackAction
+    ): Long {
+        return if (action == NetworkTypeChangedFallbackAction.ESCALATE_HARD) {
+            networkTypeChangedHardFallbackDebounceMs
+        } else {
+            networkTypeChangedRestartDebounceMs
+        }
+    }
+
+    private fun recordNetworkTypeChangedFallbackAt(
+        action: NetworkTypeChangedFallbackAction,
+        now: Long
+    ) {
+        if (action == NetworkTypeChangedFallbackAction.ESCALATE_HARD) {
+            lastNetworkTypeChangedHardFallbackAtMs.set(now)
+        } else {
+            lastNetworkTypeChangedRestartAtMs.set(now)
+        }
+    }
+
+    private fun scheduleNetworkTypeChangedFallbackIfNeeded(
+        request: RecoveryRequest,
+        mode: BoxWrapperManager.RecoveryMode,
+        success: Boolean
+    ) {
+        if (!shouldScheduleNetworkTypeChangedFallback(request, success)) {
+            return
+        }
+
+        networkTypeChangedFallbackJob?.cancel()
+        networkTypeChangedFallbackJob = serviceScope.launch {
+            delay(networkTypeChangedRecoveryGraceMs)
+
+            val signal = collectNetworkTypeChangedRecoverySignal()
+            val state = evaluateNetworkTypeChangedFallbackState(mode, signal)
+            logRecoveryEvent(
+                event = state.event,
+                request = request,
+                mode = mode,
+                merged = false,
+                skipped = state.shouldSkip,
+                outcome = state.outcome
+            )
+            if (state.shouldSkip) {
+                return@launch
+            }
+
+            when (state.action) {
+                NetworkTypeChangedFallbackAction.ESCALATE_HARD -> {
+                    val hardRequest = RecoveryRequest(
+                        reason = RecoveryReason.NETWORK_TYPE_CHANGED,
+                        rawReason = "network_type_changed_hard_fallback",
+                        force = true,
+                        requestedAtMs = SystemClock.elapsedRealtime(),
+                        merged = false
+                    )
+                    submitRecoveryRequest(hardRequest)
+                }
+
+                NetworkTypeChangedFallbackAction.RESTART_VPN -> {
+                    restartVpnService("network_type_changed_unrecovered")
+                }
+
+                null -> Unit
+            }
+        }
+    }
+
     @Suppress("LongParameterList")
     private fun logRecoveryEvent(
         event: String,
@@ -1792,10 +2254,35 @@ class SingBoxService : VpnService() {
     private val lastForegroundHardFallbackAtMs = AtomicLong(0L)
     private val foregroundHardFallbackDebounceMs: Long = 15000L
 
+    private val networkTypeChangedRecoveryGraceMs: Long = 4000L
+    private var networkTypeChangedFallbackJob: Job? = null
+    private val lastNetworkTypeChangedHardFallbackAtMs = AtomicLong(0L)
+    private val lastNetworkTypeChangedRestartAtMs = AtomicLong(0L)
+    private val networkTypeChangedHardFallbackDebounceMs: Long = 8000L
+    private val networkTypeChangedRestartDebounceMs: Long = 20000L
+
     private data class ForegroundFallbackState(
         val shouldSkip: Boolean,
         val event: String,
         val outcome: String
+    )
+
+    internal enum class NetworkTypeChangedFallbackAction {
+        ESCALATE_HARD,
+        RESTART_VPN
+    }
+
+    private data class NetworkTypeChangedFallbackState(
+        val shouldSkip: Boolean,
+        val event: String,
+        val outcome: String,
+        val action: NetworkTypeChangedFallbackAction? = null
+    )
+
+    private data class NetworkTypeChangedRecoverySignal(
+        val probeSucceeded: Boolean,
+        val networkRecoveryNeeded: Boolean,
+        val strongSignal: Boolean
     )
 
     internal data class RecoveryRequest(
@@ -2401,6 +2888,8 @@ class SingBoxService : VpnService() {
         // 重置 VPN 启动时间戳
         vpnStartedAtMs.set(0)
         stallRefreshAttempts = 0
+        autoFailoverServiceStartedAtMs = 0L
+        isProxyIdleForAutoFailover = false
 
         // 清理 networkManager (stopService 时释放)
         if (stopService) {
@@ -2519,6 +3008,10 @@ class SingBoxService : VpnService() {
         }
 
         serviceSupervisorJob.cancel()
+        autoFailoverJob?.cancel()
+        autoFailoverJob = null
+        autoFailoverSupervisorJob.cancel()
+        autoFailoverDispatcher.close()
         // cleanupSupervisorJob.cancel() // Allow cleanup to finish naturally
 
         if (instance == this) {

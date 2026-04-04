@@ -28,6 +28,11 @@ object VpnStateStore {
     private const val KEY_LAST_PREPARE_RESTART_AT_MS = "last_prepare_restart_at_ms"
     private const val KEY_TRAFFIC_CLEAR_TIMESTAMP = "traffic_clear_timestamp"
     private const val KEY_LAST_MANUAL_STOP_AT_MS = "last_manual_stop_at_ms"
+    private const val KEY_LAST_AUTO_FAILOVER_AT_MS = "last_auto_failover_at_ms"
+    private const val KEY_AUTO_FAILOVER_WINDOW_START_AT_MS = "auto_failover_window_start_at_ms"
+    private const val KEY_AUTO_FAILOVER_COUNT_IN_WINDOW = "auto_failover_count_in_window"
+    private const val KEY_AUTO_FAILOVER_QUARANTINED_TAGS = "auto_failover_quarantined_tags"
+    private const val KEY_LAST_AUTO_FAILOVER_NODE_TAG = "last_auto_failover_node_tag"
 
     enum class CoreMode {
         NONE,
@@ -191,6 +196,36 @@ object VpnStateStore {
         mmkv.encode(KEY_TRAFFIC_CLEAR_TIMESTAMP, timestamp)
     }
 
+    fun getLastAutoFailoverAtMs(): Long = mmkv.decodeLong(KEY_LAST_AUTO_FAILOVER_AT_MS, 0L)
+
+    fun setLastAutoFailoverAtMs(timestamp: Long) {
+        mmkv.encode(KEY_LAST_AUTO_FAILOVER_AT_MS, timestamp)
+    }
+
+    fun getAutoFailoverWindowStartAtMs(): Long = mmkv.decodeLong(KEY_AUTO_FAILOVER_WINDOW_START_AT_MS, 0L)
+
+    fun setAutoFailoverWindowStartAtMs(timestamp: Long) {
+        mmkv.encode(KEY_AUTO_FAILOVER_WINDOW_START_AT_MS, timestamp)
+    }
+
+    fun getAutoFailoverCountInWindow(): Int = mmkv.decodeInt(KEY_AUTO_FAILOVER_COUNT_IN_WINDOW, 0)
+
+    fun setAutoFailoverCountInWindow(count: Int) {
+        mmkv.encode(KEY_AUTO_FAILOVER_COUNT_IN_WINDOW, count)
+    }
+
+    fun getAutoFailoverQuarantinedTags(): String = mmkv.decodeString(KEY_AUTO_FAILOVER_QUARANTINED_TAGS, "") ?: ""
+
+    fun setAutoFailoverQuarantinedTags(value: String?) {
+        mmkv.encode(KEY_AUTO_FAILOVER_QUARANTINED_TAGS, value ?: "")
+    }
+
+    fun getLastAutoFailoverNodeTag(): String = mmkv.decodeString(KEY_LAST_AUTO_FAILOVER_NODE_TAG, "") ?: ""
+
+    fun setLastAutoFailoverNodeTag(tag: String?) {
+        mmkv.encode(KEY_LAST_AUTO_FAILOVER_NODE_TAG, tag ?: "")
+    }
+
     fun clear() {
         Log.i(TAG, "Clearing VPN config state keys")
         clearConfig()
@@ -213,6 +248,7 @@ object VpnStateStore {
         mmkv.removeValueForKey(KEY_LAST_BLOCKLIST_HASH)
         mmkv.removeValueForKey(KEY_LAST_TUN_SETTINGS_HASH)
         mmkv.removeValueForKey(KEY_LAST_MANUAL_STOP_AT_MS)
+        clearAutoFailoverRuntimeState()
     }
 
     /**
@@ -226,5 +262,14 @@ object VpnStateStore {
         mmkv.removeValueForKey(KEY_VPN_PENDING)
         mmkv.removeValueForKey(KEY_VPN_ACTIVE_LABEL)
         mmkv.removeValueForKey(KEY_VPN_LAST_ERROR)
+        clearAutoFailoverRuntimeState()
+    }
+
+    fun clearAutoFailoverRuntimeState() {
+        mmkv.removeValueForKey(KEY_LAST_AUTO_FAILOVER_AT_MS)
+        mmkv.removeValueForKey(KEY_AUTO_FAILOVER_WINDOW_START_AT_MS)
+        mmkv.removeValueForKey(KEY_AUTO_FAILOVER_COUNT_IN_WINDOW)
+        mmkv.removeValueForKey(KEY_AUTO_FAILOVER_QUARANTINED_TAGS)
+        mmkv.removeValueForKey(KEY_LAST_AUTO_FAILOVER_NODE_TAG)
     }
 }
