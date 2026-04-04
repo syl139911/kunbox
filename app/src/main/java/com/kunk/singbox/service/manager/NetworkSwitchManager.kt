@@ -19,12 +19,36 @@ class NetworkSwitchManager(
     private val scope: CoroutineScope,
     private val mainHandler: Handler
 ) {
+    internal data class HealthCheckRecoveryDecision(
+        val reason: String,
+        val force: Boolean
+    )
+
     companion object {
         private const val TAG = "NetworkSwitchManager"
+        private const val NETWORK_TYPE_CHANGED_REASON = "network_type_changed"
+        private const val NETWORK_VALIDATED_REASON = "network_validated"
 
         private const val STARTUP_WINDOW_MS = 1000L
         private const val EVENT_AGGREGATION_MS = 300L
         private const val MIN_SWITCH_INTERVAL_MS = 500L
+
+        internal fun resolveHealthCheckRecovery(
+            validated: Boolean,
+            connected: Boolean
+        ): HealthCheckRecoveryDecision {
+            return if (validated || connected) {
+                HealthCheckRecoveryDecision(
+                    reason = NETWORK_VALIDATED_REASON,
+                    force = false
+                )
+            } else {
+                HealthCheckRecoveryDecision(
+                    reason = NETWORK_TYPE_CHANGED_REASON,
+                    force = true
+                )
+            }
+        }
     }
 
     interface Callbacks {
@@ -170,7 +194,7 @@ class NetworkSwitchManager(
 
         if (networkChanged && typeChanged) {
             Log.i(TAG, "Network type changed, requesting recovery")
-            cb.requestCoreNetworkRecovery(reason = "network_type_changed", force = true)
+            cb.requestCoreNetworkRecovery(reason = NETWORK_TYPE_CHANGED_REASON, force = true)
         } else if (networkChanged) {
             performHealthCheck(network)
         }
@@ -196,6 +220,7 @@ class NetworkSwitchManager(
             val cm = cb.getConnectivityManager() ?: return@launch
 
             var validated = false
+            var connected = false
             for (attempt in 0 until 10) {
                 val caps = cm.getNetworkCapabilities(network)
                 if (caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true) {
@@ -213,7 +238,6 @@ class NetworkSwitchManager(
                     "223.5.5.5" to 53
                 )
 
-                var connected = false
                 for ((host, port) in testTargets) {
                     try {
                         network.socketFactory.createSocket().use { socket ->
@@ -226,16 +250,23 @@ class NetworkSwitchManager(
                         Log.d(TAG, "Connectivity test to $host failed: ${e.message}")
                     }
                 }
-
-                if (!connected) {
-                    failedSwitchCount.incrementAndGet()
-                    Log.w(TAG, "Network health check failed for $network")
-                    return@launch
-                }
             }
 
-            Log.i(TAG, "Network validated, requesting recovery")
-            cb.requestCoreNetworkRecovery(reason = "network_validated", force = false)
+            val recoveryDecision = resolveHealthCheckRecovery(validated = validated, connected = connected)
+            if (recoveryDecision.force) {
+                failedSwitchCount.incrementAndGet()
+                Log.w(
+                    TAG,
+                    "Network health check failed for $network, escalating recovery via ${recoveryDecision.reason}"
+                )
+            } else {
+                Log.i(TAG, "Network health check passed, requesting recovery via ${recoveryDecision.reason}")
+            }
+
+            cb.requestCoreNetworkRecovery(
+                reason = recoveryDecision.reason,
+                force = recoveryDecision.force
+            )
         }
     }
 

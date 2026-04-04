@@ -26,6 +26,13 @@ class ConnectManager(
         private const val CONNECTION_RESET_DEBOUNCE_MS = 2000L
         private const val STARTUP_WINDOW_MS = 3000L
         private const val NETWORK_SWITCH_DELAY_MS = 2000L
+
+        internal fun shouldHandoverToActiveDefaultNetwork(
+            isActiveDefault: Boolean,
+            isValidPhysical: Boolean
+        ): Boolean {
+            return isActiveDefault && isValidPhysical
+        }
     }
 
     private val connectivityManager: ConnectivityManager? by lazy {
@@ -260,12 +267,17 @@ class ConnectManager(
 
         val caps = cm.getNetworkCapabilities(network)
         val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-        if (!isValidated) {
-            Log.d(TAG, "Network available but not validated: $network, deferring")
+        val isValidPhysical = isValidPhysicalNetwork(caps)
+        if (!shouldHandoverToActiveDefaultNetwork(isActiveDefault, isValidPhysical)) {
+            Log.d(TAG, "Network available but not a valid physical default: $network, ignoring")
             return
         }
 
-        Log.i(TAG, "Network available: $network (active, validated)")
+        if (!isValidated) {
+            Log.d(TAG, "Active default network $network not yet validated, handing over underlying network first")
+        }
+
+        Log.i(TAG, "Network available: $network (active, validated=$isValidated)")
         lastKnownNetwork = network
         StateCache.updateNetworkCache(network)
         isReady = true
@@ -356,11 +368,13 @@ class ConnectManager(
         val isValidated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 
         if (lastKnownNetwork != network) {
-            if (!isValidated) {
-                Log.d(TAG, "New network $network not validated yet, deferring switch")
+            if (!shouldHandoverToActiveDefaultNetwork(isActiveDefault, true)) {
                 return
             }
-            Log.i(TAG, "Capabilities changed, switching to validated network: $network")
+            if (!isValidated) {
+                Log.d(TAG, "Active network $network not yet validated, switching underlying network first")
+            }
+            Log.i(TAG, "Capabilities changed, switching to active network: $network (validated=$isValidated)")
             lastKnownNetwork = network
             StateCache.updateNetworkCache(network)
             setUnderlyingNetworksFn?.invoke(arrayOf(network))

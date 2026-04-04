@@ -239,11 +239,14 @@ object BoxWrapperManager {
         }
 
         val startTime = System.currentTimeMillis()
+        val effectiveSkipProbe = skipProbe || shouldSkipProbeLevel(source)
 
         // Level 1: PROBE
-        if (!skipProbe) {
+        if (!effectiveSkipProbe) {
             val probeResult = executeProbeLevel(context, source, startTime)
             if (probeResult != null) return probeResult
+        } else {
+            Log.i(TAG, "[$source] smartRecover: skip Level 1 (PROBE) due to untrusted source")
         }
 
         // Level 2: SELECTIVE
@@ -309,40 +312,50 @@ object BoxWrapperManager {
             "[$source] SELECTIVE closedIdle=$closedIdle closedTracked=$closedTracked autoRecover=$autoRecoverOk"
         )
 
+        if (!shouldTrustSelectiveProbeSuccess(source)) {
+            Log.w(TAG, "[$source] SELECTIVE verify is untrusted for this source, escalating to NUCLEAR")
+            return SmartRecoveryResult(
+                RecoveryLevel.SELECTIVE,
+                false,
+                "untrusted selective verify signal",
+                closedConnections = closedCount
+            )
+        }
+
         kotlinx.coroutines.delay(300)
         val verifyResult = ProbeManager.probeFirstSuccessViaVpnDetailed(context, timeoutMs = 1500L)
 
-        if (verifyResult.firstSuccess != null) {
+        val result = if (verifyResult.firstSuccess != null) {
             val elapsed = System.currentTimeMillis() - startTime
             Log.i(
                 TAG,
                 "[$source] SELECTIVE success, verify=${verifyResult.firstSuccess.latencyMs}ms, total: ${elapsed}ms"
             )
-            return SmartRecoveryResult(
+            SmartRecoveryResult(
                 RecoveryLevel.SELECTIVE,
                 true,
                 "SELECTIVE succeeded",
                 closedConnections = closedCount,
                 probeLatencyMs = verifyResult.firstSuccess.latencyMs
             )
-        }
-
-        if (verifyResult.allFailedByBindPermission) {
+        } else if (verifyResult.allFailedByBindPermission) {
             val elapsed = System.currentTimeMillis() - startTime
             Log.w(
                 TAG,
                 "[$source] SELECTIVE verify unavailable by permission, keep SELECTIVE result, total: ${elapsed}ms"
             )
-            return SmartRecoveryResult(
+            SmartRecoveryResult(
                 RecoveryLevel.SELECTIVE,
                 true,
                 "verify unavailable by permission",
                 closedConnections = closedCount
             )
+        } else {
+            Log.w(TAG, "[$source] SELECTIVE verify failed, escalating to NUCLEAR")
+            SmartRecoveryResult(RecoveryLevel.SELECTIVE, false, "verify failed", closedCount)
         }
 
-        Log.w(TAG, "[$source] SELECTIVE verify failed, escalating to NUCLEAR")
-        return SmartRecoveryResult(RecoveryLevel.SELECTIVE, false, "verify failed", closedCount)
+        return result
     }
 
     private fun executeNuclearLevel(source: String, startTime: Long, closedCount: Int): SmartRecoveryResult {
@@ -365,6 +378,14 @@ object BoxWrapperManager {
         val closedConnections: Int = 0,
         val probeLatencyMs: Long? = null
     )
+
+    internal fun shouldSkipProbeLevel(source: String): Boolean {
+        return source.equals("network_type_changed", ignoreCase = true)
+    }
+
+    internal fun shouldTrustSelectiveProbeSuccess(source: String): Boolean {
+        return !source.equals("network_type_changed", ignoreCase = true)
+    }
 
     /**
      */

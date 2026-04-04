@@ -49,4 +49,25 @@ class PlatformInterfaceImplTest {
 
         assertTrue(result)
     }
+
+    @Test
+    fun testPlatformInterfaceHandoverAllowsActivePhysicalNetworkBeforeValidated() {
+        val result = PlatformInterfaceImpl.shouldHandoverToActiveDefaultNetwork(
+            isActiveDefault = true,
+            isVpn = false,
+            isValidPhysical = true
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun testConnectManagerHandoverAllowsActivePhysicalNetworkBeforeValidated() {
+        val result = ConnectManager.shouldHandoverToActiveDefaultNetwork(
+            isActiveDefault = true,
+            isValidPhysical = true
+        )
+
+        assertTrue(result)
+    }
 }

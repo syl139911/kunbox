@@ -44,6 +44,14 @@ class PlatformInterfaceImpl(
         private const val TAG = "PlatformInterfaceImpl"
         private const val NETWORK_SWITCH_DELAY_MS = 2000L
 
+        internal fun shouldHandoverToActiveDefaultNetwork(
+            isActiveDefault: Boolean,
+            isVpn: Boolean,
+            isValidPhysical: Boolean
+        ): Boolean {
+            return isActiveDefault && !isVpn && isValidPhysical
+        }
+
         internal fun shouldForceConnectionOwnerRouting(settings: AppSettings?): Boolean {
             if (settings?.routingMode != RoutingMode.RULE) return false
             return settings.appRules.any { it.enabled } || settings.appGroups.any { it.enabled }
@@ -499,19 +507,22 @@ class PlatformInterfaceImpl(
             override fun onAvailable(network: Network) {
                 val caps = cm.getNetworkCapabilities(network)
                 val isVpn = caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
-                if (isVpn) return
-
                 val isActiveDefault = cm.activeNetwork == network
-                if (!isActiveDefault) return
-
                 val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-                if (!isValidated) {
-                    Log.d(TAG, "Network available but not validated: $network, waiting for validation")
+                val isValidPhysical = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                if (!shouldHandoverToActiveDefaultNetwork(isActiveDefault, isVpn, isValidPhysical)) {
                     return
                 }
 
                 networkCallbackReady = true
-                Log.i(TAG, "Network available: $network (active default, validated)")
+                if (!isValidated) {
+                    Log.d(
+                        TAG,
+                        "Active default network $network not yet validated, handing over underlying network first"
+                    )
+                }
+                Log.i(TAG, "Network available: $network (active default, validated=$isValidated)")
                 updateDefaultInterface(network)
             }
 
@@ -544,15 +555,15 @@ class PlatformInterfaceImpl(
 
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
                 val isVpn = caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-                if (isVpn) return
-
-                if (cm.activeNetwork == network) {
-                    val isValidated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                    if (!isValidated) {
-                        Log.d(TAG, "Active network $network not yet validated, waiting")
-                        return
-                    }
+                val isActiveDefault = cm.activeNetwork == network
+                val isValidated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                val isValidPhysical = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                if (shouldHandoverToActiveDefaultNetwork(isActiveDefault, isVpn, isValidPhysical)) {
                     networkCallbackReady = true
+                    if (!isValidated) {
+                        Log.d(TAG, "Active network $network not yet validated, updating underlying network first")
+                    }
                     updateDefaultInterface(network)
                 }
             }
