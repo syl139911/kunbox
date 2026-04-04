@@ -18,7 +18,7 @@
 
     <application
         android:enableOnBackInvokedCallback="true"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:name=".SingBoxApplication"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -67,15 +67,10 @@
         <!-- 运行在 :bg 进程,与服务同进程,消除 IPC 延迟 -->
         <activity
             android:name=".ui.ShortcutActivity"
-            android:exported="true"
+            android:exported="false"
             android:excludeFromRecents="true"
             android:process=":bg"
-            android:theme="@style/Theme.SingBoxAndroid.Transparent">
-            <intent-filter>
-                <action android:name="com.kunk.singbox.action.TOGGLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.SingBoxAndroid.Transparent" />
 
         <service
             android:name=".service.SingBoxService"

@@ -38,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.kunk.singbox.model.RuleSet
 import com.kunk.singbox.model.RuleSetType
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.ClickableDropdownField
 import com.kunk.singbox.ui.components.ConfirmDialog
 import com.kunk.singbox.ui.components.ProfileNodeSelectDialog
@@ -79,6 +80,7 @@ fun RuleSetsScreen(
     val allNodes by nodesViewModel.allNodes.collectAsState()
     val nodesForSelection by nodesViewModel.filteredAllNodes.collectAsState()
     val profiles by profilesViewModel.profiles.collectAsState()
+    val scope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
         nodesViewModel.setAllNodesUiActive(true)
@@ -95,8 +97,6 @@ fun RuleSetsScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingRuleSet by remember { mutableStateOf<RuleSet?>(null) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
     var isSelectionMode by remember { mutableStateOf(false) }
@@ -232,9 +232,7 @@ fun RuleSetsScreen(
             onConfirm = {
                 val idsToDelete = selectedItems.filter { it.value }.keys.toList()
                 settingsViewModel.deleteRuleSets(idsToDelete)
-                scope.launch {
-                    snackbarHostState.showSnackbar(profilesDeletedMsg)
-                }
+                AppNotificationManager.showMessage(navController.context, profilesDeletedMsg)
                 showDeleteConfirmDialog = false
                 exitSelectionMode()
             },
@@ -402,7 +400,6 @@ fun RuleSetsScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(

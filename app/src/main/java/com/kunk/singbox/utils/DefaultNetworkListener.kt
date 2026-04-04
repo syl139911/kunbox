@@ -15,6 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.channels.Channel
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  *
@@ -32,6 +33,7 @@ object DefaultNetworkListener {
         class Put(val network: Network) : NetworkMessage()
         class Update(val network: Network) : NetworkMessage()
         class Lost(val network: Network) : NetworkMessage()
+        data object Reset : NetworkMessage()
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -78,6 +80,12 @@ object DefaultNetworkListener {
                     listeners.values.forEach { it(null) }
                 }
             }
+            NetworkMessage.Reset -> {
+                listeners.clear()
+                network = null
+                pendingRequests.forEach { it.response.complete(null) }
+                pendingRequests.clear()
+            }
         }
     }
 
@@ -88,6 +96,7 @@ object DefaultNetworkListener {
     private var connectivityManagerRef: WeakReference<ConnectivityManager>? = null
     private var fallback = false
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val cleanupEpoch = AtomicLong(0L)
 
     private val request = NetworkRequest.Builder().apply {
         addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -130,7 +139,11 @@ object DefaultNetworkListener {
                 return
             }
 
+            val lostEpoch = cleanupEpoch.get()
             mainHandler.postDelayed({
+                if (cleanupEpoch.get() != lostEpoch) {
+                    return@postDelayed
+                }
                 if (underlyingNetwork != null && underlyingNetwork != network) {
                     return@postDelayed
                 }
@@ -160,7 +173,6 @@ object DefaultNetworkListener {
             return false
         }
     }
-
     /**
      */
     suspend fun start(connectivityManager: ConnectivityManager, key: Any, listener: (Network?) -> Unit) {
@@ -194,6 +206,7 @@ object DefaultNetworkListener {
     private fun register() {
         val cm = connectivityManagerRef?.get() ?: return
         try {
+            cleanupEpoch.incrementAndGet()
             fallback = false
             when {
                 Build.VERSION.SDK_INT >= 31 -> {
@@ -228,9 +241,12 @@ object DefaultNetworkListener {
     /**
      */
     fun cleanup() {
-        networkActor.close()
+        cleanupEpoch.incrementAndGet()
+        unregister()
+        networkActor.trySend(NetworkMessage.Reset)
         underlyingNetwork = null
         connectivityManagerRef = null
+        fallback = false
         Log.i(TAG, "DefaultNetworkListener cleaned up")
     }
 }

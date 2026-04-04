@@ -12,13 +12,17 @@ import com.kunk.singbox.service.manager.BackgroundPowerManager
 import com.kunk.singbox.service.manager.ServiceStateHolder
 import com.kunk.singbox.service.manager.UrlTestTagMatcher
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.withLock
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 @Suppress("TooManyFunctions")
 object SingBoxIpcHub {
@@ -33,6 +37,8 @@ object SingBoxIpcHub {
     }
 
     private val logRepo by lazy { LogRepository.getInstance() }
+    private val ipcScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val pendingUrlTestJobs = ConcurrentHashMap<Long, kotlinx.coroutines.Job>()
 
     private fun log(msg: String) {
         Log.i(TAG, msg)
@@ -55,13 +61,11 @@ object SingBoxIpcHub {
 
     private val stateNames = ServiceState.entries.map { it.name }.toTypedArray()
 
-    private fun getStateName(ordinal: Int): String =
-        stateNames.getOrNull(ordinal) ?: "UNKNOWN"
-
     private val lastBroadcastAtMs = AtomicLong(0L)
     private val broadcastPending = AtomicBoolean(false)
     private val broadcasting = AtomicBoolean(false)
     private val broadcastLock = ReentrantLock()
+    private val callbackBroadcastLock = ReentrantLock()
 
     @Volatile
     private var powerManager: BackgroundPowerManager? = null
@@ -176,6 +180,21 @@ object SingBoxIpcHub {
         callbacks.unregister(callback)
     }
 
+    private inline fun broadcastCallbacks(crossinline action: (ISingBoxServiceCallback) -> Unit) {
+        callbackBroadcastLock.withLock {
+            val n = callbacks.beginBroadcast()
+            try {
+                for (i in 0 until n) {
+                    runCatching {
+                        action(callbacks.getBroadcastItem(i))
+                    }
+                }
+            } finally {
+                callbacks.finishBroadcast()
+            }
+        }
+    }
+
     private fun scheduleBroadcastIfNeededLocked() {
         if (broadcasting.compareAndSet(false, true)) {
             broadcastScheduler.execute { drainOrReschedule() }
@@ -207,22 +226,13 @@ object SingBoxIpcHub {
 
             val snapshot = StateSnapshot(stateOrdinal, activeLabel, lastError, manuallyStopped)
 
-            val n = callbacks.beginBroadcast()
-            Log.d(TAG, "[IPC] broadcasting to $n callbacks, state=${getStateName(snapshot.stateOrdinal)}")
-            try {
-                for (i in 0 until n) {
-                    runCatching {
-                        callbacks.getBroadcastItem(i)
-                            .onStateChanged(
-                                snapshot.stateOrdinal,
-                                snapshot.activeLabel,
-                                snapshot.lastError,
-                                snapshot.manuallyStopped
-                            )
-                    }
-                }
-            } finally {
-                callbacks.finishBroadcast()
+            broadcastCallbacks { callback ->
+                callback.onStateChanged(
+                    snapshot.stateOrdinal,
+                    snapshot.activeLabel,
+                    snapshot.lastError,
+                    snapshot.manuallyStopped
+                )
             }
 
             broadcastLock.withLock {
@@ -257,13 +267,32 @@ object SingBoxIpcHub {
         const val UNKNOWN_ERROR = 3
     }
 
-    fun urlTestNodeDelay(groupTag: String, nodeTag: String, timeoutMs: Int): Int {
-        val service = ServiceStateHolder.instance ?: return -1
+    fun requestUrlTestNodeDelay(requestId: Long, groupTag: String, nodeTag: String, timeoutMs: Int) {
+        val service = ServiceStateHolder.instance
+        if (service == null) {
+            requestUrlTestNodeDelayResult(requestId, -1)
+            return
+        }
         val safeTimeout = timeoutMs.coerceIn(1000, 30000).toLong()
-        return runBlocking {
-            val results = service.urlTestGroup(groupTag, safeTimeout)
-            val matched = UrlTestTagMatcher.resolveDelayDetail(results, nodeTag)
-            matched?.delay?.takeIf { it > 0 } ?: -1
+        pendingUrlTestJobs.remove(requestId)?.cancel()
+        val job = ipcScope.launch {
+            val delay = runCatching {
+                val results = service.urlTestGroup(groupTag, safeTimeout)
+                val matched = UrlTestTagMatcher.resolveDelayDetail(results, nodeTag)
+                matched?.delay?.takeIf { it > 0 } ?: -1
+            }.getOrElse {
+                Log.w(TAG, "requestUrlTestNodeDelay failed: requestId=$requestId", it)
+                -1
+            }
+            requestUrlTestNodeDelayResult(requestId, delay)
+        }
+        pendingUrlTestJobs[requestId] = job
+        job.invokeOnCompletion { pendingUrlTestJobs.remove(requestId) }
+    }
+
+    fun requestUrlTestNodeDelayResult(requestId: Long, delay: Int) {
+        broadcastCallbacks { callback ->
+            callback.onUrlTestNodeDelayResult(requestId, delay)
         }
     }
 

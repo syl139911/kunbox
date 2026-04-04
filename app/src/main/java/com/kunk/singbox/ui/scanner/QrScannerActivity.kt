@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -20,6 +19,7 @@ import com.google.zxing.common.HybridBinarizer
 import com.journeyapps.barcodescanner.CaptureManager
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import com.kunk.singbox.R
+import com.kunk.singbox.ui.components.AppNotificationManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,18 +83,27 @@ class QrScannerActivity : AppCompatActivity() {
                             setResult(Activity.RESULT_OK, intent)
                             finish()
                         } else {
-                            Toast.makeText(this@QrScannerActivity, getString(R.string.qr_scanner_no_qr_found), Toast.LENGTH_SHORT).show()
+                            AppNotificationManager.showMessage(
+                                this@QrScannerActivity,
+                                getString(R.string.qr_scanner_no_qr_found)
+                            )
                         }
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@QrScannerActivity, getString(R.string.qr_scanner_cannot_read_image), Toast.LENGTH_SHORT).show()
+                        AppNotificationManager.showMessage(
+                            this@QrScannerActivity,
+                            getString(R.string.qr_scanner_cannot_read_image)
+                        )
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to parse QR code from image", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@QrScannerActivity, getString(R.string.profiles_import_failed) + ": ${e.message}", Toast.LENGTH_SHORT).show()
+                    AppNotificationManager.showMessage(
+                        context = this@QrScannerActivity,
+                        message = getString(R.string.profiles_import_failed) + ": ${e.message}"
+                    )
                 }
             }
         }
@@ -121,10 +130,10 @@ class QrScannerActivity : AppCompatActivity() {
         isFlashOn = !isFlashOn
         if (isFlashOn) {
             barcodeScannerView.setTorchOn()
-            Toast.makeText(this, getString(R.string.qr_scanner_flash_on), Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(this, getString(R.string.qr_scanner_flash_on))
         } else {
             barcodeScannerView.setTorchOff()
-            Toast.makeText(this, getString(R.string.qr_scanner_flash_off), Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(this, getString(R.string.qr_scanner_flash_off))
         }
     }
 

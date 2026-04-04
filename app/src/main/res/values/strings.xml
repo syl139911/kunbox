@@ -218,6 +218,12 @@
     <!-- Profiles -->
     <string name="profiles_title">配置管理</string>
     <string name="profiles_search">搜索配置</string>
+    <string name="profiles_deep_link_import_title">确认导入订阅</string>
+    <string name="profiles_deep_link_import_message">将导入以下订阅：
+%1$s
+
+%2$s</string>
+    <string name="profiles_import_content_too_large">导入内容过大，请缩小内容后再试</string>
     <string name="profiles_search_hint">输入关键词...</string>
     <string name="profiles_add_subscription">添加订阅</string>
     <string name="profiles_edit_profile">编辑配置</string>

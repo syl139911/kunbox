@@ -4,7 +4,6 @@ import com.kunk.singbox.R
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -81,6 +80,8 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.kunk.singbox.model.UpdateStatus
 import com.kunk.singbox.ui.scanner.QrScannerActivity
+import com.kunk.singbox.ui.components.AppNotificationManager
+import com.kunk.singbox.ui.components.ConfirmDialog
 import com.kunk.singbox.ui.components.InputDialog
 import com.kunk.singbox.ui.components.ProfileCard
 import com.kunk.singbox.ui.components.StandardCard
@@ -91,8 +92,31 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.ByteArrayOutputStream
+
+private suspend fun readImportContentSafely(
+    context: android.content.Context,
+    uri: Uri,
+    maxBytes: Int
+): String = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        val output = ByteArrayOutputStream()
+        var totalBytes = 0
+
+        while (true) {
+            val read = inputStream.read(buffer)
+            if (read <= 0) break
+            totalBytes += read
+            require(totalBytes <= maxBytes) {
+                context.getString(R.string.profiles_import_content_too_large)
+            }
+            output.write(buffer, 0, read)
+        }
+
+        output.toString(Charsets.UTF_8.name())
+    } ?: ""
+}
 
 @Composable
 fun ProfilesScreen(
@@ -115,27 +139,41 @@ fun ProfilesScreen(
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.toastEvents.collectLatest { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(context, message)
         }
     }
 
     val pendingImport by DeepLinkHandler.pendingSubscriptionImport.collectAsState()
-    androidx.compose.runtime.LaunchedEffect(pendingImport) {
-        pendingImport?.let { data ->
-            viewModel.importSubscription(
-                name = data.name,
-                url = data.url,
-                autoUpdateInterval = data.autoUpdateInterval
-            )
 
-            DeepLinkHandler.clearPendingSubscriptionImport()
-        }
+    pendingImport?.let { data ->
+        ConfirmDialog(
+            title = stringResource(R.string.profiles_deep_link_import_title),
+            message = stringResource(
+                R.string.profiles_deep_link_import_message,
+                data.name,
+                data.url
+            ),
+            confirmText = stringResource(R.string.common_import),
+            onConfirm = {
+                val started = viewModel.importSubscription(
+                    name = data.name,
+                    url = data.url,
+                    autoUpdateInterval = data.autoUpdateInterval
+                )
+                if (started) {
+                    DeepLinkHandler.clearPendingSubscriptionImport()
+                } else {
+                    AppNotificationManager.showMessage(context, context.getString(R.string.common_loading))
+                }
+            },
+            onDismiss = { DeepLinkHandler.clearPendingSubscriptionImport() }
+        )
     }
 
     // Handle update state feedback
     androidx.compose.runtime.LaunchedEffect(updateStatus) {
         updateStatus?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(context, it)
         }
     }
 
@@ -146,11 +184,18 @@ fun ProfilesScreen(
     androidx.compose.runtime.LaunchedEffect(importState) {
         when (val state = importState) {
             is com.kunk.singbox.viewmodel.ProfilesViewModel.ImportState.Success -> {
-                Toast.makeText(context, context.getString(R.string.profiles_import_success, state.profile.name), Toast.LENGTH_SHORT).show()
+                AppNotificationManager.showMessage(
+                    context,
+                    context.getString(R.string.profiles_import_success, state.profile.name)
+                )
                 viewModel.resetImportState()
             }
             is com.kunk.singbox.viewmodel.ProfilesViewModel.ImportState.Error -> {
-                Toast.makeText(context, context.getString(R.string.profiles_import_failed, state.message), Toast.LENGTH_LONG).show()
+                AppNotificationManager.showMessage(
+                    context = context,
+                    message = context.getString(R.string.profiles_import_failed, state.message),
+                    duration = androidx.compose.material3.SnackbarDuration.Long
+                )
                 viewModel.resetImportState()
             }
             // Loading state is now handled by ImportLoadingDialog
@@ -191,13 +236,24 @@ fun ProfilesScreen(
         if (uri != null) {
             scope.launch {
                 try {
-                    val content = withContext(Dispatchers.IO) {
-                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                            BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                                reader.readText()
-                            }
-                        } ?: ""
+                    val declaredLength = withContext(Dispatchers.IO) {
+                        context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { descriptor ->
+                            descriptor.length
+                        } ?: -1L
                     }
+                    if (declaredLength > com.kunk.singbox.viewmodel.ProfilesViewModel.MAX_IMPORT_CONTENT_BYTES) {
+                        AppNotificationManager.showMessage(
+                            context,
+                            context.getString(R.string.profiles_import_content_too_large)
+                        )
+                        return@launch
+                    }
+
+                    val content = readImportContentSafely(
+                        context = context,
+                        uri = uri,
+                        maxBytes = com.kunk.singbox.viewmodel.ProfilesViewModel.MAX_IMPORT_CONTENT_BYTES
+                    )
 
                     if (content.isNotBlank()) {
 
@@ -211,10 +267,14 @@ fun ProfilesScreen(
 
                         viewModel.importFromContent(fileName, content)
                     } else {
-                        Toast.makeText(context, context.getString(R.string.profiles_file_empty), Toast.LENGTH_SHORT).show()
+                        AppNotificationManager.showMessage(context, context.getString(R.string.profiles_file_empty))
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(context, context.getString(R.string.profiles_read_file_failed, e.message), Toast.LENGTH_LONG).show()
+                    AppNotificationManager.showMessage(
+                        context = context,
+                        message = context.getString(R.string.profiles_read_file_failed, e.message),
+                        duration = androidx.compose.material3.SnackbarDuration.Long
+                    )
                 }
             }
         }
@@ -277,7 +337,7 @@ fun ProfilesScreen(
         if (isGranted) {
             qrCodeLauncher.launch(createScanOptions())
         } else {
-            Toast.makeText(context, context.getString(R.string.profiles_camera_permission_required), Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(context, context.getString(R.string.profiles_camera_permission_required))
         }
     }
 
@@ -342,14 +402,14 @@ fun ProfilesScreen(
             confirmText = stringResource(R.string.common_import),
             onConfirm = { name ->
                 if (name.contains("://")) {
-                    Toast.makeText(context, nameInvalidMsg, Toast.LENGTH_SHORT).show()
+                    AppNotificationManager.showMessage(context, nameInvalidMsg)
                 } else {
                     val content = clipboardManager.getText()?.text ?: ""
                     if (content.isNotBlank()) {
                         viewModel.importFromContent(if (name.isBlank()) defaultClipboardName else name, content)
                         showClipboardInput = false
                     } else {
-                        Toast.makeText(context, clipboardEmptyMsg, Toast.LENGTH_SHORT).show()
+                        AppNotificationManager.showMessage(context, clipboardEmptyMsg)
                     }
                 }
             },
@@ -955,21 +1015,26 @@ private fun SubscriptionInputDialog(
                     }
 
                     if (isNodeLink) {
-                        Toast.makeText(context,
-                            context.getString(R.string.profiles_subscription_node_warning),
-                            Toast.LENGTH_LONG).show()
+                        AppNotificationManager.showMessage(
+                            context = context,
+                            message = context.getString(R.string.profiles_subscription_node_warning),
+                            duration = androidx.compose.material3.SnackbarDuration.Long
+                        )
                         return@Button
                     }
 
                     if (name.contains("://")) {
-                        Toast.makeText(context, context.getString(R.string.profiles_name_invalid), Toast.LENGTH_SHORT).show()
+                        AppNotificationManager.showMessage(context, context.getString(R.string.profiles_name_invalid))
                         return@Button
                     }
 
                     val finalInterval = if (autoUpdateEnabled) {
                         val minutes = autoUpdateMinutes.toIntOrNull() ?: 0
                         if (minutes < 15) {
-                            Toast.makeText(context, context.getString(R.string.settings_update_interval_min), Toast.LENGTH_SHORT).show()
+                            AppNotificationManager.showMessage(
+                                context,
+                                context.getString(R.string.settings_update_interval_min)
+                            )
                             return@Button
                         }
                         minutes

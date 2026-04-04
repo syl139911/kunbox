@@ -25,6 +25,10 @@ import kotlinx.coroutines.launch
 
 class ProfilesViewModel(application: Application) : AndroidViewModel(application) {
 
+    companion object {
+        const val MAX_IMPORT_CONTENT_BYTES = 1024 * 1024
+    }
+
     private val configRepository = ConfigRepository.getInstance(application)
 
     private var importJob: Job? = null
@@ -169,10 +173,10 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
         autoUpdateInterval: Int = 0,
         dnsPreResolve: Boolean = false,
         dnsServer: String? = null
-    ) {
+    ): Boolean {
 
         if (_importState.value is ImportState.Loading) {
-            return
+            return false
         }
 
         importJob = viewModelScope.launch {
@@ -205,6 +209,8 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
                 }
             )
         }
+
+        return true
     }
 
     fun importFromContent(
@@ -217,6 +223,12 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
         }
         if (content.isBlank()) {
             _importState.value = ImportState.Error(getApplication<Application>().getString(R.string.profiles_content_empty))
+            return
+        }
+        if (content.toByteArray(Charsets.UTF_8).size > MAX_IMPORT_CONTENT_BYTES) {
+            _importState.value = ImportState.Error(
+                getApplication<Application>().getString(R.string.profiles_import_content_too_large)
+            )
             return
         }
 

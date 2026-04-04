@@ -25,6 +25,8 @@ class DataExportRepository(private val context: Context) {
     companion object {
         private const val TAG = "DataExportRepository"
         private const val CURRENT_VERSION = 1
+        private const val MAX_IMPORT_JSON_BYTES = 2 * 1024 * 1024
+        private const val MAX_IMPORT_PROFILE_COUNT = 64
 
         @Volatile
         private var instance: DataExportRepository? = null
@@ -128,6 +130,7 @@ class DataExportRepository(private val context: Context) {
      */
     suspend fun validateImportData(jsonData: String): Result<ExportData> = withContext(Dispatchers.IO) {
         try {
+            validateImportPayloadSize(jsonData)
             val exportData = gson.fromJson(jsonData, ExportData::class.java)
 
             // 濡ょ姴鐭侀惁澶愭偋閸喐鎷?
@@ -139,6 +142,12 @@ class DataExportRepository(private val context: Context) {
 
             if (exportData.settings == null) {
                 return@withContext Result.failure(Exception("Data format error: missing settings info"))
+            }
+
+            if (exportData.profiles.size > MAX_IMPORT_PROFILE_COUNT) {
+                return@withContext Result.failure(
+                    Exception("Import rejected: profile count exceeds limit ($MAX_IMPORT_PROFILE_COUNT)")
+                )
             }
 
             Result.success(exportData)
@@ -188,6 +197,10 @@ class DataExportRepository(private val context: Context) {
                 return@withContext Result.failure(error)
             }
             val exportData = validateResult.getOrThrow()
+            val snapshot = createImportSnapshot(options)
+                ?: return@withContext Result.success(
+                    ImportResult.Failed("Import aborted: failed to create rollback snapshot")
+                )
 
             var profilesImported = 0
             var nodesImported = 0
@@ -198,19 +211,6 @@ class DataExportRepository(private val context: Context) {
                 try {
                     importSettings(exportData.settings)
                     settingsImported = true
-
-                    if (exportData.settings.ruleSets.isNotEmpty()) {
-                        Log.i(TAG, "Triggering rule set download after import...")
-
-                        repositoryScope.launch {
-                            try {
-                                ruleSetRepository.ensureRuleSetsReady(forceUpdate = false, allowNetwork = true) {
-                                }
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Failed to download rule sets after import", e)
-                            }
-                        }
-                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to import settings", e)
                     errors.add("Failed to import settings: ${e.message}")
@@ -232,7 +232,6 @@ class DataExportRepository(private val context: Context) {
 
             if (options.importProfiles && exportData.activeProfileId != null) {
                 try {
-
                     val profiles = configRepository.profiles.value
                     if (profiles.any { it.id == exportData.activeProfileId }) {
                         configRepository.setActiveProfile(
@@ -242,6 +241,33 @@ class DataExportRepository(private val context: Context) {
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to restore active profile", e)
+                }
+            }
+
+            if (errors.isNotEmpty()) {
+                val rollbackResult = restoreSnapshot(snapshot)
+                if (rollbackResult.isFailure) {
+                    val rollbackMessage = rollbackResult.exceptionOrNull()?.message ?: "unknown rollback error"
+                    return@withContext Result.success(
+                        ImportResult.Failed(
+                            errors.joinToString("\n") + "\nRollback failed: $rollbackMessage"
+                        )
+                    )
+                }
+                return@withContext Result.success(
+                    ImportResult.Failed(errors.joinToString("\n"))
+                )
+            }
+
+            if (settingsImported && exportData.settings.ruleSets.isNotEmpty()) {
+                Log.i(TAG, "Triggering rule set download after import...")
+                repositoryScope.launch {
+                    try {
+                        ruleSetRepository.ensureRuleSetsReady(forceUpdate = false, allowNetwork = true) {
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to download rule sets after import", e)
+                    }
                 }
             }
 
@@ -270,9 +296,8 @@ class DataExportRepository(private val context: Context) {
      */
     suspend fun importFromFile(uri: Uri, options: ImportOptions = ImportOptions()): Result<ImportResult> = withContext(Dispatchers.IO) {
         try {
-            val jsonData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                inputStream.bufferedReader().readText()
-            } ?: throw Exception("Could not read file")
+            validateImportFileSize(uri)
+            val jsonData = readImportJson(uri)
 
             importData(jsonData, options)
         } catch (e: Exception) {
@@ -285,9 +310,8 @@ class DataExportRepository(private val context: Context) {
      */
     suspend fun validateFromFile(uri: Uri): Result<ExportData> = withContext(Dispatchers.IO) {
         try {
-            val jsonData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                inputStream.bufferedReader().readText()
-            } ?: throw Exception("Could not read file")
+            validateImportFileSize(uri)
+            val jsonData = readImportJson(uri)
 
             validateImportData(jsonData)
         } catch (e: Exception) {
@@ -408,6 +432,110 @@ class DataExportRepository(private val context: Context) {
         } ?: 0
 
         return nodeCount
+    }
+
+    private fun validateImportPayloadSize(jsonData: String) {
+        val sizeBytes = jsonData.toByteArray(Charsets.UTF_8).size
+        require(sizeBytes <= MAX_IMPORT_JSON_BYTES) {
+            "Import rejected: payload exceeds ${MAX_IMPORT_JSON_BYTES / 1024}KB"
+        }
+    }
+
+    private fun validateImportFileSize(uri: Uri) {
+        val fileSize = runCatching {
+            context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { descriptor ->
+                descriptor.length
+            }
+        }.getOrNull() ?: return
+
+        require(fileSize <= MAX_IMPORT_JSON_BYTES) {
+            "Import rejected: file exceeds ${MAX_IMPORT_JSON_BYTES / 1024}KB"
+        }
+    }
+
+    private fun readImportJson(uri: Uri): String {
+        return context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            val output = java.io.ByteArrayOutputStream()
+            var totalBytes = 0
+
+            while (true) {
+                val read = inputStream.read(buffer)
+                if (read <= 0) break
+                totalBytes += read
+                require(totalBytes <= MAX_IMPORT_JSON_BYTES) {
+                    "Import rejected: file exceeds ${MAX_IMPORT_JSON_BYTES / 1024}KB"
+                }
+                output.write(buffer, 0, read)
+            }
+
+            output.toString(Charsets.UTF_8.name())
+        } ?: throw IllegalStateException("Could not read file")
+    }
+
+    private suspend fun createImportSnapshot(options: ImportOptions): ExportData? {
+        if (!options.importSettings && !options.importProfiles) {
+            return ExportData(
+                exportTime = System.currentTimeMillis(),
+                appVersion = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown",
+                settings = settingsRepository.settings.first(),
+                profiles = emptyList(),
+                activeProfileId = configRepository.activeProfileId.value,
+                activeNodeId = configRepository.activeNodeId.value
+            )
+        }
+
+        val snapshotJson = exportAllData().getOrNull() ?: return null
+        return gson.fromJson(snapshotJson, ExportData::class.java)
+    }
+
+    private suspend fun restoreSnapshot(snapshot: ExportData): Result<Unit> {
+        val rollbackErrors = mutableListOf<String>()
+
+        runCatching {
+            importSettings(snapshot.settings)
+        }.onFailure { error ->
+            rollbackErrors += "settings rollback failed: ${error.message}"
+        }
+
+        snapshot.profiles.forEach { profileData ->
+            runCatching {
+                importProfile(profileData, overwrite = true)
+            }.onFailure { error ->
+                rollbackErrors += "profile rollback failed: ${profileData.profile.name}: ${error.message}"
+            }
+        }
+
+        if (rollbackErrors.isEmpty()) {
+            val snapshotIds = snapshot.profiles.map { it.profile.id }.toSet()
+            val currentProfiles = configRepository.profiles.value
+            currentProfiles
+                .filter { it.id !in snapshotIds }
+                .forEach { profile ->
+                    runCatching {
+                        configRepository.deleteProfile(profile.id)
+                    }.onFailure { error ->
+                        rollbackErrors += "profile cleanup failed: ${profile.name}: ${error.message}"
+                    }
+                }
+        }
+
+        snapshot.activeProfileId?.let { activeProfileId ->
+            runCatching {
+                val profiles = configRepository.profiles.value
+                if (profiles.any { it.id == activeProfileId }) {
+                    configRepository.setActiveProfile(activeProfileId, snapshot.activeNodeId)
+                }
+            }.onFailure { error ->
+                rollbackErrors += "active profile rollback failed: ${error.message}"
+            }
+        }
+
+        return if (rollbackErrors.isEmpty()) {
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException(rollbackErrors.joinToString("; ")))
+        }
     }
 
     /**

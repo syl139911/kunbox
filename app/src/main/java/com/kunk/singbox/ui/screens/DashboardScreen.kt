@@ -61,10 +61,10 @@ import com.kunk.singbox.ui.components.ModeChip
 import com.kunk.singbox.ui.components.NodeSelectorDialog
 import com.kunk.singbox.ui.components.SingleSelectDialog
 import com.kunk.singbox.ui.components.StatusChip
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.theme.Neutral500
 import com.kunk.singbox.R
 import com.kunk.singbox.viewmodel.NodesViewModel
-import android.widget.Toast
 import android.app.Activity
 import android.net.VpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -147,20 +147,20 @@ fun DashboardScreen(
     // Monitor update status
     LaunchedEffect(updateStatus) {
         updateStatus?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(context, it)
         }
     }
 
     // Monitor test status
     LaunchedEffect(testStatus) {
         testStatus?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(context, it)
         }
     }
 
     LaunchedEffect(actionStatus) {
         actionStatus?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(context, it)
         }
     }
 
@@ -400,7 +400,7 @@ fun DashboardScreen(
                             if (profiles.isNotEmpty()) {
                                 showProfileDialog = true
                             } else {
-                                Toast.makeText(context, noProfileMsg, Toast.LENGTH_SHORT).show()
+                                AppNotificationManager.showMessage(context, noProfileMsg)
                             }
                         }
                     )
@@ -411,7 +411,7 @@ fun DashboardScreen(
                             if (nodes.isNotEmpty()) {
                                 showNodeDialog = true
                             } else {
-                                Toast.makeText(context, noNodeMsg, Toast.LENGTH_SHORT).show()
+                                AppNotificationManager.showMessage(context, noNodeMsg)
                             }
                         }
                     )

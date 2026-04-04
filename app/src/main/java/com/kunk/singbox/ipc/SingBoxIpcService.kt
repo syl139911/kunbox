@@ -49,9 +49,12 @@ class SingBoxIpcService : Service() {
             return SingBoxIpcHub.hotReloadConfig(configContent)
         }
 
-        override fun urlTestNodeDelay(groupTag: String?, nodeTag: String?, timeoutMs: Int): Int {
-            if (groupTag.isNullOrBlank() || nodeTag.isNullOrBlank()) return -1
-            return SingBoxIpcHub.urlTestNodeDelay(groupTag, nodeTag, timeoutMs)
+        override fun requestUrlTestNodeDelay(requestId: Long, groupTag: String?, nodeTag: String?, timeoutMs: Int) {
+            if (groupTag.isNullOrBlank() || nodeTag.isNullOrBlank()) {
+                SingBoxIpcHub.requestUrlTestNodeDelayResult(requestId, -1)
+                return
+            }
+            SingBoxIpcHub.requestUrlTestNodeDelay(requestId, groupTag, nodeTag, timeoutMs)
         }
     }
 

@@ -3,6 +3,8 @@
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.kunk.singbox.ipc.SingBoxRemote
 import com.kunk.singbox.ipc.VpnStateStore
@@ -23,6 +25,13 @@ object VpnServiceManager {
     private var lastTunCheckTime: Long = 0L
 
     private const val CACHE_VALIDITY_MS = 5_000L
+    private val restartHandler = Handler(Looper.getMainLooper())
+
+    @Volatile
+    private var pendingRestartTask: Runnable? = null
+
+    @Volatile
+    private var pendingRestartVersion: Long = 0L
 
     /**
      *
@@ -151,12 +160,21 @@ object VpnServiceManager {
     fun restartVpn(context: Context) {
         Log.d(TAG, "restartVpn")
 
-        val currentTunMode = isTunEnabled(context)
-        stopVpn(context)
+        val appContext = context.applicationContext
+        val currentTunMode = isTunEnabled(appContext)
+        val version = pendingRestartVersion + 1L
+        pendingRestartVersion = version
 
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            startVpn(context, currentTunMode)
-        }, 500)
+        pendingRestartTask?.let { restartHandler.removeCallbacks(it) }
+        stopVpn(appContext)
+
+        val restartTask = Runnable {
+            if (pendingRestartVersion != version) return@Runnable
+            pendingRestartTask = null
+            startVpn(appContext, currentTunMode)
+        }
+        pendingRestartTask = restartTask
+        restartHandler.postDelayed(restartTask, 500)
     }
 
     /**

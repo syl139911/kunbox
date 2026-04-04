@@ -22,24 +22,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,12 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -68,9 +52,10 @@ import com.kunk.singbox.utils.LocaleHelper
 import com.kunk.singbox.utils.DeepLinkHandler
 import com.kunk.singbox.ipc.SingBoxRemote
 import com.kunk.singbox.service.VpnTileService
+import com.kunk.singbox.ui.components.AppNotificationHost
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.AppNavBar
 import com.kunk.singbox.ui.navigation.AppNavigation
-import com.kunk.singbox.ui.theme.PureWhite
 import com.kunk.singbox.ui.theme.SingBoxTheme
 import android.content.ComponentName
 import android.service.quicksettings.TileService
@@ -264,18 +249,20 @@ fun SingBoxApp() {
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
     LaunchedEffect(Unit) {
         SettingsRepository.restartRequiredEvents.collectLatest {
 
             if (!SingBoxRemote.isRunning.value && !SingBoxRemote.isStarting.value) return@collectLatest
 
-            snackbarHostState.currentSnackbarData?.dismiss()
-
-            snackbarHostState.showSnackbar(
+            AppNotificationManager.showInAppMessage(
                 message = context.getString(R.string.settings_restart_needed),
-                duration = SnackbarDuration.Short
+                duration = SnackbarDuration.Short,
+                actionLabel = context.getString(R.string.main_restart),
+                onAction = {
+                    if (isRunning || isStarting) {
+                        dashboardViewModel.restartVpn()
+                    }
+                }
             )
         }
     }
@@ -310,56 +297,7 @@ fun SingBoxApp() {
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 snackbarHost = {
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier.padding(bottom = if (showBottomBar) 64.dp else 16.dp),
-                        snackbar = { data ->
-                            Surface(
-                                modifier = Modifier
-                                    .padding(horizontal = 12.dp)
-                                    .heightIn(min = 52.dp)
-                                    .shadow(6.dp, RoundedCornerShape(12.dp)),
-                                color = PureWhite,
-                                contentColor = Color.Black,
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = data.visuals.message,
-                                        modifier = Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Normal,
-                                        color = Color.Black,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-
-                                    Spacer(modifier = Modifier.width(12.dp))
-
-                                    Text(
-                                        text = stringResource(R.string.main_restart),
-                                        modifier = Modifier
-                                            .heightIn(min = 24.dp)
-                                            .clickable {
-                                                data.dismiss()
-                                                if (isRunning || isStarting) {
-                                                    dashboardViewModel.restartVpn()
-                                                }
-                                            }
-                                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF00C853)
-                                    )
-                                }
-                            }
-                        }
-                    )
+                    AppNotificationHost(bottomOffset = if (showBottomBar) 64.dp else 16.dp)
                 },
                 bottomBar = {
                     AnimatedVisibility(

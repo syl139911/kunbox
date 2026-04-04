@@ -23,6 +23,7 @@ import com.kunk.singbox.repository.ConfigRepository
 import com.kunk.singbox.repository.LogRepository
 import com.kunk.singbox.repository.RuleSetRepository
 import com.kunk.singbox.repository.SettingsRepository
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.repository.TrafficRepository
 import com.kunk.singbox.core.BoxWrapperManager
 import com.kunk.singbox.core.ProbeManager
@@ -2680,11 +2681,11 @@ class SingBoxService : VpnService() {
         LogRepository.getInstance().addLog("ERROR [HotReload] $errorMsg")
 
         serviceScope.launch(Dispatchers.Main) {
-            android.widget.Toast.makeText(
-                applicationContext,
-                errorMsg,
-                android.widget.Toast.LENGTH_LONG
-            ).show()
+            AppNotificationManager.showMessage(
+                context = applicationContext,
+                message = errorMsg,
+                duration = androidx.compose.material3.SnackbarDuration.Long
+            )
         }
 
         isManuallyStopped = false

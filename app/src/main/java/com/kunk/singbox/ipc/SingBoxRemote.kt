@@ -15,6 +15,10 @@ import android.util.Log
 import com.kunk.singbox.aidl.ISingBoxService
 import com.kunk.singbox.aidl.ISingBoxServiceCallback
 import com.kunk.singbox.service.ServiceState
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -103,10 +107,19 @@ object SingBoxRemote {
     private var pendingLifecycleRetry: Runnable? = null
 
     @Volatile
+    private var pendingLifecycleRetryAttempts: Int = 0
+
+    @Volatile
+    private var pendingLifecycleRetryVersion: Long = -1L
+
+    @Volatile
     private var pendingReconnect: Runnable? = null
 
     @Volatile
     private var pendingRecoveryCallback: ((RecoveryResult) -> Unit)? = null
+
+    private val urlTestRequestId = AtomicLong(0L)
+    private val pendingUrlTestRequests = ConcurrentHashMap<Long, CompletableDeferred<Int?>>()
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -130,6 +143,10 @@ object SingBoxRemote {
                 else -> Unit
             }
         }
+
+        override fun onUrlTestNodeDelayResult(requestId: Long, delay: Int) {
+            pendingUrlTestRequests.remove(requestId)?.complete(delay.takeIf { it > 0 })
+        }
     }
 
     private fun startPendingRecovery(
@@ -151,6 +168,11 @@ object SingBoxRemote {
 
     private fun failPendingRecovery(reason: String, throwable: Throwable? = null) {
         completePendingRecovery(RecoveryResult.Failed(reason, throwable))
+    }
+
+    private fun clearPendingUrlTestRequests() {
+        pendingUrlTestRequests.values.forEach { it.complete(null) }
+        pendingUrlTestRequests.clear()
     }
 
     private fun updateState(
@@ -207,6 +229,12 @@ object SingBoxRemote {
         pendingLifecycleRetry = null
     }
 
+    private fun resetPendingLifecycleRetryState() {
+        clearPendingLifecycleRetry()
+        pendingLifecycleRetryAttempts = 0
+        pendingLifecycleRetryVersion = -1L
+    }
+
     private fun clearPendingReconnect() {
         pendingReconnect?.let { mainHandler.removeCallbacks(it) }
         pendingReconnect = null
@@ -245,7 +273,7 @@ object SingBoxRemote {
             s.notifyAppLifecycle(pending)
             sentLifecycleVersion = version
             pendingAppLifecycle = null
-            clearPendingLifecycleRetry()
+            resetPendingLifecycleRetryState()
             Log.w(TAG, "notifyAppLifecycle retried: isForeground=$pending")
         }.onFailure {
             Log.w(TAG, "notifyAppLifecycle retry failed", it)
@@ -264,6 +292,17 @@ object SingBoxRemote {
 
     private fun schedulePendingLifecycleRetry(version: Long) {
         clearPendingLifecycleRetry()
+        if (pendingLifecycleRetryVersion != version) {
+            pendingLifecycleRetryVersion = version
+            pendingLifecycleRetryAttempts = 0
+        }
+        if (pendingLifecycleRetryAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            Log.w(TAG, "notifyAppLifecycle: retry limit reached for version=$version")
+            return
+        }
+        val attempt = pendingLifecycleRetryAttempts
+        pendingLifecycleRetryAttempts++
+        val delayMs = minOf(RECONNECT_DELAY_MS * (1L shl minOf(attempt, 6)), RECONNECT_BACKOFF_MAX)
         val retryTask = Runnable {
             if (pendingLifecycleVersion != version) return@Runnable
             val pending = pendingAppLifecycle ?: return@Runnable
@@ -274,7 +313,7 @@ object SingBoxRemote {
             schedulePendingLifecycleRetry(version)
         }
         pendingLifecycleRetry = retryTask
-        mainHandler.postDelayed(retryTask, RECONNECT_DELAY_MS)
+        mainHandler.postDelayed(retryTask, delayMs)
     }
 
     private fun rebindAndNotifyLifecycle(context: Context, isForeground: Boolean, version: Long) {
@@ -307,7 +346,7 @@ object SingBoxRemote {
             s.notifyAppLifecycle(pending)
             sentLifecycleVersion = version
             pendingAppLifecycle = null
-            clearPendingLifecycleRetry()
+            resetPendingLifecycleRetryState()
             Log.d(TAG, "notifyAppLifecycle ($tag): isForeground=$pending")
         }.onFailure {
             Log.w(TAG, "Failed to notify $tag app lifecycle", it)
@@ -325,6 +364,7 @@ object SingBoxRemote {
         service = null
         bound = false
         callbackRegistered = false
+        clearPendingUrlTestRequests()
     }
 
     private val conn = object : ServiceConnection {
@@ -357,6 +397,7 @@ object SingBoxRemote {
             unregisterCallback()
             service = null
             bound = false
+            clearPendingUrlTestRequests()
 
             val ctx = contextRef?.get()
             val systemVpn = ctx != null && hasSystemVpn(ctx)
@@ -497,7 +538,7 @@ object SingBoxRemote {
 
     fun disconnect(context: Context) {
         unregisterCallback()
-        clearPendingLifecycleRetry()
+        resetPendingLifecycleRetryState()
         clearPendingReconnect()
         if (connectionActive) {
             runCatching { context.applicationContext.unbindService(conn) }
@@ -698,6 +739,8 @@ object SingBoxRemote {
         val version = pendingLifecycleVersion + 1
         pendingLifecycleVersion = (version) and Long.MAX_VALUE
         pendingAppLifecycle = isForeground
+        resetPendingLifecycleRetryState()
+        pendingLifecycleRetryVersion = version
 
         val s = service
         if (s != null && connectionActive && bound) {
@@ -721,14 +764,25 @@ object SingBoxRemote {
         const val IPC_ERROR = 4
     }
 
-    fun urlTestNodeDelay(groupTag: String, nodeTag: String, timeoutMs: Int): Int? {
+    suspend fun urlTestNodeDelay(groupTag: String, nodeTag: String, timeoutMs: Int): Int? {
         val s = service ?: return null
         if (!connectionActive || !bound) return null
 
-        return runCatching {
-            val delay = s.urlTestNodeDelay(groupTag, nodeTag, timeoutMs)
-            if (delay > 0) delay else null
-        }.getOrNull()
+        val requestId = urlTestRequestId.incrementAndGet()
+        val deferred = CompletableDeferred<Int?>()
+        pendingUrlTestRequests[requestId] = deferred
+
+        return try {
+            s.requestUrlTestNodeDelay(requestId, groupTag, nodeTag, timeoutMs)
+            withTimeoutOrNull(timeoutMs.coerceIn(1000, 30000).toLong() + 1000L) {
+                deferred.await()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "urlTestNodeDelay request failed: requestId=$requestId", e)
+            null
+        } finally {
+            pendingUrlTestRequests.remove(requestId)
+        }
     }
 
     fun hotReloadConfig(configContent: String): Int {

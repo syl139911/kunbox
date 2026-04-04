@@ -82,7 +82,7 @@ internal class DiagnosticsNodeLineQueryRunner(
         }.getOrDefault(emptyList())
     }
 
-    private fun queryNodeDelay(node: NodeUi, timeoutMs: Int, coreActive: Boolean): Int? {
+    private suspend fun queryNodeDelay(node: NodeUi, timeoutMs: Int, coreActive: Boolean): Int? {
         if (!coreActive) return null
         SingBoxRemote.ensureBound(application)
         return SingBoxRemote.urlTestNodeDelay(

@@ -1,7 +1,6 @@
 package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -91,6 +90,7 @@ import com.kunk.singbox.model.TransportConfig
 import com.kunk.singbox.model.UdpOverTcpConfig
 import com.kunk.singbox.model.WireGuardPeer
 import com.kunk.singbox.repository.ConfigRepository
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.EditableMultilineTextItem
 import com.kunk.singbox.ui.components.EditableSelectionItem
 import com.kunk.singbox.ui.components.EditableTextItem
@@ -170,7 +170,7 @@ fun NodeDetailScreen(
                             configRepository.createNode(outbound, newProfileName = target.profileName)
                         }
                     }
-                    Toast.makeText(context, createdMsg, Toast.LENGTH_SHORT).show()
+                    AppNotificationManager.showMessage(context, createdMsg)
                     navController.popBackStack()
                 }
                 showSelectProfileDialog = false
@@ -205,7 +205,7 @@ fun NodeDetailScreen(
                                 showSelectProfileDialog = true
                             } else {
                                 configRepository.updateNode(nodeId, currentOutbound)
-                                Toast.makeText(context, savedMsg, Toast.LENGTH_SHORT).show()
+                                AppNotificationManager.showMessage(context, savedMsg)
                                 navController.popBackStack()
                             }
                         }

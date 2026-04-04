@@ -1,7 +1,6 @@
 ﻿package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -55,6 +54,7 @@ import com.kunk.singbox.model.AppLanguage
 import com.kunk.singbox.model.ImportOptions
 import com.kunk.singbox.repository.RuleSetRepository
 import com.kunk.singbox.ui.components.AboutDialog
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.EditableTextItem
 import com.kunk.singbox.ui.components.ExportProgressDialog
 import com.kunk.singbox.ui.components.ImportPreviewDialog
@@ -132,11 +132,11 @@ fun SettingsScreen(
             onSelect = { index ->
                 viewModel.setAppLanguage(AppLanguage.entries[index])
                 showLanguageDialog = false
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_restart_needed),
-                    Toast.LENGTH_LONG
-                ).show()
+                AppNotificationManager.showMessage(
+                    context = context,
+                    message = context.getString(R.string.settings_restart_needed),
+                    duration = androidx.compose.material3.SnackbarDuration.Long
+                )
             },
             onDismiss = { showLanguageDialog = false }
         )
@@ -279,18 +279,16 @@ fun SettingsScreen(
                                     updateMessage = it
                                 }
                                 updateMessage = if (success) updateSuccessMsg else updateFailedMsg
-                                Toast.makeText(
-                                    context,
-                                    if (success) rulesetUpdateSuccessMsg else rulesetUpdateFailedMsg,
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                AppNotificationManager.showMessage(
+                                    context = context,
+                                    message = if (success) rulesetUpdateSuccessMsg else rulesetUpdateFailedMsg
+                                )
                             } catch (e: Exception) {
                                 updateMessage = "Error: ${e.message}"
-                                Toast.makeText(
-                                    context,
-                                    "$rulesetUpdateFailedMsg: ${e.message}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                AppNotificationManager.showMessage(
+                                    context = context,
+                                    message = "$rulesetUpdateFailedMsg: ${e.message}"
+                                )
                             } finally {
                                 kotlinx.coroutines.delay(1000)
                                 isUpdatingRuleSets = false
@@ -319,7 +317,7 @@ fun SettingsScreen(
                         if (interval != null && interval >= 15) {
                             viewModel.setRuleSetAutoUpdateInterval(interval)
                         } else {
-                            Toast.makeText(context, intervalMinMsg, Toast.LENGTH_SHORT).show()
+                            AppNotificationManager.showMessage(context, intervalMinMsg)
                         }
                     }
                 )

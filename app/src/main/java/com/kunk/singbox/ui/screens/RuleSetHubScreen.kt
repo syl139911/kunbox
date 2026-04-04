@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,10 +27,10 @@ import androidx.navigation.NavController
 import com.kunk.singbox.model.RuleSet
 import com.kunk.singbox.model.RuleSetType
 import com.kunk.singbox.model.HubRuleSet
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.StandardCard
 import com.kunk.singbox.viewmodel.RuleSetViewModel
 import com.kunk.singbox.viewmodel.SettingsViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,8 +57,7 @@ fun RuleSetHubScreen(
         ruleSetSettings.ruleSets.map { it.tag }.toSet()
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val filteredRuleSets = remember(searchQuery, ruleSets) {
         if (searchQuery.isBlank()) ruleSets
@@ -67,7 +67,6 @@ fun RuleSetHubScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -171,7 +170,7 @@ fun RuleSetHubScreen(
                                         url = ruleSet.sourceUrl
                                     )
                                 ) { _, message ->
-                                    scope.launch { snackbarHostState.showSnackbar(message) }
+                                    AppNotificationManager.showMessage(context, message)
                                 }
                             },
                             onAddBinary = {
@@ -183,7 +182,7 @@ fun RuleSetHubScreen(
                                         url = ruleSet.binaryUrl
                                     )
                                 ) { _, message ->
-                                    scope.launch { snackbarHostState.showSnackbar(message) }
+                                    AppNotificationManager.showMessage(context, message)
                                 }
                             }
                         )

@@ -357,6 +357,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     // 2025-fix: 用于处理连接状态变更的防抖 Job
     private var pendingIdleJob: Job? = null
     private var startGraceUntilElapsedMs: Long? = null
+    private var refreshStateJob: Job? = null
 
     /**
      * 启动状态收集器（幂等方法）
@@ -525,7 +526,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
      * - 防止 init 块超时导致状态监听器永不启动
      */
     fun refreshState() {
-        viewModelScope.launch {
+        refreshStateJob?.cancel()
+        refreshStateJob = viewModelScope.launch {
             val context = getApplication<Application>()
 
             // Phase 1: 即时恢复 (< 1ms，从 MMKV 读状态 + 异步验证 IPC)
@@ -546,55 +548,45 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
             setConnectionState(phase1State)
 
+            startStateCollector()
+
             // Phase 2: IPC 就绪后精确同步（后台静默完成，用户无感）
             // 2025-fix-v12: 增加等待次数，从 50 次增加到 80 次（总共 8 秒）
             // 原因: 在低性能设备或系统负载高时，IPC 绑定可能需要更长时间
-            launch {
-                var retries = 0
-                val maxRetries = 80 // 80 * 100ms = 8 秒
-                while (!SingBoxRemote.isBound() && retries < maxRetries) {
-                    delay(100)
-                    retries++
-                }
-
-                if (SingBoxRemote.isBound()) {
-                    val state = SingBoxRemote.state.value
-                    Log.i(TAG, "refreshState Phase 2: state=$state, bound=true, retries=$retries")
-                    when (state) {
-                        ServiceState.RUNNING -> setConnectionState(ConnectionState.Connected)
-                        ServiceState.STARTING -> setConnectionState(ConnectionState.Connecting)
-                        ServiceState.STOPPING -> setConnectionState(ConnectionState.Disconnecting)
-                        ServiceState.STOPPED -> {
-                            // 关键保护：如果 MMKV 仍然显示 active，说明 AIDL 可能还没同步完成
-                            // （刚 rebind 后 onServiceConnected 的初始同步可能还没到达）
-                            // 此时不要回退到 Idle，等后续回调自然更新
-                            if (VpnStateStore.getActive()) {
-                                Log.w(
-                                    TAG,
-                                    "refreshState Phase 2: AIDL says STOPPED but MMKV says active, " +
-                                        "keeping Connected (wait for callback)"
-                                )
-                            } else {
-                                setConnectionState(ConnectionState.Idle)
-                            }
-                        }
-                    }
-                } else {
-                    // IPC 超时未绑定，但如果 MMKV 显示 active，保持 Connected
-                    if (isActive) {
-                        Log.w(TAG, "refreshState Phase 2: IPC not bound but MMKV active, keeping Connected")
-                    } else {
-                        Log.w(TAG, "refreshState Phase 2: IPC not bound and MMKV inactive")
-                        // 2025-fix-v12: 超时后明确设置为 Idle，避免 UI 卡住
-                        setConnectionState(ConnectionState.Idle)
-                    }
-                }
+            var retries = 0
+            val maxRetries = 80 // 80 * 100ms = 8 秒
+            while (!SingBoxRemote.isBound() && retries < maxRetries) {
+                delay(100)
+                retries++
             }
 
-            // Phase 3: 强制确保状态收集器启动 (关键修复)
-            // 无论 IPC 绑定是否成功，都要确保 startStateCollector 被调用
-            // 这样即使所有等待都超时，MMKV 状态更新也能正确传递到 UI
-            startStateCollector()
+            if (SingBoxRemote.isBound()) {
+                val state = SingBoxRemote.state.value
+                Log.i(TAG, "refreshState Phase 2: state=$state, bound=true, retries=$retries")
+                when (state) {
+                    ServiceState.RUNNING -> setConnectionState(ConnectionState.Connected)
+                    ServiceState.STARTING -> setConnectionState(ConnectionState.Connecting)
+                    ServiceState.STOPPING -> setConnectionState(ConnectionState.Disconnecting)
+                    ServiceState.STOPPED -> {
+                        if (VpnStateStore.getActive()) {
+                            Log.w(
+                                TAG,
+                                "refreshState Phase 2: AIDL says STOPPED but MMKV says active, " +
+                                    "keeping Connected (wait for callback)"
+                            )
+                        } else {
+                            setConnectionState(ConnectionState.Idle)
+                        }
+                    }
+                }
+            } else {
+                if (isActive) {
+                    Log.w(TAG, "refreshState Phase 2: IPC not bound but MMKV active, keeping Connected")
+                } else {
+                    Log.w(TAG, "refreshState Phase 2: IPC not bound and MMKV inactive")
+                    setConnectionState(ConnectionState.Idle)
+                }
+            }
         }
     }
 

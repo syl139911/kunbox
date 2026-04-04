@@ -58,7 +58,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.res.stringResource
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -91,6 +90,7 @@ import androidx.navigation.NavController
 import com.kunk.singbox.model.FilterMode
 import com.kunk.singbox.model.NodeSortType
 import com.kunk.singbox.viewmodel.NodesViewModel
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.AddNodeDialog
 import com.kunk.singbox.ui.components.AddNodeTarget
 import com.kunk.singbox.ui.components.InputDialog
@@ -144,7 +144,7 @@ fun NodesScreen(
 
     LaunchedEffect(Unit) {
         viewModel.toastEvents.collectLatest { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            AppNotificationManager.showMessage(context, message)
         }
     }
 
@@ -251,7 +251,7 @@ fun NodesScreen(
             confirmText = stringResource(R.string.common_copy),
             onConfirm = {
                 clipboardManager.setText(AnnotatedString(it))
-                Toast.makeText(context, copiedMsg, Toast.LENGTH_SHORT).show()
+                AppNotificationManager.showMessage(context, copiedMsg)
                 exportLink = null
             },
             onDismiss = { exportLink = null }

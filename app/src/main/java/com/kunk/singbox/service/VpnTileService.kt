@@ -16,7 +16,6 @@ import android.util.Log
 import android.app.NotificationManager
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import android.widget.Toast
 import com.kunk.singbox.aidl.ISingBoxService
 import com.kunk.singbox.aidl.ISingBoxServiceCallback
 import com.kunk.singbox.R
@@ -24,6 +23,7 @@ import com.kunk.singbox.ipc.VpnStateStore
 import com.kunk.singbox.ipc.SingBoxIpcService
 import com.kunk.singbox.manager.VpnServiceManager
 import com.kunk.singbox.repository.ConfigRepository
+import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.repository.SettingsRepository
 import com.kunk.singbox.service.notification.VpnNotificationManager
 import kotlinx.coroutines.CoroutineScope
@@ -70,6 +70,8 @@ class VpnTileService : TileService() {
                 updateTile(activeLabelOverride = activeLabel)
             }
         }
+
+        override fun onUrlTestNodeDelayResult(requestId: Long, delay: Int) = Unit
     }
 
     companion object {
@@ -366,7 +368,11 @@ class VpnTileService : TileService() {
 
         withContext(Dispatchers.Main) {
             revertToInactive()
-            Toast.makeText(this@VpnTileService, reason, Toast.LENGTH_LONG).show()
+            AppNotificationManager.showMessage(
+                context = this@VpnTileService,
+                message = reason,
+                duration = androidx.compose.material3.SnackbarDuration.Long
+            )
         }
     }
 
