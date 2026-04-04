@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.12.0](https://github.com/roseforljh/KunBox/compare/v2.11.7...v2.12.0) (2026-04-04)
+
+
+### Features
+
+* add node line query diagnostics ([c14668b](https://github.com/roseforljh/KunBox/commit/c14668b1417bc9f47da7142e01c83f52a7b5ccd6))
+* update diagnostics and network recovery flows ([8c7c52b](https://github.com/roseforljh/KunBox/commit/8c7c52bc6dd44f50815fd955aba84272f52143ac))
+
+
+### Bug Fixes
+
+* add automatic failover for stalled proxy traffic ([a9d6935](https://github.com/roseforljh/KunBox/commit/a9d69352a48c0d9c570b38969172c98d4df87119))
+* harden import and recovery safety flows ([7a5b49c](https://github.com/roseforljh/KunBox/commit/7a5b49cb75d31b7cec6dabed38d0871441e1266a))
+* resolve IPC lifecycle and state synchronization issues ([c39c20c](https://github.com/roseforljh/KunBox/commit/c39c20c26a171e088d7c6615dc8a6950f7385e36))
+* resolve lifecycle notification absence and IPC race conditions ([217da11](https://github.com/roseforljh/KunBox/commit/217da116dfe7cf72e897b13aa39728591affed90))
+* speed up startup selection for profile route groups ([9f34cbd](https://github.com/roseforljh/KunBox/commit/9f34cbdd66f0013c342b0b9622ac0a8d2ec17023))
+* 同步官方内核、一些优化 ([060b4b9](https://github.com/roseforljh/KunBox/commit/060b4b94d86aae0b6689450b05faecba193b49ea))
+
 ## [2.11.7](https://github.com/roseforljh/KunBox/compare/v2.11.6...v2.11.7) (2026-03-29)
 
 
