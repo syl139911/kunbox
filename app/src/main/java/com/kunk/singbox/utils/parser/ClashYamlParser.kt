@@ -165,6 +165,7 @@ class ClashYamlParser : SubscriptionParser {
         val alpn = asStringList(map["alpn"])
         val flow = asString(map["flow"])
         val packetEncoding = asString(map["packet-encoding"]) ?: "xudp"
+        val encryption = extractXhttpExtraEncryption(map)
 
         val tlsMinVersion = asString(map["tls-version"]) ?: asString(map["min-tls-version"]) ?: globalTlsMinVersion
 
@@ -270,8 +271,17 @@ class ClashYamlParser : SubscriptionParser {
             tls = tlsConfig,
             transport = transport,
             packetEncoding = packetEncoding,
+            encryption = encryption,
             multiplex = multiplex
         )
+    }
+
+    private fun extractXhttpExtraEncryption(map: Map<*, *>): String? {
+        val xhttpOpts = map["xhttp-opts"] as? Map<*, *>
+            ?: map["splithttp-opts"] as? Map<*, *>
+            ?: return null
+        val extra = xhttpOpts["extra"] as? Map<*, *> ?: return null
+        return asString(extra["encryption"])
     }
 
     private fun parseVMess(map: Map<*, *>, name: String, server: String?, port: Int?, globalFingerprint: String? = null, globalTlsMinVersion: String? = null): Outbound? {

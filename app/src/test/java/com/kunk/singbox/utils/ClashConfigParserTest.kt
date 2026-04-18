@@ -88,6 +88,41 @@ class ClashConfigParserTest {
     }
 
     @Test
+    fun testParseVLessXhttpPreservesExtraEncryption() {
+        val yaml = """
+            proxies:
+              - name: "xhttp-vless"
+                type: vless
+                server: 35.194.192.123
+                port: 13324
+                uuid: 2edd765b-a895-46ab-a01c-c4719947546b
+                cipher: auto
+                tls: true
+                flow: xtls-rprx-vision
+                network: xhttp
+                servername: apple.com
+                client-fingerprint: chrome
+                reality-opts:
+                  public-key: HBnrh72W2LW-zJygpN_H0Kw5fO7kIWhw5Bd-8ieVGj0
+                  short-id: "94c5638d"
+                xhttp-opts:
+                  path: "/2edd765b-a895-46ab-a01c-c4719947546b-xh"
+                  mode: auto
+                  extra:
+                    encryption: "mlkem768x25519plus.native.0rtt.test"
+        """.trimIndent()
+
+        val config = ClashConfigParser.parse(yaml)
+        val vless = config?.outbounds?.find { it.tag == "xhttp-vless" }
+
+        assertNotNull(vless)
+        assertEquals("xhttp", vless?.transport?.type)
+        assertEquals("/2edd765b-a895-46ab-a01c-c4719947546b-xh", vless?.transport?.path)
+        assertEquals("auto", vless?.transport?.mode)
+        assertEquals("mlkem768x25519plus.native.0rtt.test", vless?.encryption)
+    }
+
+    @Test
     fun testParseHttpWithTls() {
         val yaml = """
             proxies:
