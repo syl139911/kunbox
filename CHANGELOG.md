@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.12.1](https://github.com/roseforljh/KunBox/compare/v2.12.0...v2.12.1) (2026-04-18)
+
+
+### Bug Fixes
+
+* 更新内核、重新支持Vless-xhttp-reality-enc协议节点 ([48e8d80](https://github.com/roseforljh/KunBox/commit/48e8d80009c5b299f68cd07090c6e7f85f9ebc32))
+* 补齐 Clash YAML 导入 xhttp encryption 映射 ([ef661b0](https://github.com/roseforljh/KunBox/commit/ef661b0878f7154c28b7c767a9a0a42aea474e5e))
+* 补齐 fakeip DNS server 的地址段配置 ([3414cf7](https://github.com/roseforljh/KunBox/commit/3414cf7dd4194e7a12dd31a72da92f96372f71c9))
+
 ## [2.12.0](https://github.com/roseforljh/KunBox/compare/v2.11.7...v2.12.0) (2026-04-04)
 
 
