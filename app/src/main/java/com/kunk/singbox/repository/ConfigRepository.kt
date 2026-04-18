@@ -736,6 +736,45 @@ class ConfigRepository(private val context: Context) {
             )
         }
 
+        private data class FakeIpRanges(
+            val inet4Range: String,
+            val inet6Range: String
+        )
+
+        private fun resolveFakeIpRanges(fakeIpRange: String): FakeIpRanges {
+            val ranges = fakeIpRange
+                .split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+
+            val inet4Range = ranges.firstOrNull { it.contains(".") } ?: "198.18.0.0/15"
+            val inet6Range = ranges.firstOrNull { it.contains(":") } ?: "fc00::/18"
+            return FakeIpRanges(inet4Range = inet4Range, inet6Range = inet6Range)
+        }
+
+        private fun buildFakeIpDnsServer(fakeIpRange: String): DnsServer {
+            val ranges = resolveFakeIpRanges(fakeIpRange)
+            return DnsServer(
+                tag = "fakeip-dns",
+                type = "fakeip",
+                inet4Range = ranges.inet4Range,
+                inet6Range = ranges.inet6Range
+            )
+        }
+
+        internal fun buildFakeIpDnsServerForTest(fakeIpRange: String): DnsServer {
+            return buildFakeIpDnsServer(fakeIpRange)
+        }
+
+        private fun buildFakeIpConfig(fakeIpRange: String): DnsFakeIpConfig {
+            val ranges = resolveFakeIpRanges(fakeIpRange)
+            return DnsFakeIpConfig(
+                enabled = true,
+                inet4Range = ranges.inet4Range,
+                inet6Range = ranges.inet6Range
+            )
+        }
+
         private fun dnsServerTagForSemantic(
             semantic: OutboundSemantic,
             fakeDnsEnabled: Boolean,
@@ -4048,12 +4087,7 @@ class ConfigRepository(private val context: Context) {
         )
 
         if (settings.fakeDnsEnabled) {
-            dnsServers.add(
-                DnsServer(
-                    tag = "fakeip-dns",
-                    type = "fakeip"
-                )
-            )
+            dnsServers.add(buildFakeIpDnsServer(settings.fakeIpRange))
         }
         val customDomainRulesForDns = settings.customRules
             .filter { it.enabled }
@@ -4312,15 +4346,7 @@ class ConfigRepository(private val context: Context) {
         }
 
         val fakeIpConfig = if (settings.fakeDnsEnabled) {
-            val fakeIpRanges = settings.fakeIpRange.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            val inet4Range = fakeIpRanges.firstOrNull { it.contains(".") } ?: "198.18.0.0/15"
-            val inet6Range = fakeIpRanges.firstOrNull { it.contains(":") } ?: "fc00::/18"
-
-            DnsFakeIpConfig(
-                enabled = true,
-                inet4Range = inet4Range,
-                inet6Range = inet6Range
-            )
+            buildFakeIpConfig(settings.fakeIpRange)
         } else {
             null
         }

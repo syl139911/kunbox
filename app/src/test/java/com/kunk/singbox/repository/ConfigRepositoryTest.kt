@@ -820,6 +820,24 @@ class ConfigRepositoryTest {
     }
 
     @Test
+    fun testBuildFakeIpDnsServerForTestIncludesRangesForFakeIpTransport() {
+        val server = ConfigRepository.buildFakeIpDnsServerForTest("198.18.0.0/15")
+
+        assertEquals("fakeip-dns", server.tag)
+        assertEquals("fakeip", server.type)
+        assertEquals("198.18.0.0/15", server.inet4Range)
+        assertEquals("fc00::/18", server.inet6Range)
+    }
+
+    @Test
+    fun testBuildFakeIpDnsServerForTestPreservesCustomIpv4AndIpv6Ranges() {
+        val server = ConfigRepository.buildFakeIpDnsServerForTest("198.18.0.0/15,fd00::/16")
+
+        assertEquals("198.18.0.0/15", server.inet4Range)
+        assertEquals("fd00::/16", server.inet6Range)
+    }
+
+    @Test
     fun testDnsServerTagForRouteTagUsesDynamicServerWhenFakeDnsDisabled() {
         val serverTag = ConfigRepository.dnsServerTagForSemanticForTest(
             semantic = ConfigRepository.OutboundSemantic.RouteTag("P:HK"),
