@@ -204,8 +204,26 @@ class RouteGroupSelector(
             return resolveCandidateTag(currentSelectedTag, listOf(targetTag)) != targetTag
         }
 
-        internal fun selectorTagForRpc(groupTag: String): String {
-            return groupTag
+        internal fun selectorTagForCandidateRpc(target: RouteGroupTarget): String {
+            return target.autoGroupTag?.takeIf { it.isNotBlank() } ?: target.groupTag
+        }
+
+        internal fun selectorTagForFallbackRpc(target: RouteGroupTarget): String {
+            return target.groupTag
+        }
+
+        internal fun resolveCurrentCandidateSelection(
+            groupSelectedTag: String?,
+            autoGroupSelectedTag: String?,
+            candidates: Collection<String>
+        ): String? {
+            val autoResolved = autoGroupSelectedTag
+                ?.takeIf { it.isNotBlank() }
+                ?.let { resolveCandidateTag(it, candidates) ?: it }
+            if (!autoResolved.isNullOrBlank()) {
+                return autoResolved
+            }
+            return resolveCandidateTag(groupSelectedTag, candidates)
         }
 
         internal fun resolveFirstValidSelectionDecision(
@@ -480,19 +498,41 @@ class RouteGroupSelector(
         }
     }
 
+    private fun currentCandidateSelection(
+        target: RouteGroupTarget,
+        groupSelectedTag: String?,
+        autoGroupSelectedTag: String?
+    ): String? {
+        return resolveCurrentCandidateSelection(
+            groupSelectedTag = groupSelectedTag,
+            autoGroupSelectedTag = autoGroupSelectedTag,
+            candidates = target.candidates
+        )
+    }
+
+    private fun logTargetGroupStart(
+        target: RouteGroupTarget,
+        initialSelected: String?,
+        initialGroupSelected: String?
+    ) {
+        Log.i(
+            TAG,
+            "Testing route group '${target.groupTag}', " +
+                "current='${initialSelected ?: initialGroupSelected ?: "(none)"}', " +
+                "testGroup='${target.testGroupTag}', candidates=${target.candidates.size}"
+        )
+    }
+
     private suspend fun processTargetGroup(
         client: CommandClient,
         target: RouteGroupTarget,
         selectionContext: SelectionContext,
         trigger: String
     ) {
-        val initialSelected = callbacks?.getSelectedOutbound(target.groupTag)
-        Log.i(
-            TAG,
-            "Testing route group '${target.groupTag}', current='${initialSelected ?: "(none)"}', " +
-                "testGroup='${target.testGroupTag}', candidates=${target.candidates.size}"
-        )
-
+        val initialGroupSelected = callbacks?.getSelectedOutbound(target.groupTag)
+        val initialAutoSelected = target.autoGroupTag?.let { callbacks?.getSelectedOutbound(it) }
+        val initialSelected = currentCandidateSelection(target, initialGroupSelected, initialAutoSelected)
+        logTargetGroupStart(target, initialSelected, initialGroupSelected)
         val best = findBestCandidate(
             client = client,
             target = target,
@@ -500,21 +540,24 @@ class RouteGroupSelector(
             trigger = trigger,
             initialSelected = initialSelected
         )
-
         if (best == null) {
             handleFallbackSelection(
                 client = client,
                 target = target,
-                currentSelected = callbacks?.getSelectedOutbound(target.groupTag) ?: initialSelected,
+                currentSelected = callbacks?.getSelectedOutbound(target.groupTag) ?: initialGroupSelected,
                 trigger = trigger
             )
             return
         }
-
         val (bestTag, bestDelayMs) = best
         Log.i(TAG, "Best node for '${target.groupTag}' is '$bestTag' (${bestDelayMs}ms)")
-
-        val currentSelected = callbacks?.getSelectedOutbound(target.groupTag) ?: initialSelected
+        val currentSelected = currentCandidateSelection(
+            target = target,
+            groupSelectedTag = callbacks?.getSelectedOutbound(target.groupTag) ?: initialGroupSelected,
+            autoGroupSelectedTag = target.autoGroupTag
+                ?.let { callbacks?.getSelectedOutbound(it) }
+                ?: initialAutoSelected
+        ) ?: initialSelected
         val desiredSelectedTag = bestTag
 
         if (!shouldSwitchToTag(currentSelected, desiredSelectedTag)) {
@@ -525,13 +568,17 @@ class RouteGroupSelector(
 
         val switched = switchToBestCandidate(
             client = client,
-            groupTag = target.groupTag,
+            target = target,
             currentSelected = currentSelected,
             bestTag = desiredSelectedTag
         )
         if (switched) {
             fallbackActiveGroups.remove(target.groupTag)
-            val selectedAfterSwitch = callbacks?.getSelectedOutbound(target.groupTag) ?: desiredSelectedTag
+            val selectedAfterSwitch = currentCandidateSelection(
+                target = target,
+                groupSelectedTag = callbacks?.getSelectedOutbound(target.groupTag),
+                autoGroupSelectedTag = target.autoGroupTag?.let { callbacks?.getSelectedOutbound(it) }
+            ) ?: desiredSelectedTag
             notifyImmediateSwitchIfNeeded(
                 trigger = trigger,
                 groupTag = target.groupTag,
@@ -561,9 +608,9 @@ class RouteGroupSelector(
             Log.d(TAG, "Group '${target.groupTag}' already uses fallback '$fallbackTag'")
             true
         } else {
-            switchToBestCandidate(
+            switchSelectedOutbound(
                 client = client,
-                groupTag = target.groupTag,
+                selectorTag = selectorTagForFallbackRpc(target),
                 currentSelected = currentSelected,
                 bestTag = fallbackTag
             )
@@ -628,20 +675,32 @@ class RouteGroupSelector(
 
         val targetTag = decision.targetTag
         if (targetTag == null) {
-            selectedTagRef.set(callbacks?.getSelectedOutbound(target.groupTag) ?: currentSelected)
+            selectedTagRef.set(
+                currentCandidateSelection(
+                    target = target,
+                    groupSelectedTag = callbacks?.getSelectedOutbound(target.groupTag),
+                    autoGroupSelectedTag = target.autoGroupTag?.let { callbacks?.getSelectedOutbound(it) }
+                ) ?: currentSelected
+            )
             return@progressHandler
         }
 
         val switched = switchToBestCandidate(
             client = client,
-            groupTag = target.groupTag,
+            target = target,
             currentSelected = currentSelected,
             bestTag = targetTag
         )
         if (switched) {
             fallbackActiveGroups.remove(target.groupTag)
         }
-        selectedTagRef.set(callbacks?.getSelectedOutbound(target.groupTag) ?: targetTag)
+        selectedTagRef.set(
+            currentCandidateSelection(
+                target = target,
+                groupSelectedTag = callbacks?.getSelectedOutbound(target.groupTag),
+                autoGroupSelectedTag = target.autoGroupTag?.let { callbacks?.getSelectedOutbound(it) }
+            ) ?: targetTag
+        )
     }
 
     private suspend fun findBestCandidate(
@@ -696,16 +755,49 @@ class RouteGroupSelector(
 
     private fun switchToBestCandidate(
         client: CommandClient,
-        groupTag: String,
+        target: RouteGroupTarget,
+        currentSelected: String?,
+        bestTag: String
+    ): Boolean {
+        val autoGroupTag = target.autoGroupTag?.takeIf { it.isNotBlank() }
+        if (autoGroupTag != null) {
+            val currentRouteSelection = callbacks?.getSelectedOutbound(target.groupTag)
+            if (
+                !currentRouteSelection.isNullOrBlank() &&
+                !currentRouteSelection.equals(autoGroupTag, ignoreCase = true)
+            ) {
+                val restored = switchSelectedOutbound(
+                    client = client,
+                    selectorTag = selectorTagForFallbackRpc(target),
+                    currentSelected = currentRouteSelection,
+                    bestTag = autoGroupTag
+                )
+                if (!restored) {
+                    return false
+                }
+            }
+        }
+
+        return switchSelectedOutbound(
+            client = client,
+            selectorTag = selectorTagForCandidateRpc(target),
+            currentSelected = currentSelected,
+            bestTag = bestTag
+        )
+    }
+
+    private fun switchSelectedOutbound(
+        client: CommandClient,
+        selectorTag: String,
         currentSelected: String?,
         bestTag: String
     ): Boolean {
         return runCatching {
-            client.selectOutbound(selectorTagForRpc(groupTag), bestTag)
-            Log.i(TAG, "Route group '$groupTag' switched from '${currentSelected ?: "(none)"}' to '$bestTag'")
+            client.selectOutbound(selectorTag, bestTag)
+            Log.i(TAG, "Route group '$selectorTag' switched from '${currentSelected ?: "(none)"}' to '$bestTag'")
             true
         }.onFailure { e ->
-            Log.w(TAG, "Failed to switch group '$groupTag' to '$bestTag': ${e.message}", e)
+            Log.w(TAG, "Failed to switch group '$selectorTag' to '$bestTag': ${e.message}", e)
         }.getOrDefault(false)
     }
 
