@@ -422,7 +422,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                     for (mirror in oldMirrors) {
                         if (rawUrl.startsWith(mirror)) {
-                            rawUrl = rawUrl.replace(mirror, rawPrefix)
+                            if (rawUrl.contains("raw.githubusercontent.com")) {
+                                rawUrl = rawUrl.removePrefix(mirror)
+                            } else {
+                                rawUrl = rawUrl.replace(mirror, rawPrefix)
+                            }
+                            break
                         }
                     }
 
@@ -523,7 +528,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                     for (mirror in oldMirrors) {
                         if (rawUrl.startsWith(mirror)) {
-                            rawUrl = rawUrl.replace(mirror, rawPrefix)
+                            if (rawUrl.contains("raw.githubusercontent.com")) {
+                                rawUrl = rawUrl.removePrefix(mirror)
+                            } else {
+                                rawUrl = rawUrl.replace(mirror, rawPrefix)
+                            }
+                            break
                         }
                     }
 

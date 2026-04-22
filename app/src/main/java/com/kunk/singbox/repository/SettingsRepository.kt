@@ -413,7 +413,12 @@ class SettingsRepository(private val context: Context) {
                     )
                     for (mirror in oldMirrors) {
                         if (rawUrl.startsWith(mirror)) {
-                            rawUrl = rawUrl.replace(mirror, rawPrefix)
+                            if (rawUrl.contains("raw.githubusercontent.com")) {
+                                rawUrl = rawUrl.removePrefix(mirror)
+                            } else {
+                                rawUrl = rawUrl.replace(mirror, rawPrefix)
+                            }
+                            break
                         }
                     }
                 }
