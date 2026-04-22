@@ -84,14 +84,15 @@ class RuleSetViewModel(application: Application) : AndroidViewModel(application)
             _error.value = null
             try {
                 val currentSettings = settingsRepository.settings.first()
-                val sagerNetRules = fetchFromSagerNet(currentSettings)
+                val sagerNetGeositeRules = fetchGeositeFromSagerNet(currentSettings)
+                val sagerNetGeoipRules = fetchGeoipFromSagerNet(currentSettings)
 
-                if (sagerNetRules.isEmpty()) {
+                if (sagerNetGeositeRules.isEmpty() && sagerNetGeoipRules.isEmpty()) {
                     Log.w(TAG, "Online results empty, using built-in rule sets")
                     val builtIn = getBuiltInRuleSets().sortedBy { it.name }
                     _ruleSets.value = builtIn
                 } else {
-                    _ruleSets.value = sagerNetRules.sortedBy { it.name }
+                    _ruleSets.value = (sagerNetGeositeRules + sagerNetGeoipRules).sortedBy { it.name }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to fetch rule sets", e)
@@ -152,7 +153,7 @@ class RuleSetViewModel(application: Application) : AndroidViewModel(application)
         return geositeRuleSets + geoipRuleSets
     }
 
-    private fun fetchFromSagerNet(currentSettings: AppSettings): List<HubRuleSet> {
+    private fun fetchGeositeFromSagerNet(currentSettings: AppSettings): List<HubRuleSet> {
         val rawUrl = "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set"
         val url = "https://api.github.com/repos/SagerNet/sing-geosite/git/trees/rule-set?recursive=1"
         return try {
@@ -162,14 +163,31 @@ class RuleSetViewModel(application: Application) : AndroidViewModel(application)
                 .build()
 
             val response = executeRequestWithFallback(request, currentSettings)
-            parseSagerNetResponse(response, rawUrl)
+            parseGeositeResponse(response, rawUrl)
         } catch (e: Exception) {
             Log.e(TAG, "[SagerNet] Request failed: ${e.javaClass.simpleName} - ${e.message}", e)
             emptyList()
         }
     }
 
-    private fun parseSagerNetResponse(response: okhttp3.Response?, rawUrl: String): List<HubRuleSet> {
+    private fun fetchGeoipFromSagerNet(currentSettings: AppSettings): List<HubRuleSet> {
+        val rawUrl = "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set"
+        val url = "https://api.github.com/repos/SagerNet/sing-geoip/git/trees/rule-set?recursive=1"
+        return try {
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "KunK-KunBox-App")
+                .build()
+
+            val response = executeRequestWithFallback(request, currentSettings)
+            parseGeoipResponse(response, rawUrl)
+        } catch (e: Exception) {
+            Log.e(TAG, "[SagerNet] Request failed: ${e.javaClass.simpleName} - ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    private fun parseGeositeResponse(response: okhttp3.Response?, rawUrl: String): List<HubRuleSet> {
         if (response == null) {
             Log.e(TAG, "[SagerNet] Response is null")
             return emptyList()
@@ -197,6 +215,42 @@ class RuleSetViewModel(application: Application) : AndroidViewModel(application)
                     name = nameWithoutExt,
                     ruleCount = 0,
                     tags = listOf("Official", "geosite"),
+                    description = "SagerNet Official Rule Set",
+                    sourceUrl = "https://ghp.ci/$rawUrl/$sourcePath",
+                    binaryUrl = "https://ghp.ci/$rawUrl/${file.path}"
+                )
+            }
+        }
+    }
+
+    private fun parseGeoipResponse(response: okhttp3.Response?, rawUrl: String): List<HubRuleSet> {
+        if (response == null) {
+            Log.e(TAG, "[SagerNet] Response is null")
+            return emptyList()
+        }
+
+        return response.use { resp ->
+            if (!resp.isSuccessful) {
+                val errorBody = resp.body?.string() ?: ""
+                Log.e(TAG, "[SagerNet] HTTP ${resp.code}, body=$errorBody")
+                return@use emptyList()
+            }
+
+            val json = resp.body?.string() ?: "{}"
+            val treeResponse: GithubTreeResponse = gson.fromJson(json, GithubTreeResponse::class.java)
+                ?: return@use emptyList()
+
+            val srsFiles = treeResponse.tree
+                .filter { it.type == "blob" && it.path.endsWith(".srs") }
+
+            srsFiles.map { file ->
+                val fileName = file.path.substringAfterLast("/")
+                val nameWithoutExt = fileName.substringBeforeLast(".srs")
+                val sourcePath = file.path.replace(".srs", ".json")
+                HubRuleSet(
+                    name = nameWithoutExt,
+                    ruleCount = 0,
+                    tags = listOf("Official", "geoip"),
                     description = "SagerNet Official Rule Set",
                     sourceUrl = "https://ghp.ci/$rawUrl/$sourcePath",
                     binaryUrl = "https://ghp.ci/$rawUrl/${file.path}"
