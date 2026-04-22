@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.ui.screens
+package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
 import android.Manifest
@@ -32,13 +32,14 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,38 +47,49 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ContentPaste
+import androidx.compose.material.icons.rounded.DashboardCustomize
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import com.kunk.singbox.model.NodeUi
+import com.kunk.singbox.model.ProfileType
 import com.kunk.singbox.model.UpdateStatus
 import com.kunk.singbox.ui.scanner.QrScannerActivity
 import com.kunk.singbox.ui.components.AppNotificationManager
@@ -124,6 +136,7 @@ fun ProfilesScreen(
     viewModel: com.kunk.singbox.viewmodel.ProfilesViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val profiles by viewModel.profiles.collectAsState()
+    val allNodes by viewModel.allNodes.collectAsState()
     val activeProfileId by viewModel.activeProfileId.collectAsState()
     val importState by viewModel.importState.collectAsState()
     val updateStatus by viewModel.updateStatus.collectAsState()
@@ -132,10 +145,42 @@ fun ProfilesScreen(
     var showImportSelection by remember { mutableStateOf(false) }
     var showSubscriptionInput by remember { mutableStateOf(false) }
     var showClipboardInput by remember { mutableStateOf(false) }
+    var showCustomConfigInput by remember { mutableStateOf(false) }
     var editingProfile by remember { mutableStateOf<com.kunk.singbox.model.ProfileUi?>(null) }
 
     val context = LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+    // Reordering state
+    val profileList = remember { mutableStateListOf<com.kunk.singbox.model.ProfileUi>() }
+    val isDragging = remember { mutableStateOf(false) }
+    var suppressPlacementAnimation by remember { mutableStateOf(false) }
+    val enablePlacementAnimation = false
+
+    androidx.compose.runtime.LaunchedEffect(profiles) {
+        if (!isDragging.value) {
+            val currentIds = profileList.map { it.id }.toSet()
+            val newIds = profiles.map { it.id }.toSet()
+            if (currentIds != newIds || profileList.size != profiles.size || profileList.isEmpty()) {
+                profileList.clear()
+                profileList.addAll(profiles)
+            } else {
+                profiles.forEach { newProfile ->
+                    val index = profileList.indexOfFirst { it.id == newProfile.id }
+                    if (index != -1 && profileList[index] != newProfile) {
+                        profileList[index] = newProfile
+                    }
+                }
+            }
+        }
+    }
+
+    var draggingItemIndex by remember { mutableStateOf<Int?>(null) }
+    var draggingItemOffset by remember { mutableStateOf(0f) }
+    var itemHeightPx by remember { mutableStateOf(0f) }
+
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.toastEvents.collectLatest { message ->
@@ -349,6 +394,7 @@ fun ProfilesScreen(
                 when (type) {
                     ProfileImportType.Subscription -> showSubscriptionInput = true
                     ProfileImportType.Clipboard -> showClipboardInput = true
+                    ProfileImportType.Custom -> showCustomConfigInput = true
                     ProfileImportType.File -> {
 
                         filePickerLauncher.launch(arrayOf(
@@ -414,6 +460,36 @@ fun ProfilesScreen(
                 }
             },
             onDismiss = { showClipboardInput = false }
+        )
+    }
+
+    if (showCustomConfigInput) {
+        DisposableEffect(Unit) {
+            viewModel.setAllNodesUiActive(true)
+            onDispose {
+                viewModel.setAllNodesUiActive(false)
+            }
+        }
+
+        val subscriptionProfileNames = remember(profiles) {
+            profiles
+                .filter { it.type == ProfileType.Subscription }
+                .associate { it.id to it.name }
+        }
+        val selectableNodes = remember(allNodes, subscriptionProfileNames) {
+            allNodes
+                .filter { subscriptionProfileNames.containsKey(it.sourceProfileId) }
+                .sortedWith(compareBy<NodeUi>({ subscriptionProfileNames[it.sourceProfileId] ?: "" }, { it.name }))
+        }
+
+        CustomConfigDialog(
+            nodes = selectableNodes,
+            profileNames = subscriptionProfileNames,
+            onDismiss = { showCustomConfigInput = false },
+            onConfirm = { name, selectedNodeIds ->
+                viewModel.createCustomConfig(name, selectedNodeIds)
+                showCustomConfigInput = false
+            }
         )
     }
 
@@ -513,7 +589,8 @@ fun ProfilesScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                itemsIndexed(profiles, key = { _, profile -> profile.id }) { index, profile ->
+                items(profileList.size, key = { profileList[it].id }) { index ->
+                    val profile = profileList[index]
                     var visible by remember { mutableStateOf(false) }
                     androidx.compose.runtime.LaunchedEffect(Unit) {
                         if (index < 15) {
@@ -527,56 +604,298 @@ fun ProfilesScreen(
                         animationSpec = tween(durationMillis = 300),
                         label = "alpha"
                     )
-                    val translateY by animateFloatAsState(
-                        targetValue = if (visible) 0f else 40f,
-                        animationSpec = tween(durationMillis = 300),
-                        label = "translateY"
-                    )
 
-                    ProfileCard(
-                        name = profile.name,
-                        type = profile.type.name,
-                        isSelected = profile.id == activeProfileId,
-                        isEnabled = profile.enabled,
-                        isUpdating = profile.updateStatus == UpdateStatus.Updating &&
-                            profile.updateStage?.isBackground != true,
-                        updateStatus = profile.updateStatus,
-                        updateStage = profile.updateStage,
-                        expireDate = profile.expireDate,
-                        totalTraffic = profile.totalTraffic,
-                        usedTraffic = profile.usedTraffic,
-                        lastUpdated = profile.lastUpdated,
-                        dnsPreResolve = profile.dnsPreResolve,
-                        onClick = { viewModel.setActiveProfile(profile.id) },
-                        onUpdate = {
-                            viewModel.updateProfile(profile.id)
-                        },
-                        onToggle = {
-                            viewModel.toggleProfileEnabled(profile.id)
-                        },
-                        onEdit = {
-                            if (profile.type == com.kunk.singbox.model.ProfileType.Subscription ||
-                                profile.type == com.kunk.singbox.model.ProfileType.Imported) {
-                                editingProfile = profile
-                            } else {
-                                navController.navigate(Screen.ProfileEditor.route)
+                    val currentDraggingIndex = draggingItemIndex
+                    val currentDragOffset = draggingItemOffset
+
+                    var translationY = if (visible) 0f else 40f
+                    var zIndex = 0f
+
+                    if (currentDraggingIndex != null && itemHeightPx > 0) {
+                        if (index == currentDraggingIndex) {
+                            translationY = currentDragOffset
+                            zIndex = 1f
+                        } else {
+                            val dist = (currentDragOffset / itemHeightPx).toInt()
+                            val targetIndex = (currentDraggingIndex + dist).coerceIn(0, profileList.lastIndex)
+
+                            if (currentDraggingIndex < targetIndex) {
+                                if (index in (currentDraggingIndex + 1)..targetIndex) {
+                                    translationY = -itemHeightPx
+                                }
+                            } else if (currentDraggingIndex > targetIndex) {
+                                if (index in targetIndex until currentDraggingIndex) {
+                                    translationY = itemHeightPx
+                                }
                             }
-                        },
-                        onDelete = {
-                            viewModel.deleteProfile(profile.id)
-                        },
-                        modifier = Modifier.graphicsLayer(
-                            alpha = alpha,
-                            translationY = translateY
+                        }
+                    }
+
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .zIndex(zIndex)
+                            .graphicsLayer {
+                                this.translationY = translationY
+                                this.alpha = alpha
+                                if (index == currentDraggingIndex) {
+                                    scaleX = 1.02f
+                                    scaleY = 1.02f
+                                    shadowElevation = 8.dp.toPx()
+                                }
+                            }
+                            .onGloballyPositioned { coordinates ->
+                                if (itemHeightPx == 0f) {
+                                    val spacingPx = with(density) { 12.dp.toPx() }
+                                    itemHeightPx = coordinates.size.height.toFloat() + spacingPx
+                                }
+                            }
+                            .then(
+                                if (!enablePlacementAnimation || suppressPlacementAnimation) {
+                                    Modifier
+                                } else {
+                                    Modifier.animateItem()
+                                }
+                            )
+                    ) {
+                        ProfileCard(
+                            name = profile.name,
+                            type = profile.type.name,
+                            isSelected = profile.id == activeProfileId,
+                            isEnabled = profile.enabled,
+                            isUpdating = profile.updateStatus == UpdateStatus.Updating &&
+                                profile.updateStage?.isBackground != true,
+                            updateStatus = profile.updateStatus,
+                            updateStage = profile.updateStage,
+                            expireDate = profile.expireDate,
+                            totalTraffic = profile.totalTraffic,
+                            usedTraffic = profile.usedTraffic,
+                            lastUpdated = profile.lastUpdated,
+                            dnsPreResolve = profile.dnsPreResolve,
+                            onClick = { viewModel.setActiveProfile(profile.id) },
+                            onUpdate = {
+                                viewModel.updateProfile(profile.id)
+                            },
+                            onToggle = {
+                                viewModel.toggleProfileEnabled(profile.id)
+                            },
+                            onEdit = {
+                                if (profile.type == com.kunk.singbox.model.ProfileType.Subscription ||
+                                    profile.type == com.kunk.singbox.model.ProfileType.Imported) {
+                                    editingProfile = profile
+                                } else {
+                                    navController.navigate(Screen.ProfileEditor.route)
+                                }
+                            },
+                            onDelete = {
+                                viewModel.deleteProfile(profile.id)
+                            },
+                            modifier = Modifier
+                                .pointerInput(index) {
+                                    androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            draggingItemIndex = index
+                                            draggingItemOffset = 0f
+                                            isDragging.value = true
+                                            haptic.performHapticFeedback(
+                                                androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+                                            )
+                                        },
+                                        onDragEnd = {
+                                            draggingItemIndex?.let { startIdx ->
+                                                val dist = kotlin.math.round(draggingItemOffset / itemHeightPx).toInt()
+                                                val endIdx = (startIdx + dist).coerceIn(0, profileList.lastIndex)
+
+                                                suppressPlacementAnimation = true
+
+                                                val absScrollBefore = if (itemHeightPx > 0f) {
+                                                    val index = listState.firstVisibleItemIndex
+                                                    val offset = listState.firstVisibleItemScrollOffset
+                                                    index * itemHeightPx + offset
+                                                } else {
+                                                    null
+                                                }
+
+                                                if (startIdx != endIdx) {
+                                                    val item = profileList.removeAt(startIdx)
+                                                    profileList.add(endIdx, item)
+                                                    viewModel.reorderProfiles(profileList.toList())
+                                                }
+
+                                                val abs = absScrollBefore
+                                                if (abs != null && itemHeightPx > 0f) {
+                                                    val targetIndex = (abs / itemHeightPx).toInt().coerceIn(
+                                                        0,
+                                                        profileList.lastIndex
+                                                    )
+                                                    val targetOffset = (abs - targetIndex * itemHeightPx).toInt()
+                                                        .coerceAtLeast(0)
+                                                    scope.launch {
+                                                        listState.scrollToItem(targetIndex, targetOffset)
+                                                    }
+                                                }
+
+                                                draggingItemIndex = null
+                                                draggingItemOffset = 0f
+                                                isDragging.value = false
+
+                                                scope.launch {
+                                                    withFrameNanos { }
+                                                    suppressPlacementAnimation = false
+                                                }
+                                            }
+                                        },
+                                        onDragCancel = {
+                                            draggingItemIndex = null
+                                            draggingItemOffset = 0f
+                                            isDragging.value = false
+                                            suppressPlacementAnimation = false
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            draggingItemOffset += dragAmount.y
+                                        }
+                                    )
+                                }
                         )
-                    )
+                    }
                 }
             }
         }
     }
 }
 
-private enum class ProfileImportType { Subscription, File, Clipboard, QRCode }
+private fun MutableList<String>.updateCustomSelection(nodeId: String, checked: Boolean) {
+    if (checked) {
+        if (!contains(nodeId)) {
+            add(nodeId)
+        }
+    } else {
+        remove(nodeId)
+    }
+}
+
+private fun buildCustomNodeSubtitle(profileNames: Map<String, String>, node: NodeUi): String {
+    val profileName = profileNames[node.sourceProfileId] ?: "未知订阅"
+    return "$profileName · ${node.protocolDisplay}"
+}
+
+@Composable
+private fun CustomConfigNodeItem(
+    node: NodeUi,
+    subtitle: String,
+    isSelected: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle(!isSelected) }
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isSelected,
+            onCheckedChange = onToggle
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = node.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomConfigNodeList(
+    nodes: List<NodeUi>,
+    profileNames: Map<String, String>,
+    selectedNodeIds: MutableList<String>
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 320.dp)
+    ) {
+        items(nodes, key = { it.id }) { node ->
+            val isSelected = selectedNodeIds.contains(node.id)
+            CustomConfigNodeItem(
+                node = node,
+                subtitle = buildCustomNodeSubtitle(profileNames, node),
+                isSelected = isSelected,
+                onToggle = { checked -> selectedNodeIds.updateCustomSelection(node.id, checked) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomConfigDialog(
+    nodes: List<NodeUi>,
+    profileNames: Map<String, String>,
+    onDismiss: () -> Unit,
+    onConfirm: (String, List<String>) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    val selectedNodeIds = remember { mutableStateListOf<String>() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "自定义配置", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = {
+                        Text(
+                            text = "请输入配置名称",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                if (nodes.isEmpty()) {
+                    Text(
+                        text = "暂无可用订阅节点",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    CustomConfigNodeList(
+                        nodes = nodes,
+                        profileNames = profileNames,
+                        selectedNodeIds = selectedNodeIds
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim(), selectedNodeIds.toList()) },
+                enabled = name.isNotBlank() && selectedNodeIds.isNotEmpty()
+            ) {
+                Text(stringResource(R.string.common_ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        }
+    )
+}
+
+private enum class ProfileImportType { Subscription, File, Clipboard, QRCode, Custom }
 
 @Composable
 private fun ImportSelectionDialog(
@@ -611,6 +930,12 @@ private fun ImportSelectionDialog(
                 title = stringResource(R.string.profiles_scan_qrcode),
                 subtitle = stringResource(R.string.profiles_scan_qrcode_subtitle),
                 onClick = { onTypeSelected(ProfileImportType.QRCode) }
+            )
+            ImportOptionCard(
+                icon = Icons.Rounded.DashboardCustomize,
+                title = "自定义配置",
+                subtitle = "从现有订阅选择节点组合",
+                onClick = { onTypeSelected(ProfileImportType.Custom) }
             )
         }
     }
