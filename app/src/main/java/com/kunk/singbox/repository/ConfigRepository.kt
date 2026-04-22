@@ -2524,6 +2524,77 @@ class ConfigRepository(private val context: Context) {
         }
     }
 
+    private suspend fun loadSelectedCustomNodes(selectedNodeIds: List<String>): List<NodeUi> {
+        val allCurrentNodes = _allNodes.value.takeIf { it.isNotEmpty() } ?: loadAllNodesSnapshot()
+        val nodeById = allCurrentNodes.associateBy { it.id }
+        return selectedNodeIds.mapNotNull { nodeById[it] }
+    }
+
+    private fun collectCustomOutbounds(targetNodes: List<NodeUi>): List<com.kunk.singbox.model.Outbound> {
+        return targetNodes.mapNotNull { node ->
+            val sourceConfig = getConfig(node.sourceProfileId) ?: return@mapNotNull null
+            sourceConfig.outbounds?.find { it.tag == node.name }
+                ?: sourceConfig.outbounds?.find { it.tag.equals(node.name, ignoreCase = true) }
+        }
+    }
+
+    private fun buildCustomProfile(profileId: String, name: String): ProfileUi {
+        return ProfileUi(
+            id = profileId,
+            name = name,
+            type = ProfileType.Custom,
+            url = null,
+            lastUpdated = System.currentTimeMillis(),
+            enabled = true,
+            updateStatus = UpdateStatus.Idle
+        )
+    }
+
+    suspend fun createCustomProfile(
+        name: String,
+        selectedNodeIds: List<String>
+    ): Result<ProfileUi> = withContext(Dispatchers.IO) {
+        var profileId: String? = null
+        try {
+            val targetNodes = loadSelectedCustomNodes(selectedNodeIds)
+            if (targetNodes.isEmpty()) {
+                return@withContext Result.failure(Exception("No nodes selected or found"))
+            }
+
+            val outbounds = collectCustomOutbounds(targetNodes)
+            if (outbounds.isEmpty()) {
+                return@withContext Result.failure(Exception("Failed to extract any outbound data"))
+            }
+
+            val newConfig = com.kunk.singbox.model.SingBoxConfig(outbounds = outbounds)
+            profileId = UUID.randomUUID().toString()
+            val deduplicatedConfig = deduplicateTags(newConfig)
+            val nodes = extractNodesFromConfig(deduplicatedConfig, profileId, {})
+            if (nodes.isEmpty()) {
+                return@withContext Result.failure(Exception("Failed to process extracted nodes"))
+            }
+
+            writeConfigFileOrThrow(profileId, deduplicatedConfig)
+
+            val profile = buildCustomProfile(profileId, name)
+            cacheConfig(profileId, deduplicatedConfig)
+            profileNodes[profileId] = nodes
+            updateAllNodesAndGroups()
+            _profiles.update { it + profile }
+            saveProfiles()
+
+            if (_activeProfileId.value == null) {
+                setActiveProfile(profileId)
+            }
+
+            Result.success(profile)
+        } catch (e: Exception) {
+            profileId?.let { rollbackTransientProfileFile(it) }
+            Log.e(TAG, "Failed to create custom profile", e)
+            Result.failure(e)
+        }
+    }
+
     suspend fun importFromContent(
         name: String,
         content: String,
@@ -3181,6 +3252,11 @@ class ConfigRepository(private val context: Context) {
                 if (it.id == profileId) it.copy(enabled = !it.enabled) else it
             }
         }
+        saveProfiles()
+    }
+
+    fun reorderProfiles(newProfiles: List<ProfileUi>) {
+        _profiles.value = newProfiles
         saveProfiles()
     }
 

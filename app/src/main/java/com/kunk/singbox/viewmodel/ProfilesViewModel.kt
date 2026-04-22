@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.viewmodel
+package com.kunk.singbox.viewmodel
 
 import com.kunk.singbox.R
 import android.app.Application
@@ -34,6 +34,13 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
     private var importJob: Job? = null
 
     val profiles: StateFlow<List<ProfileUi>> = configRepository.profiles
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val allNodes: StateFlow<List<com.kunk.singbox.model.NodeUi>> = configRepository.allNodes
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -211,6 +218,44 @@ class ProfilesViewModel(application: Application) : AndroidViewModel(application
         }
 
         return true
+    }
+
+    fun createCustomConfig(name: String, selectedNodeIds: List<String>) {
+        if (_importState.value is ImportState.Loading) {
+            return
+        }
+        if (name.isBlank() || selectedNodeIds.isEmpty()) {
+            _importState.value = ImportState.Error("名称不能为空，且至少选择一个节点")
+            return
+        }
+
+        importJob = viewModelScope.launch {
+            _importState.value = ImportState.Loading("创建自定义配置中...")
+
+            val result = configRepository.createCustomProfile(
+                name = name,
+                selectedNodeIds = selectedNodeIds
+            )
+
+            coroutineContext.ensureActive()
+
+            result.fold(
+                onSuccess = { profile ->
+                    _importState.value = ImportState.Success(profile)
+                },
+                onFailure = { error ->
+                    if (error is kotlinx.coroutines.CancellationException) {
+                        _importState.value = ImportState.Idle
+                    } else {
+                        _importState.value = ImportState.Error(error.message ?: "创建失败")
+                    }
+                }
+            )
+        }
+    }
+
+    fun setAllNodesUiActive(active: Boolean) {
+        configRepository.setAllNodesUiActive(active)
     }
 
     fun importFromContent(

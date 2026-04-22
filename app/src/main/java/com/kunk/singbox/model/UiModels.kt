@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox.model
+package com.kunk.singbox.model
 
 import android.content.Context
 import androidx.annotation.Keep
@@ -42,7 +42,8 @@ enum class SubscriptionUpdateStage(
 enum class ProfileType {
     @SerializedName("Subscription") Subscription,
     @SerializedName("LocalFile") LocalFile,
-    @SerializedName("Imported") Imported
+    @SerializedName("Imported") Imported,
+    @SerializedName("Custom") Custom
 }
 
 @Keep
