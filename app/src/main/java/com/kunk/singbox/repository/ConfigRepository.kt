@@ -88,6 +88,13 @@ class ConfigRepository(private val context: Context) {
         val callTimeoutSeconds: Long
     )
 
+    enum class RuleSetRuleType {
+        IP,
+        DOMAIN,
+        MIXED,
+        UNKNOWN
+    }
+
     @Suppress("TooManyFunctions", "LargeClass")
     companion object {
         private const val TAG = "ConfigRepository"
@@ -133,8 +140,6 @@ class ConfigRepository(private val context: Context) {
 
         private val REGEX_IP_CIDR = Regex("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}" +
             "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/([0-9]|[1-2][0-9]|3[0-2])\$")
-        private val REGEX_IPV6_CIDR = Regex("^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}/" +
-            "([0-9]|[1-9][0-9]|1[0-2][0-8])\$")
         private val REGEX_DOMAIN_LINE = Regex("^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\." +
             "[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\\.[a-zA-Z]{2,}\$")
 
@@ -490,13 +495,6 @@ class ConfigRepository(private val context: Context) {
             return filterAppliedRemoteRuleSets(ruleSets, validTags)
         }
 
-        enum class RuleSetRuleType {
-            IP,
-            DOMAIN,
-            MIXED,
-            UNKNOWN
-        }
-
         @JvmStatic
         internal fun detectRuleSetRuleTypeForTest(file: java.io.File): RuleSetRuleType {
             return detectRuleSetRuleTypeFromFile(file)
@@ -562,14 +560,24 @@ class ConfigRepository(private val context: Context) {
         }
 
         private fun isIpRuleLineContent(line: String): Boolean {
-            if (REGEX_IP_CIDR.matches(line) || REGEX_IPV6_CIDR.matches(line)) {
-                return true
-            }
+            if (REGEX_IP_CIDR.matches(line)) return true
+            if (isLikelyIpv6Cidr(line)) return true
+            return isIpRuleWithPrefix(line)
+        }
+
+        private fun isLikelyIpv6Cidr(line: String): Boolean {
+            if (!line.contains("/") || !line.contains(":") || line.contains(".")) return false
+            val ipPart = line.substringBefore("/")
+            return !ipPart.contains(" ") && ipPart.length <= 45 && ipPart.count { it == ':' } >= 1
+        }
+
+        private fun isIpRuleWithPrefix(line: String): Boolean {
             val prefixes = listOf("ip-cidr:", "ip:", "geoip:")
             for (prefix in prefixes) {
                 if (line.startsWith(prefix, ignoreCase = true)) {
                     val content = line.removePrefix(prefix).trim()
-                    return REGEX_IP_CIDR.matches(content) || REGEX_IPV6_CIDR.matches(content)
+                    if (REGEX_IP_CIDR.matches(content)) return true
+                    if (content.contains(":") && content.contains("/") && !content.contains(".")) return true
                 }
             }
             return false
