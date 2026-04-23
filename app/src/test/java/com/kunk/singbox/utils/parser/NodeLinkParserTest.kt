@@ -94,6 +94,47 @@ class NodeLinkParserTest {
     // ==================== VMess ====================
 
     @Test
+    fun testParseVMessHttpTransportKeepsHttp() {
+        val vmessJson = """{"v":"2","ps":"http vmess","add":"18.225.57.7","port":"32721","id":"c31a559b-8285-4b11-db99-d1edfc2b2b70","aid":"0","net":"http","host":"","path":"","tls":""}"""
+        val encoded = java.util.Base64.getEncoder().encodeToString(vmessJson.toByteArray())
+        val link = "vmess://$encoded"
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("vmess", outbound?.type)
+        assertNotNull(outbound?.transport)
+        assertEquals("http", outbound?.transport?.type)
+    }
+
+    @Test
+    fun testParseVMessHttpTransportPreservesHostAndPath() {
+        val vmessJson = """
+            {
+              "v":"2",
+              "ps":"http with host",
+              "add":"vmess.example.com",
+              "port":"80",
+              "id":"uuid-2000",
+              "aid":"0",
+              "net":"http",
+              "host":"cdn.example.com",
+              "path":"/health",
+              "tls":""
+            }
+        """.trimIndent()
+        val encoded = java.util.Base64.getEncoder().encodeToString(vmessJson.toByteArray())
+        val link = "vmess://$encoded"
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("http", outbound?.transport?.type)
+        assertEquals(listOf("cdn.example.com"), outbound?.transport?.host)
+        assertEquals("/health", outbound?.transport?.path)
+    }
+
+    @Test
     fun testParseVMessBasic() {
         val vmessJson = """{"v":"2","ps":"VMess Node","add":"vmess.example.com","port":"443","id":"uuid-1234","aid":"0","net":"ws","type":"none","host":"","path":"/path","tls":"tls"}"""
         val encoded = java.util.Base64.getEncoder().encodeToString(vmessJson.toByteArray())
@@ -516,6 +557,20 @@ class NodeLinkParserTest {
         assertEquals("password", outbound?.password)
         assertEquals("bbr", outbound?.congestionControl)
         assertEquals("native", outbound?.udpRelayMode)
+        assertEquals("tuic.example.com", outbound?.tls?.serverName)
+        assertNull(outbound?.disableSni)
+    }
+
+    @Test
+    fun testParseTuicWithDisableSniClearsServerName() {
+        val link = "tuic://uuid:password@tuic.example.com:443?sni=edge.example.com&disable_sni=1#TUICDisableSni"
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("tuic", outbound?.type)
+        assertEquals(true, outbound?.disableSni)
+        assertEquals(true, outbound?.tls?.enabled)
+        assertNull(outbound?.tls?.serverName)
     }
 
     @Test

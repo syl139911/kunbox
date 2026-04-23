@@ -431,7 +431,7 @@ class NodeLinkParser(private val gson: Gson) {
                     type = "grpc",
                     serviceName = path
                 )
-                "h2" -> TransportConfig(
+                "h2", "http" -> TransportConfig(
                     type = "http",
                     host = if (host.isNotBlank()) listOf(host) else null,
                     path = path
@@ -951,10 +951,17 @@ class NodeLinkParser(private val gson: Gson) {
                 password = params["password"] ?: params["token"] ?: uuid
             }
 
-            val sni = defaultTlsServerName(
-                explicitServerName = params["sni"],
-                server = server
-            )
+            val disableSni = parseBooleanFlag(
+                firstParam(params, "disable_sni", "disableSni")
+            ) == true
+            val sni = if (disableSni) {
+                null
+            } else {
+                defaultTlsServerName(
+                    explicitServerName = firstParam(params, "sni"),
+                    server = server
+                )
+            }
             val insecure = params["insecure"] == "1" || params["allow_insecure"] == "1" || params["allowInsecure"] == "1"
             val alpnList = params["alpn"]?.split(",")?.filter { it.isNotBlank() }
             val fingerprint = params["fp"]?.takeIf { it.isNotBlank() }
@@ -973,6 +980,7 @@ class NodeLinkParser(private val gson: Gson) {
                 congestionControl = congestionControl,
                 udpRelayMode = udpRelayMode,
                 zeroRttHandshake = zeroRtt,
+                disableSni = if (disableSni) true else null,
                 tls = TlsConfig(
                     enabled = true,
                     serverName = sni,

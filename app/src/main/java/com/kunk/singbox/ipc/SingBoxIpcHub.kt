@@ -121,6 +121,21 @@ object SingBoxIpcHub {
         return manuallyStopped && lastError.isNotBlank()
     }
 
+    internal fun resolveRealtimeUrlTestNodeDelay(
+        nodeTag: String,
+        progressResults: List<Map<String, Int>>
+    ): Int {
+        var resolvedDelay = -1
+        progressResults.forEach { results ->
+            val matched = UrlTestTagMatcher.resolveDelayDetail(results, nodeTag)
+            val candidate = matched?.delay ?: -1
+            if (candidate > 0) {
+                resolvedDelay = candidate
+            }
+        }
+        return resolvedDelay
+    }
+
     fun onAppLifecycle(isForeground: Boolean) {
         val vpnState = stateNames.getOrNull(stateOrdinal) ?: "UNKNOWN"
         log("onAppLifecycle: isForeground=$isForeground, vpnState=$vpnState")
@@ -289,9 +304,16 @@ object SingBoxIpcHub {
         pendingUrlTestJobs.remove(requestId)?.cancel()
         val job = ipcScope.launch {
             val delay = runCatching {
-                val results = service.urlTestGroup(groupTag, safeTimeout)
-                val matched = UrlTestTagMatcher.resolveDelayDetail(results, nodeTag)
-                matched?.delay?.takeIf { it > 0 } ?: -1
+                val progressResults = mutableListOf<Map<String, Int>>()
+                service.urlTestGroup(
+                    groupTag = groupTag,
+                    timeoutMs = safeTimeout,
+                    expectedTags = setOf(nodeTag),
+                    onProgress = { results ->
+                        progressResults.add(results)
+                    }
+                )
+                resolveRealtimeUrlTestNodeDelay(nodeTag, progressResults)
             }.getOrElse {
                 Log.w(TAG, "requestUrlTestNodeDelay failed: requestId=$requestId", it)
                 -1
