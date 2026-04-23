@@ -503,9 +503,13 @@ fun RuleSetsScreen(
                         zIndex = 1f
                     } else if (canDisplace) {
                         val dragProgress = currentDragOffset / itemHeightPx
-                        val endProgress = kotlin.math.round(dragProgress)
+                        val rawEndProgress = when {
+                            dragProgress > 0f -> kotlin.math.ceil(dragProgress)
+                            dragProgress < 0f -> kotlin.math.floor(dragProgress)
+                            else -> 0.0
+                        }
                         val clampedStart = currentDraggingIndex.coerceIn(0, ruleSets.lastIndex)
-                        val clampedEnd = (currentDraggingIndex + endProgress.toInt()).coerceIn(0, ruleSets.lastIndex)
+                        val clampedEnd = (currentDraggingIndex + rawEndProgress.toInt()).coerceIn(0, ruleSets.lastIndex)
 
                         when {
                             clampedStart < clampedEnd && index > clampedStart && index <= clampedEnd -> {
@@ -515,7 +519,7 @@ fun RuleSetsScreen(
                             }
                             clampedStart > clampedEnd && index < clampedStart && index >= clampedEnd -> {
                                 val itemSlotOffset = currentDraggingIndex - index
-                                targetTranslationY = -(dragProgress + itemSlotOffset) * itemHeightPx
+                                targetTranslationY = (-dragProgress - (itemSlotOffset - 1)) * itemHeightPx
                                 targetTranslationY = targetTranslationY.coerceIn(0f, itemHeightPx)
                             }
                         }
@@ -595,7 +599,12 @@ fun RuleSetsScreen(
                                 onDragEnd = {
                                     draggingItemIndex?.let { startIdx ->
                                         val dist = if (itemHeightPx > 0f) {
-                                            kotlin.math.round(draggingItemOffset / itemHeightPx).toInt()
+                                            val progress = draggingItemOffset / itemHeightPx
+                                            when {
+                                                progress > 0f -> kotlin.math.ceil(progress).toInt()
+                                                progress < 0f -> kotlin.math.floor(progress).toInt()
+                                                else -> 0
+                                            }
                                         } else {
                                             0
                                         }
