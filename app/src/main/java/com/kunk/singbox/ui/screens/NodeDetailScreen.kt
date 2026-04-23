@@ -454,8 +454,13 @@ fun NodeDetailScreen(
                             checked = outbound.disableSni == true,
                             icon = Icons.Rounded.Fingerprint,
                             onCheckedChange = { checked ->
+                                val currentTls = outbound.tls ?: TlsConfig(enabled = true)
                                 editingOutbound = outbound.copy(
-                                    disableSni = if (checked) true else null
+                                    disableSni = if (checked) true else null,
+                                    tls = currentTls.copy(
+                                        enabled = true,
+                                        serverName = if (checked) null else currentTls.serverName
+                                    )
                                 )
                             }
                         )

@@ -213,6 +213,22 @@ object OutboundFixer {
             }
         }
 
+        if (result.type == "tuic") {
+            val currentTls = result.tls ?: TlsConfig(enabled = true)
+            result = if (result.disableSni == true) {
+                result.copy(
+                    tls = currentTls.copy(
+                        enabled = true,
+                        serverName = null
+                    )
+                )
+            } else {
+                result.copy(
+                    tls = currentTls.copy(enabled = true)
+                )
+            }
+        }
+
         // Fix User-Agent and path for WS
         if (transport != null && transport.type == "ws") {
             val headers = transport.headers?.toMutableMap() ?: mutableMapOf()

@@ -169,6 +169,51 @@ class OutboundFixerTest {
     }
 
     @Test
+    fun testBuildForRuntimeClearsTuicServerNameWhenDisableSniEnabled() {
+        val outbound = Outbound(
+            type = "tuic",
+            tag = "tuic-node",
+            server = "tuic.example.com",
+            serverPort = 443,
+            uuid = "uuid",
+            password = "secret",
+            disableSni = true,
+            tls = TlsConfig(
+                enabled = true,
+                serverName = "tuic.example.com"
+            )
+        )
+
+        val runtime = OutboundFixer.buildForRuntimeWithDialConfigForTest(outbound)
+
+        assertEquals(true, runtime?.disableSni)
+        assertEquals(true, runtime?.tls?.enabled)
+        assertNull(runtime?.tls?.serverName)
+    }
+
+    @Test
+    fun testBuildForRuntimeKeepsTuicServerNameWhenDisableSniDisabled() {
+        val outbound = Outbound(
+            type = "tuic",
+            tag = "tuic-node",
+            server = "tuic.example.com",
+            serverPort = 443,
+            uuid = "uuid",
+            password = "secret",
+            disableSni = null,
+            tls = TlsConfig(
+                enabled = true,
+                serverName = "edge.example.com"
+            )
+        )
+
+        val runtime = OutboundFixer.buildForRuntimeWithDialConfigForTest(outbound)
+
+        assertNull(runtime?.disableSni)
+        assertEquals("edge.example.com", runtime?.tls?.serverName)
+    }
+
+    @Test
     fun testFixPreservesWhitelistedAutoUrlTestWithoutDefault() {
         val outbound = Outbound(
             type = "urltest",
