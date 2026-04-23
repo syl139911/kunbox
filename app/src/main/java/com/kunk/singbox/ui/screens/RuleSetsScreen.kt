@@ -168,6 +168,7 @@ fun RuleSetsScreen(
     var draggingItemIndex by remember { mutableStateOf<Int?>(null) }
     var draggingItemOffset by remember { mutableStateOf(0f) }
     var draggingItemId by remember { mutableStateOf<String?>(null) }
+    var settlingItemId by remember { mutableStateOf<String?>(null) }
     var itemHeightPx by remember { mutableStateOf(0f) }
 
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -485,45 +486,67 @@ fun RuleSetsScreen(
             items(ruleSets.size, key = { ruleSets[it].id }) { index ->
                 val ruleSet = ruleSets[index]
                 val isDraggingItem = draggingItemIndex == index
+                val isSettlingItem = settlingItemId == ruleSet.id
                 val isCurrentlyDragging = isDragging.value
                 val currentDraggingIndex = draggingItemIndex
                 val currentDragOffset = draggingItemOffset
 
                 var targetTranslationY = 0f
                 var zIndex = 0f
-                if (!isSelectionMode && currentDraggingIndex != null && itemHeightPx > 0f) {
-                    if (index == currentDraggingIndex) {
+                val canDisplace = !isSelectionMode &&
+                    currentDraggingIndex != null &&
+                    itemHeightPx > 0f &&
+                    !isDraggingItem
+                if (currentDraggingIndex != null && itemHeightPx > 0f) {
+                    if (isDraggingItem) {
                         targetTranslationY = currentDragOffset
                         zIndex = 1f
-                    } else {
-                        val dist = (currentDragOffset / itemHeightPx).toInt()
-                        val projectedIndex = (currentDraggingIndex + dist).coerceIn(0, ruleSets.lastIndex)
+                    } else if (canDisplace) {
+                        val dragProgress = currentDragOffset / itemHeightPx
+                        val endProgress = kotlin.math.round(dragProgress)
+                        val clampedStart = currentDraggingIndex.coerceIn(0, ruleSets.lastIndex)
+                        val clampedEnd = (currentDraggingIndex + endProgress.toInt()).coerceIn(0, ruleSets.lastIndex)
 
-                        if (currentDraggingIndex < projectedIndex) {
-                            if (index in (currentDraggingIndex + 1)..projectedIndex) {
-                                targetTranslationY = -itemHeightPx
+                        when {
+                            clampedStart < clampedEnd && index > clampedStart && index <= clampedEnd -> {
+                                val itemSlotOffset = index - currentDraggingIndex
+                                targetTranslationY = -(dragProgress - (itemSlotOffset - 1)) * itemHeightPx
+                                targetTranslationY = targetTranslationY.coerceIn(-itemHeightPx, 0f)
                             }
-                        } else if (currentDraggingIndex > projectedIndex) {
-                            if (index in projectedIndex until currentDraggingIndex) {
-                                targetTranslationY = itemHeightPx
+                            clampedStart > clampedEnd && index < clampedStart && index >= clampedEnd -> {
+                                val itemSlotOffset = currentDraggingIndex - index
+                                targetTranslationY = -(dragProgress + itemSlotOffset) * itemHeightPx
+                                targetTranslationY = targetTranslationY.coerceIn(0f, itemHeightPx)
                             }
                         }
                     }
                 }
 
                 val dragScale by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = if (isDraggingItem && isCurrentlyDragging) 1.02f else 1f,
-                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 420f),
+                    targetValue = when {
+                        isDraggingItem && isCurrentlyDragging -> 1.02f
+                        isSettlingItem -> 1.01f
+                        else -> 1f
+                    },
+                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 260f),
                     label = "dragScale"
                 )
                 val dragShadow by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = if (isDraggingItem && isCurrentlyDragging) 8f else 0f,
-                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.75f, stiffness = 420f),
+                    targetValue = when {
+                        isDraggingItem && isCurrentlyDragging -> 8f
+                        isSettlingItem -> 4f
+                        else -> 0f
+                    },
+                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.82f, stiffness = 260f),
                     label = "dragShadow"
                 )
                 val dragAlpha by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = if (isDraggingItem && isCurrentlyDragging) 0.94f else 1f,
-                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 500f),
+                    targetValue = when {
+                        isDraggingItem && isCurrentlyDragging -> 0.94f
+                        isSettlingItem -> 0.98f
+                        else -> 1f
+                    },
+                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.85f, stiffness = 280f),
                     label = "dragAlpha"
                 )
 
@@ -578,6 +601,8 @@ fun RuleSetsScreen(
                                         }
                                         val endIdx = (startIdx + dist).coerceIn(0, ruleSets.lastIndex)
 
+                                        val settledRuleSetId = ruleSet.id
+                                        settlingItemId = settledRuleSetId
                                         suppressPlacementAnimation = true
 
                                         if (startIdx != endIdx) {
@@ -595,12 +620,19 @@ fun RuleSetsScreen(
                                             androidx.compose.runtime.withFrameNanos { }
                                             suppressPlacementAnimation = false
                                         }
+                                        scope.launch {
+                                            kotlinx.coroutines.delay(220)
+                                            if (settlingItemId == settledRuleSetId) {
+                                                settlingItemId = null
+                                            }
+                                        }
                                     }
                                 },
                                 onDragCancel = {
                                     draggingItemIndex = null
                                     draggingItemId = null
                                     draggingItemOffset = 0f
+                                    settlingItemId = null
                                     isDragging.value = false
                                     suppressPlacementAnimation = false
                                 },
