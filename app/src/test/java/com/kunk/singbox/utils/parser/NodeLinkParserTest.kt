@@ -172,6 +172,26 @@ class NodeLinkParserTest {
     // ==================== VLESS ====================
 
     @Test
+    fun testParseVLessWebSocketEarlyDataFromPathQuery() {
+        val link =
+            "vless://uuid@125.140.145.188:21272?type=ws&encryption=none&security=tls" +
+                "&sni=lp3.0528.linkpc.net&fp=random&allowInsecure=1&host=lp3.0528.linkpc.net" +
+                "&path=%2F%3Fed%3D2560#KR_1"
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("vless", outbound?.type)
+        assertEquals("ws", outbound?.transport?.type)
+        assertEquals("/", outbound?.transport?.path)
+        assertEquals(2560, outbound?.transport?.maxEarlyData)
+        assertEquals("Sec-WebSocket-Protocol", outbound?.transport?.earlyDataHeaderName)
+        assertEquals("random", outbound?.tls?.utls?.fingerprint)
+        assertEquals(true, outbound?.tls?.insecure)
+        assertEquals("lp3.0528.linkpc.net", outbound?.tls?.serverName)
+    }
+
+    @Test
     fun testParseVLessBasic() {
         val link = "vless://uuid-1234@vless.example.com:443?security=tls&sni=vless.example.com&type=ws&path=%2Fpath#VLESSNode"
         val outbound = parser.parse(link)

@@ -35,6 +35,34 @@ class NodeLinkParser(private val gson: Gson) {
         return hosts.takeIf { it.isNotEmpty() }
     }
 
+    private data class WebSocketPathConfig(
+        val path: String,
+        val maxEarlyData: Int?,
+        val earlyDataHeaderName: String?
+    )
+
+    private fun parseWebSocketPathConfig(rawPath: String?): WebSocketPathConfig {
+        if (rawPath.isNullOrBlank()) {
+            return WebSocketPathConfig(path = "/", maxEarlyData = null, earlyDataHeaderName = null)
+        }
+
+        val normalized = rawPath.trim().ifEmpty { "/" }
+        val questionIndex = normalized.indexOf('?')
+        if (questionIndex == -1) {
+            return WebSocketPathConfig(path = normalized, maxEarlyData = null, earlyDataHeaderName = null)
+        }
+
+        val basePath = normalized.substring(0, questionIndex).ifEmpty { "/" }
+        val queryParams = parseQueryParams(normalized.substring(questionIndex + 1))
+        val maxEarlyData = firstParam(queryParams, "ed")?.toIntOrNull()
+        val earlyDataHeaderName = if (maxEarlyData != null) "Sec-WebSocket-Protocol" else null
+        return WebSocketPathConfig(
+            path = basePath,
+            maxEarlyData = maxEarlyData,
+            earlyDataHeaderName = earlyDataHeaderName
+        )
+    }
+
     private fun parseQueryParams(query: String?): Map<String, String> {
         if (query.isNullOrBlank()) return emptyMap()
         val params = mutableMapOf<String, String>()
@@ -511,11 +539,16 @@ class NodeLinkParser(private val gson: Gson) {
             }
 
             val transport = when (transportType) {
-                "ws" -> TransportConfig(
-                    type = "ws",
-                    path = firstParam(params, "path") ?: "/",
-                    headers = hostParam?.let { mapOf("Host" to it) }
-                )
+                "ws" -> {
+                    val webSocketPathConfig = parseWebSocketPathConfig(firstParam(params, "path"))
+                    TransportConfig(
+                        type = "ws",
+                        path = webSocketPathConfig.path,
+                        headers = hostParam?.let { mapOf("Host" to it) },
+                        maxEarlyData = webSocketPathConfig.maxEarlyData,
+                        earlyDataHeaderName = webSocketPathConfig.earlyDataHeaderName
+                    )
+                }
                 "grpc" -> TransportConfig(
                     type = "grpc",
                     serviceName = firstParam(params, "serviceName", "sn") ?: ""
