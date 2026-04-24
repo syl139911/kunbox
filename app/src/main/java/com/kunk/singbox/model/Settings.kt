@@ -27,6 +27,7 @@ data class AppSettings(
 
     @SerializedName("tunEnabled") val tunEnabled: Boolean = true,
     @SerializedName("tunStack") val tunStack: TunStack = TunStack.MIXED,
+    @SerializedName("ipVersionMode") val ipVersionMode: IpVersionMode = IpVersionMode.DUAL_STACK,
     // Throughput defaults:
     // - 1280 is IPv6 minimum MTU, safe but often reduces throughput.
     @SerializedName("tunMtu") val tunMtu: Int = 1500,
@@ -134,6 +135,19 @@ enum class TunStack(@StringRes val displayNameRes: Int) {
     companion object {
         fun fromDisplayName(name: String): TunStack {
             return entries.find { it.name == name } ?: SYSTEM
+        }
+    }
+}
+
+enum class IpVersionMode(@StringRes val displayNameRes: Int) {
+    @SerializedName("IPV4_ONLY") IPV4_ONLY(R.string.ip_version_mode_ipv4_only),
+    @SerializedName("DUAL_STACK") DUAL_STACK(R.string.ip_version_mode_dual_stack),
+    @SerializedName("PREFER_IPV6") PREFER_IPV6(R.string.ip_version_mode_prefer_ipv6),
+    @SerializedName("IPV6_ONLY") IPV6_ONLY(R.string.ip_version_mode_ipv6_only);
+
+    companion object {
+        fun fromDisplayName(name: String): IpVersionMode {
+            return entries.find { it.name == name } ?: DUAL_STACK
         }
     }
 }

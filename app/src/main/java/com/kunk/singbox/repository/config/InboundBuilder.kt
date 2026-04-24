@@ -4,6 +4,7 @@ import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.Inbound
 import com.kunk.singbox.model.TunAddressConfig
 import com.kunk.singbox.model.TunStack
+import com.kunk.singbox.model.tunAddresses
 
 /**
  */
@@ -33,7 +34,7 @@ object InboundBuilder {
                     type = "tun",
                     tag = "tun-in",
                     interfaceName = settings.tunInterfaceName,
-                    addressRaw = listOf(tunAddress.ipv4, tunAddress.ipv6),
+                    addressRaw = settings.ipVersionMode.tunAddresses(tunAddress),
                     mtu = settings.tunMtu,
                     autoRoute = false,
                     strictRoute = false,

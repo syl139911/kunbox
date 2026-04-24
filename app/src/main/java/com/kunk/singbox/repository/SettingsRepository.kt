@@ -17,6 +17,7 @@ import com.kunk.singbox.model.LatencyTestMethod
 import com.kunk.singbox.model.VpnAppMode
 import com.kunk.singbox.model.VpnRouteMode
 import com.kunk.singbox.model.GhProxyMirror
+import com.kunk.singbox.model.IpVersionMode
 import com.kunk.singbox.model.AppThemeMode
 import com.kunk.singbox.model.AppLanguage
 import com.kunk.singbox.model.NodeSortType
@@ -116,6 +117,11 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setTunStack(value: TunStack) {
         settingsStore.updateSettingsAndWait { it.copy(tunStack = value) }
+        notifyRestartRequired()
+    }
+
+    suspend fun setIpVersionMode(value: IpVersionMode) {
+        settingsStore.updateSettingsAndWait { it.copy(ipVersionMode = value) }
         notifyRestartRequired()
     }
 

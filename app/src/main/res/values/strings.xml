@@ -183,6 +183,7 @@
     <string name="tun_settings_enable">启用 TUN</string>
     <string name="tun_settings_enable_subtitle">创建 VPN 接口以接管系统流量</string>
     <string name="tun_settings_stack">堆栈</string>
+    <string name="tun_settings_ip_version_mode">IP 版本模式</string>
     <string name="tun_settings_mtu">MTU</string>
     <string name="tun_settings_mtu_auto">自动 MTU</string>
     <string name="tun_settings_mtu_auto_subtitle">Wi-Fi/有线 1480，蜂窝 1400；适配 QUIC 代理协议，可关闭后手动设置</string>
@@ -648,6 +649,12 @@
     <string name="tun_stack_system">System</string>
     <string name="tun_stack_gvisor">gVisor</string>
     <string name="tun_stack_mixed">Mixed</string>
+
+    <!-- Enum: IpVersionMode -->
+    <string name="ip_version_mode_ipv4_only">仅 IPv4</string>
+    <string name="ip_version_mode_dual_stack">双栈</string>
+    <string name="ip_version_mode_prefer_ipv6">双栈，优先 IPv6</string>
+    <string name="ip_version_mode_ipv6_only">仅 IPv6</string>
 
     <!-- Enum: VpnRouteMode -->
     <string name="vpn_route_mode_global">全局接管</string>

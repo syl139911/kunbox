@@ -39,6 +39,10 @@ fun SettingsStore.setTunStack(value: TunStack) {
     updateSettings { it.copy(tunStack = value) }
 }
 
+fun SettingsStore.setIpVersionMode(value: IpVersionMode) {
+    updateSettings { it.copy(ipVersionMode = value) }
+}
+
 fun SettingsStore.setTunMtu(value: Int) {
     updateSettings { it.copy(tunMtu = value) }
 }

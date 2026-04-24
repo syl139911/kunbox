@@ -15,6 +15,7 @@ import com.kunk.singbox.model.ExportData
 import com.kunk.singbox.model.ExportDataSummary
 import com.kunk.singbox.model.ImportOptions
 import com.kunk.singbox.model.ImportResult
+import com.kunk.singbox.model.IpVersionMode
 import com.kunk.singbox.model.RoutingMode
 import com.kunk.singbox.model.AppRule
 import com.kunk.singbox.model.AppGroup
@@ -215,6 +216,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setTunStack(value: TunStack) {
         viewModelScope.launch { repository.setTunStack(value) }
+    }
+
+    fun setIpVersionMode(value: IpVersionMode) {
+        viewModelScope.launch { repository.setIpVersionMode(value) }
     }
 
     fun setTunMtu(value: Int) {

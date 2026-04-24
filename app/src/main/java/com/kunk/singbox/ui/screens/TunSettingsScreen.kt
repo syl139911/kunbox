@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.kunk.singbox.model.IpVersionMode
 import com.kunk.singbox.model.TunStack
 import com.kunk.singbox.model.VpnAppMode
 import com.kunk.singbox.model.VpnRouteMode
@@ -43,6 +44,7 @@ import com.kunk.singbox.ui.components.StandardCard
 import com.kunk.singbox.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod", "CognitiveComplexMethod", "CyclomaticComplexMethod")
 @Composable
 fun TunSettingsScreen(
     navController: NavController,
@@ -53,6 +55,7 @@ fun TunSettingsScreen(
 
     // Dialog States
     var showStackDialog by remember { mutableStateOf(false) }
+    var showIpVersionDialog by remember { mutableStateOf(false) }
     var showMtuDialog by remember { mutableStateOf(false) }
     var showInterfaceDialog by remember { mutableStateOf(false) }
     var showRouteModeDialog by remember { mutableStateOf(false) }
@@ -71,6 +74,20 @@ fun TunSettingsScreen(
                 showStackDialog = false
             },
             onDismiss = { showStackDialog = false }
+        )
+    }
+
+    if (showIpVersionDialog) {
+        val options = IpVersionMode.entries.map { stringResource(it.displayNameRes) }
+        SingleSelectDialog(
+            title = stringResource(R.string.tun_settings_ip_version_mode),
+            options = options,
+            selectedIndex = IpVersionMode.entries.indexOf(settings.ipVersionMode).coerceAtLeast(0),
+            onSelect = { index ->
+                settingsViewModel.setIpVersionMode(IpVersionMode.entries[index])
+                showIpVersionDialog = false
+            },
+            onDismiss = { showIpVersionDialog = false }
         )
     }
 
@@ -197,6 +214,11 @@ fun TunSettingsScreen(
 
             StandardCard {
                 SettingItem(title = stringResource(R.string.tun_settings_stack), value = stringResource(settings.tunStack.displayNameRes), onClick = { showStackDialog = true })
+                SettingItem(
+                    title = stringResource(R.string.tun_settings_ip_version_mode),
+                    value = stringResource(settings.ipVersionMode.displayNameRes),
+                    onClick = { showIpVersionDialog = true }
+                )
                 SettingSwitchItem(
                     title = stringResource(R.string.tun_settings_mtu_auto),
                     subtitle = stringResource(R.string.tun_settings_mtu_auto_subtitle),

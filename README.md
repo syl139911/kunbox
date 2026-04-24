@@ -2,6 +2,13 @@
 
 # KunBox for Android
 
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-purple.svg?style=flat&logo=kotlin)](https://kotlinlang.org)
+[![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-4285F4.svg?style=flat&logo=android)](https://developer.android.com/jetpack/compose)
+[![Sing-box](https://img.shields.io/badge/Core-Sing--box-success.svg?style=flat)](https://github.com/SagerNet/sing-box)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)](LICENSE)
+[![Telegram](https://img.shields.io/badge/Telegram-Chat-blue?style=flat&logo=telegram)](https://t.me/+978J0WfmJLk4ZmQ1)
+[![Downloads](https://img.shields.io/github/downloads/roseforljh/KunBox/total.svg?style=flat&logo=github)](https://github.com/roseforljh/KunBox/releases)
+
 > **OLED Hyper-Minimalist**
 >
 > A next-generation Android proxy client designed for those who pursue ultimate performance and visual purity.

@@ -79,6 +79,35 @@ class DnsResolverTest {
     }
 
     @Test
+    fun testParseDnsResponseReturnsIpv6WhenOnlyAaaaExists() {
+        val response = byteArrayOf(
+            0x12, 0x34,
+            0x81.toByte(), 0x80.toByte(),
+            0x00, 0x01,
+            0x00, 0x01,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x07, 'e'.code.toByte(), 'x'.code.toByte(), 'a'.code.toByte(), 'm'.code.toByte(),
+            'p'.code.toByte(), 'l'.code.toByte(), 'e'.code.toByte(),
+            0x03, 'c'.code.toByte(), 'o'.code.toByte(), 'm'.code.toByte(),
+            0x00,
+            0x00, 0x1c,
+            0x00, 0x01,
+            0xc0.toByte(), 0x0c,
+            0x00, 0x1c,
+            0x00, 0x01,
+            0x00, 0x00, 0x00, 0x3c,
+            0x00, 0x10,
+            0x20, 0x01, 0x0d, 0xb8.toByte(),
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x01
+        )
+
+        assertEquals("2001:db8:0:0:0:0:0:1", DnsResolver().parseDnsResponseForTest(response))
+    }
+
+    @Test
     fun testResolveBatchReturnsEmptyMapWhenInputsAreOnlyIps() = runBlocking {
         val resolver = DnsResolver()
 

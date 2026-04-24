@@ -4,7 +4,9 @@ import com.google.gson.Gson
 import com.kunk.singbox.model.AppGroup
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.CustomRule
+import com.kunk.singbox.model.DnsStrategy
 import com.kunk.singbox.model.DomainResolveConfig
+import com.kunk.singbox.model.IpVersionMode
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.OutboundTag
 import com.kunk.singbox.model.RuleSet
@@ -1197,6 +1199,89 @@ class ConfigRepositoryTest {
 
         assertEquals("reject", routeRule.action)
         assertNull(routeRule.outbound)
+    }
+
+    @Test
+    fun testResolveDnsStrategyClampsIpv4OnlyMode() {
+        assertEquals(
+            "ipv4_only",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.AUTO, IpVersionMode.IPV4_ONLY)
+        )
+        assertEquals(
+            "ipv4_only",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.PREFER_IPV6, IpVersionMode.IPV4_ONLY)
+        )
+        assertEquals(
+            "ipv4_only",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.ONLY_IPV6, IpVersionMode.IPV4_ONLY)
+        )
+    }
+
+    @Test
+    fun testResolveDnsStrategyClampsIpv6OnlyMode() {
+        assertEquals(
+            "ipv6_only",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.AUTO, IpVersionMode.IPV6_ONLY)
+        )
+        assertEquals(
+            "ipv6_only",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.PREFER_IPV4, IpVersionMode.IPV6_ONLY)
+        )
+        assertEquals(
+            "ipv6_only",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.ONLY_IPV4, IpVersionMode.IPV6_ONLY)
+        )
+    }
+
+    @Test
+    fun testResolveDnsStrategyPrefersIpv6InPreferMode() {
+        assertEquals(
+            "prefer_ipv6",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.AUTO, IpVersionMode.PREFER_IPV6)
+        )
+        assertEquals(
+            "prefer_ipv4",
+            ConfigRepository.resolveDnsStrategyForTest(DnsStrategy.PREFER_IPV4, IpVersionMode.PREFER_IPV6)
+        )
+    }
+
+    @Test
+    fun testBypassLanRulesUseIpIsPrivate() {
+        val rules = ConfigRepository.buildBypassLanRulesForTest(AppSettings(bypassLan = true))
+
+        assertEquals(1, rules.size)
+        assertEquals(true, rules.first().ipIsPrivate)
+        assertEquals("direct", rules.first().outbound)
+    }
+
+    @Test
+    fun testBypassLanRulesDisabledWhenSettingOff() {
+        val rules = ConfigRepository.buildBypassLanRulesForTest(AppSettings(bypassLan = false))
+
+        assertTrue(rules.isEmpty())
+    }
+
+    @Test
+    fun testMulticastRejectRulesCoverIpv4AndIpv6WhenDualStack() {
+        val rules = ConfigRepository.buildMulticastRejectRulesForTest(
+            AppSettings(ipVersionMode = IpVersionMode.DUAL_STACK)
+        )
+
+        assertEquals(listOf("224.0.0.0/3", "ff00::/8"), rules.first().ipCidr)
+        assertEquals("reject", rules.first().action)
+    }
+
+    @Test
+    fun testMulticastRejectRulesFollowIpVersionMode() {
+        val ipv4Only = ConfigRepository.buildMulticastRejectRulesForTest(
+            AppSettings(ipVersionMode = IpVersionMode.IPV4_ONLY)
+        )
+        val ipv6Only = ConfigRepository.buildMulticastRejectRulesForTest(
+            AppSettings(ipVersionMode = IpVersionMode.IPV6_ONLY)
+        )
+
+        assertEquals(listOf("224.0.0.0/3"), ipv4Only.first().ipCidr)
+        assertEquals(listOf("ff00::/8"), ipv6Only.first().ipCidr)
     }
 
     @Test

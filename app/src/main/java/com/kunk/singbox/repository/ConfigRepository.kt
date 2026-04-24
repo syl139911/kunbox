@@ -698,6 +698,37 @@ class ConfigRepository(private val context: Context) {
             }
         }
 
+        internal fun resolveDnsStrategyForTest(strategy: DnsStrategy, mode: IpVersionMode): String {
+            return mode.resolveDnsStrategy(strategy)
+        }
+
+        internal fun buildBypassLanRulesForTest(settings: AppSettings): List<RouteRule> {
+            return buildBypassLanRulesStatic(settings)
+        }
+
+        internal fun buildMulticastRejectRulesForTest(settings: AppSettings): List<RouteRule> {
+            return buildMulticastRejectRulesStatic(settings)
+        }
+
+        private fun buildBypassLanRulesStatic(settings: AppSettings): List<RouteRule> {
+            return if (settings.bypassLan) {
+                listOf(RouteRule(ipIsPrivate = true, outbound = "direct"))
+            } else {
+                emptyList()
+            }
+        }
+
+        private fun buildMulticastRejectRulesStatic(settings: AppSettings): List<RouteRule> {
+            val cidrs = mutableListOf<String>()
+            if (settings.ipVersionMode.includesIpv4) cidrs.add("224.0.0.0/3")
+            if (settings.ipVersionMode.includesIpv6) cidrs.add("ff00::/8")
+            return if (cidrs.isEmpty()) {
+                emptyList()
+            } else {
+                listOf(RouteRule(ipCidr = cidrs, action = "reject"))
+            }
+        }
+
         private data class OutboundSemanticContext(
             val selectorTag: String,
             val outbounds: List<Outbound>,
@@ -4238,10 +4269,7 @@ class ConfigRepository(private val context: Context) {
         if (settings.blockQuic) {
             dnsRules.add(dnsReject(DnsRule(queryType = listOf("HTTPS", "SVCB"))))
         }
-        val bootstrapStrategy = when (settings.serverAddressStrategy) {
-            DnsStrategy.AUTO -> "prefer_ipv4"
-            else -> mapDnsStrategy(settings.serverAddressStrategy) ?: "prefer_ipv4"
-        }
+        val bootstrapStrategy = resolveDnsStrategy(settings.serverAddressStrategy, settings.ipVersionMode)
         val bootstrapV4Tag = "dns-bootstrap-v4"
         val bootstrapV6Tag = "dns-bootstrap-v6"
 
@@ -4277,7 +4305,7 @@ class ConfigRepository(private val context: Context) {
         val localServer = buildDnsServer(
             address = localDnsAddr,
             tag = "local",
-            domainStrategy = mapDnsStrategy(settings.directDnsStrategy),
+            domainStrategy = resolveDnsStrategy(settings.directDnsStrategy, settings.ipVersionMode),
             domainResolver = localResolver
         )
         dnsServers.add(localServer)
@@ -4286,7 +4314,7 @@ class ConfigRepository(private val context: Context) {
         val remoteServer = buildDnsServer(
             address = remoteDnsAddr,
             tag = "remote",
-            domainStrategy = mapDnsStrategy(settings.remoteDnsStrategy),
+            domainStrategy = resolveDnsStrategy(settings.remoteDnsStrategy, settings.ipVersionMode),
             domainResolver = remoteResolver
         )
         dnsServers.add(remoteServer)
@@ -4544,7 +4572,7 @@ class ConfigRepository(private val context: Context) {
             dnsServers = dnsServers,
             semantics = domainSemantics + ruleSetSemantics + packageSemantics,
             remoteDnsAddr = remoteDnsAddr,
-            remoteStrategy = mapDnsStrategy(settings.remoteDnsStrategy),
+            remoteStrategy = resolveDnsStrategy(settings.remoteDnsStrategy, settings.ipVersionMode),
             remoteResolver = remoteResolver
         )
 
@@ -4595,7 +4623,7 @@ class ConfigRepository(private val context: Context) {
             servers = dnsServers,
             rules = dnsRules,
             finalServer = finalServer,
-            strategy = mapDnsStrategy(settings.dnsStrategy),
+            strategy = resolveDnsStrategy(settings.dnsStrategy, settings.ipVersionMode),
             disableCache = !settings.dnsCacheEnabled,
             // Keep cache shared by default to improve hit rate and reduce repeated resolutions.
             // sing-box doc notes independent_cache slightly degrades performance.
@@ -4905,23 +4933,11 @@ class ConfigRepository(private val context: Context) {
     }
 
     private fun buildBypassLanRules(settings: AppSettings): List<RouteRule> {
-        return if (settings.bypassLan) {
-            listOf(
-                RouteRule(
-                    ipCidr = listOf(
-                        "10.0.0.0/8",
-                        "172.16.0.0/12",
-                        "192.168.0.0/16",
-                        "fd00::/8",
-                        "127.0.0.0/8",
-                        "::1/128"
-                    ),
-                    outbound = "direct"
-                )
-            )
-        } else {
-            emptyList()
-        }
+        return buildBypassLanRulesStatic(settings)
+    }
+
+    private fun buildMulticastRejectRules(settings: AppSettings): List<RouteRule> {
+        return buildMulticastRejectRulesStatic(settings)
     }
 
     private fun buildIcmpEchoRules(settings: AppSettings): List<RouteRule> {
@@ -4958,8 +4974,7 @@ class ConfigRepository(private val context: Context) {
         selectorTag: String,
         outbounds: List<Outbound>,
         nodeTagResolver: (String?) -> String?,
-        validRuleSets: List<RuleSetConfig>,
-        bootstrapStrategy: String = "prefer_ipv4"
+        validRuleSets: List<RuleSetConfig>
     ): RouteConfig {
         val hasAppRouting = settings.appRules.any { it.enabled } || settings.appGroups.any { it.enabled }
 
@@ -4968,6 +4983,7 @@ class ConfigRepository(private val context: Context) {
             buildCustomRuleSetRules(settings, selectorTag, outbounds, nodeTagResolver, validRuleSets)
 
         val quicRule = buildQuicBlockRule(settings)
+        val multicastRejectRules = buildMulticastRejectRules(settings)
         val bypassLanRules = buildBypassLanRules(settings)
         val icmpEchoRules = buildIcmpEchoRules(settings)
         val customDomainRules = buildCustomDomainRules(settings, selectorTag, outbounds, nodeTagResolver)
@@ -4976,14 +4992,17 @@ class ConfigRepository(private val context: Context) {
         val sniffRule = listOf(RouteRule(inbound = listOf("tun-in", "mixed-in"), action = "sniff"))
 
         val allRules = when (settings.routingMode) {
-            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + sniffRule + quicRule + icmpEchoRules
+            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules
             RoutingMode.GLOBAL_DIRECT ->
-                hijackDnsRule + sniffRule + quicRule + icmpEchoRules + listOf(RouteRule(outbound = "direct"))
+                hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules +
+                    listOf(RouteRule(outbound = "direct"))
             RoutingMode.RULE -> {
-                hijackDnsRule + sniffRule + quicRule + bypassLanRules + icmpEchoRules +
+                hijackDnsRule + sniffRule + quicRule + multicastRejectRules + bypassLanRules + icmpEchoRules +
                     customDomainRules + appRoutingRules + customRuleSetRules + defaultRuleCatchAll
             }
         }
+
+        val bootstrapStrategy = resolveDnsStrategy(settings.serverAddressStrategy, settings.ipVersionMode)
 
         val normalizedRules = allRules.map { rule ->
             if (rule.outbound == "block") {
@@ -5018,14 +5037,8 @@ class ConfigRepository(private val context: Context) {
         return loadConfig(profileId)
     }
 
-    private fun mapDnsStrategy(strategy: DnsStrategy): String? {
-        return when (strategy) {
-            DnsStrategy.AUTO -> null
-            DnsStrategy.PREFER_IPV4 -> "prefer_ipv4"
-            DnsStrategy.PREFER_IPV6 -> "prefer_ipv6"
-            DnsStrategy.ONLY_IPV4 -> "ipv4_only"
-            DnsStrategy.ONLY_IPV6 -> "ipv6_only"
-        }
+    private fun resolveDnsStrategy(strategy: DnsStrategy, mode: IpVersionMode): String {
+        return mode.resolveDnsStrategy(strategy)
     }
 
     fun getOutboundByNodeId(nodeId: String): Outbound? {

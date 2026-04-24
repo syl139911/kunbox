@@ -13,6 +13,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.net.Inet6Address
 import java.net.InetAddress
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -100,7 +101,7 @@ class DnsResolver(
                 Log.d(TAG, "DoH resolved $domain -> $ip")
                 DnsResolveResult(ip, "doh")
             } else {
-                DnsResolveResult(null, "doh", "No A record found")
+                DnsResolveResult(null, "doh", "No A/AAAA record found")
             }
         }
     }
@@ -180,7 +181,7 @@ class DnsResolver(
                         Log.d(TAG, "DoH resolved $domain -> $ip")
                         cont.resume(DnsResolveResult(ip, "doh"))
                     } else {
-                        cont.resume(DnsResolveResult(null, "doh", "No A record found"))
+                        cont.resume(DnsResolveResult(null, "doh", "No A/AAAA record found"))
                     }
                 }
             }
@@ -243,6 +244,10 @@ class DnsResolver(
         resultMap
     }
 
+    internal fun parseDnsResponseForTest(data: ByteArray): String? {
+        return parseDnsResponse(data)
+    }
+
     /**
      */
     private fun buildDnsQuery(domain: String): ByteArray {
@@ -298,28 +303,35 @@ class DnsResolver(
 
         // Parse answers
         repeat(answerCount) {
-            if (buffer.remaining() < 12) return null
+            if (buffer.remaining() >= 12) {
+                skipName(buffer)
 
-            skipName(buffer)
-
-            val type = buffer.short.toInt() and 0xFFFF
-            buffer.short // Class
-            buffer.int // TTL
-            val rdLength = buffer.short.toInt() and 0xFFFF
-
-            if (type == 1 && rdLength == 4) {
-                // A record - IPv4 address
-                val ip = ByteArray(4)
-                buffer.get(ip)
-                return "${ip[0].toInt() and 0xFF}.${ip[1].toInt() and 0xFF}." +
-                    "${ip[2].toInt() and 0xFF}.${ip[3].toInt() and 0xFF}"
-            } else {
-                // Skip this record
-                buffer.position(buffer.position() + rdLength)
+                val type = buffer.short.toInt() and 0xFFFF
+                buffer.short // Class
+                buffer.int // TTL
+                val rdLength = buffer.short.toInt() and 0xFFFF
+                val ip = parseAnswerAddress(buffer, type, rdLength)
+                if (ip != null) return ip
             }
         }
 
         return null
+    }
+
+    private fun parseAnswerAddress(buffer: ByteBuffer, type: Int, rdLength: Int): String? {
+        return if (type == 1 && rdLength == 4) {
+            val ip = ByteArray(4)
+            buffer.get(ip)
+            "${ip[0].toInt() and 0xFF}.${ip[1].toInt() and 0xFF}." +
+                "${ip[2].toInt() and 0xFF}.${ip[3].toInt() and 0xFF}"
+        } else if (type == 28 && rdLength == 16) {
+            val ip = ByteArray(16)
+            buffer.get(ip)
+            Inet6Address.getByAddress(ip).hostAddress
+        } else {
+            buffer.position(buffer.position() + rdLength)
+            null
+        }
     }
 
     /**

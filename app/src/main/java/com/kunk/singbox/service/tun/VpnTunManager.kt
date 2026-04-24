@@ -13,6 +13,7 @@ import android.provider.Settings
 import android.util.Log
 import com.kunk.singbox.ipc.VpnStateStore
 import com.kunk.singbox.model.AppSettings
+import com.kunk.singbox.model.IpVersionMode
 import com.kunk.singbox.model.TunStack
 import com.kunk.singbox.model.VpnAppMode
 import com.kunk.singbox.model.VpnRouteMode
@@ -78,16 +79,18 @@ class VpnTunManager(
     ) {
         val effectiveMtu = resolveEffectiveMtu(options, settings)
         logEffectiveMtuIfNeeded(options, settings, effectiveMtu)
+        val tunPlan = VpnTunAddressPlanner.build(settings?.ipVersionMode ?: IpVersionMode.DUAL_STACK)
 
         builder.setSession("KunBox VPN")
             .setMtu(effectiveMtu)
 
-        builder.addAddress("172.19.0.1", 30)
-        builder.addAddress("fd00::1", 126)
+        tunPlan.addresses.forEach { (address, prefix) ->
+            builder.addAddress(address, prefix)
+        }
 
-        configureRoutes(builder, settings)
+        configureRoutes(builder, settings, tunPlan)
 
-        configureDns(builder, settings)
+        configureDns(builder, settings, tunPlan)
 
         configurePerAppVpn(builder, settings)
 
@@ -188,7 +191,11 @@ class VpnTunManager(
         return physicalCaps ?: cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }
     }
 
-    private fun configureRoutes(builder: VpnService.Builder, settings: AppSettings?) {
+    private fun configureRoutes(
+        builder: VpnService.Builder,
+        settings: AppSettings?,
+        tunPlan: VpnTunAddressPlan
+    ) {
         val routeMode = settings?.vpnRouteMode ?: VpnRouteMode.GLOBAL
         val cidrText = settings?.vpnRouteIncludeCidrs.orEmpty()
         val cidrs = cidrText
@@ -207,8 +214,9 @@ class VpnTunManager(
         }
 
         if (!usedCustomRoutes) {
-            builder.addRoute("0.0.0.0", 0)
-            builder.addRoute("::", 0)
+            tunPlan.globalRoutes.forEach { (route, prefix) ->
+                builder.addRoute(route, prefix)
+            }
         }
     }
 
@@ -226,7 +234,11 @@ class VpnTunManager(
         }
     }
 
-    private fun configureDns(builder: VpnService.Builder, settings: AppSettings?) {
+    private fun configureDns(
+        builder: VpnService.Builder,
+        settings: AppSettings?,
+        tunPlan: VpnTunAddressPlan
+    ) {
         val dnsServers = mutableListOf<String>()
         if (settings != null) {
             if (isNumericAddress(settings.remoteDns)) dnsServers.add(settings.remoteDns)
@@ -234,9 +246,7 @@ class VpnTunManager(
         }
 
         if (dnsServers.isEmpty()) {
-            dnsServers.add("223.5.5.5")
-            dnsServers.add("119.29.29.29")
-            dnsServers.add("1.1.1.1")
+            dnsServers.addAll(tunPlan.defaultDnsServers)
         }
 
         dnsServers.distinct().forEach { dns ->

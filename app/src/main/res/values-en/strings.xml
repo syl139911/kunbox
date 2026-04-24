@@ -182,6 +182,7 @@
     <string name="tun_settings_enable">Enable TUN</string>
     <string name="tun_settings_enable_subtitle">Create VPN interface to capture system traffic</string>
     <string name="tun_settings_stack">Stack</string>
+    <string name="tun_settings_ip_version_mode">IP Version Mode</string>
     <string name="tun_settings_mtu">MTU</string>
     <string name="tun_settings_interface_name">Interface Name</string>
     <string name="tun_settings_auto_route">Auto Route</string>
@@ -624,6 +625,12 @@
     <string name="tun_stack_system">System</string>
     <string name="tun_stack_gvisor">gVisor</string>
     <string name="tun_stack_mixed">Mixed</string>
+
+    <!-- Enum: IpVersionMode -->
+    <string name="ip_version_mode_ipv4_only">IPv4 Only</string>
+    <string name="ip_version_mode_dual_stack">Dual Stack</string>
+    <string name="ip_version_mode_prefer_ipv6">Dual Stack, Prefer IPv6</string>
+    <string name="ip_version_mode_ipv6_only">IPv6 Only</string>
 
     <!-- Enum: VpnRouteMode -->
     <string name="vpn_route_mode_global">Global</string>

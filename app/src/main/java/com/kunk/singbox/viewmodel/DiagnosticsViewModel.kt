@@ -185,6 +185,7 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
             appendLine("\n=== Throughput / Runtime Hints ===")
             appendLine("Network: $networkType")
             appendLine("TUN stack (setting): ${settings.tunStack.name}")
+            appendLine("IP version mode: ${settings.ipVersionMode.name}")
             appendLine("TUN stack (effective): $effectiveTunStack")
             appendLine("MTU auto: ${settings.tunMtuAuto}")
             appendLine("MTU manual: ${settings.tunMtu}")

@@ -1,6 +1,8 @@
 package com.kunk.singbox.repository.config
 
 import com.kunk.singbox.model.AppSettings
+import com.kunk.singbox.model.IpVersionMode
+import com.kunk.singbox.model.TunAddressConfig
 import com.kunk.singbox.model.TunStack
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -23,6 +25,53 @@ class InboundBuilderTest {
         assertTrue(inbounds.all { it.sniff == null })
         assertTrue(inbounds.all { it.sniffOverrideDestination == null })
         assertTrue(inbounds.all { it.sniffTimeout == null })
+    }
+
+    @Test
+    fun buildTunInboundAddressesFollowIpVersionMode() {
+        val tunAddress = TunAddressConfig(ipv4 = "10.7.0.1/30", ipv6 = "fd07::1/126")
+
+        val ipv4Only = InboundBuilder.build(
+            settings = AppSettings(
+                tunEnabled = true,
+                proxyPort = 0,
+                ipVersionMode = IpVersionMode.IPV4_ONLY,
+                tunAddress = tunAddress
+            ),
+            effectiveTunStack = TunStack.MIXED
+        ).single()
+        val dualStack = InboundBuilder.build(
+            settings = AppSettings(
+                tunEnabled = true,
+                proxyPort = 0,
+                ipVersionMode = IpVersionMode.DUAL_STACK,
+                tunAddress = tunAddress
+            ),
+            effectiveTunStack = TunStack.MIXED
+        ).single()
+        val preferIpv6 = InboundBuilder.build(
+            settings = AppSettings(
+                tunEnabled = true,
+                proxyPort = 0,
+                ipVersionMode = IpVersionMode.PREFER_IPV6,
+                tunAddress = tunAddress
+            ),
+            effectiveTunStack = TunStack.MIXED
+        ).single()
+        val ipv6Only = InboundBuilder.build(
+            settings = AppSettings(
+                tunEnabled = true,
+                proxyPort = 0,
+                ipVersionMode = IpVersionMode.IPV6_ONLY,
+                tunAddress = tunAddress
+            ),
+            effectiveTunStack = TunStack.MIXED
+        ).single()
+
+        assertEquals(listOf("10.7.0.1/30"), ipv4Only.address)
+        assertEquals(listOf("10.7.0.1/30", "fd07::1/126"), dualStack.address)
+        assertEquals(listOf("10.7.0.1/30", "fd07::1/126"), preferIpv6.address)
+        assertEquals(listOf("fd07::1/126"), ipv6Only.address)
     }
 
     @Test
