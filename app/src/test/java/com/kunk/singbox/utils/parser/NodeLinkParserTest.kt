@@ -9,6 +9,7 @@ import org.junit.Test
  * NodeLinkParser 单元测试
  * 覆盖所有支持的协议链接解析
  */
+@Suppress("LargeClass")
 class NodeLinkParserTest {
 
     private lateinit var parser: NodeLinkParser
@@ -145,6 +146,22 @@ class NodeLinkParserTest {
         assertEquals("http", outbound?.transport?.type)
         assertEquals(listOf("cdn.example.com"), outbound?.transport?.host)
         assertEquals("/health", outbound?.transport?.path)
+    }
+
+    @Test
+    fun testParseVMessUserHttpLinkKeepsHttpTransport() {
+        val link = "vmess://" +
+            "eyJhZGQiOiIxOC4yMjUuNTcuNyIsImFpZCI6IjAiLCJob3N0IjoiIiwiaWQiOiJjMzFhNTU5Yi04" +
+            "Mjg1LTRiMTEtZGI5OS1kMWVkZmMyYjJiNzAiLCJuZXQiOiJodHRwIiwicGF0aCI6IiIsInBv" +
+            "cnQiOiIzMjcyMSIsInBzIjoiVVMg8J+HuvCfh7ggIC1cdTAwM2UgIOe+juWbvS3ljp/nlJ8t" +
+            "5Lqa6ams6YCKLeWkp+W4puWuvS0zMjcyMSIsInNjeSI6ImF1dG8iLCJzbmkiOiIiLCJ0" +
+            "bHMiOiIiLCJ0eXBlIjoibm9uZSIsInYiOiIyIn0="
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("vmess", outbound?.type)
+        assertEquals("http", outbound?.transport?.type)
     }
 
     @Test

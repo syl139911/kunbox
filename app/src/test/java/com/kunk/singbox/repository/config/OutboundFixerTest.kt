@@ -4,6 +4,7 @@ import com.kunk.singbox.model.DomainResolveConfig
 import com.kunk.singbox.model.ObfsConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
+import com.kunk.singbox.model.TransportConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
@@ -289,6 +290,23 @@ class OutboundFixerTest {
         val runtime = OutboundFixer.buildForRuntimeWithDialConfigForTest(outbound)
 
         assertEquals("", runtime?.packetEncoding)
+    }
+
+    @Test
+    fun testBuildForRuntimeKeepsVmessHttpTransport() {
+        val outbound = Outbound(
+            type = "vmess",
+            tag = "vmess-http-node",
+            server = "18.225.57.7",
+            serverPort = 32721,
+            uuid = "c31a559b-8285-4b11-db99-d1edfc2b2b70",
+            transport = TransportConfig(type = "http")
+        )
+
+        val runtime = OutboundFixer.buildForRuntimeWithDialConfigForTest(outbound)
+
+        assertEquals("vmess", runtime?.type)
+        assertEquals("http", runtime?.transport?.type)
     }
 
     @Test
