@@ -62,6 +62,16 @@ class PlatformInterfaceImplTest {
     }
 
     @Test
+    fun testShouldProtectAndBindPhysicalNetworkForOutboundSockets() {
+        val result = PlatformInterfaceImpl.shouldBindProtectedSocketToPhysicalNetwork(
+            protected = true,
+            physicalNetworkAvailable = true
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
     fun testConnectManagerHandoverAllowsActivePhysicalNetworkBeforeValidated() {
         val result = ConnectManager.shouldHandoverToActiveDefaultNetwork(
             isActiveDefault = true,

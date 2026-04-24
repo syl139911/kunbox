@@ -1,11 +1,11 @@
 # Graph Report - .  (2026-04-24)
 
 ## Corpus Check
-- 201 files ， ~203,981 words
+- 201 files ， ~204,061 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3154 nodes ， 2955 edges ， 201 communities detected
+- 3156 nodes ， 2957 edges ， 201 communities detected
 - Extraction: 100% EXTRACTED ， 0% INFERRED ， 0% AMBIGUOUS
 - Token cost: 0 input ， 0 output
 
@@ -447,40 +447,40 @@ Cohesion: 0.25
 Nodes (2): TrafficStatsUiState, TrafficStatsViewModel
 
 ### Community 105 - "Community 105"
-Cohesion: 0.29
-Nodes (1): LatencyTester
+Cohesion: 0.25
+Nodes (1): PlatformInterfaceImplTest
 
 ### Community 106 - "Community 106"
 Cohesion: 0.29
-Nodes (1): SubscriptionAutoUpdateWorker
+Nodes (1): LatencyTester
 
 ### Community 107 - "Community 107"
 Cohesion: 0.29
-Nodes (1): VpnKeepaliveWorker
+Nodes (1): SubscriptionAutoUpdateWorker
 
 ### Community 108 - "Community 108"
 Cohesion: 0.29
-Nodes (1): SquareViewFinderView
+Nodes (1): VpnKeepaliveWorker
 
 ### Community 109 - "Community 109"
 Cohesion: 0.29
-Nodes (0): 
+Nodes (1): SquareViewFinderView
 
 ### Community 110 - "Community 110"
 Cohesion: 0.29
-Nodes (1): BatteryOptimizationHelper
+Nodes (0): 
 
 ### Community 111 - "Community 111"
 Cohesion: 0.29
-Nodes (1): LocaleHelper
+Nodes (1): BatteryOptimizationHelper
 
 ### Community 112 - "Community 112"
 Cohesion: 0.29
-Nodes (1): SecurityUtils
+Nodes (1): LocaleHelper
 
 ### Community 113 - "Community 113"
 Cohesion: 0.29
-Nodes (1): PlatformInterfaceImplTest
+Nodes (1): SecurityUtils
 
 ### Community 114 - "Community 114"
 Cohesion: 0.29

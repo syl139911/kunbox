@@ -61,6 +61,13 @@ class PlatformInterfaceImpl(
             if (!procFsReadable) return false
             return !shouldForceConnectionOwnerRouting(settings)
         }
+
+        internal fun shouldBindProtectedSocketToPhysicalNetwork(
+            protected: Boolean,
+            physicalNetworkAvailable: Boolean
+        ): Boolean {
+            return protected && physicalNetworkAvailable
+        }
     }
 
     private val networkSwitchManager: NetworkSwitchManager by lazy {
@@ -156,12 +163,28 @@ class PlatformInterfaceImpl(
     }
 
     override fun autoDetectInterfaceControl(fd: Int) {
-        val result = callbacks.protect(fd)
-        if (!result) {
+        val protected = callbacks.protect(fd)
+        if (!protected) {
             Log.e(TAG, "autoDetectInterfaceControl: protect($fd) failed")
             runCatching {
                 com.kunk.singbox.repository.LogRepository.getInstance()
                     .addLog("ERROR: protect($fd) failed")
+            }
+            return
+        }
+
+        val physicalNetwork = callbacks.findBestPhysicalNetwork()
+        if (shouldBindProtectedSocketToPhysicalNetwork(protected, physicalNetwork != null)) {
+            runCatching {
+                val pfd = android.os.ParcelFileDescriptor.adoptFd(fd)
+                try {
+                    physicalNetwork?.bindSocket(pfd.fileDescriptor)
+                    Log.d(TAG, "autoDetectInterfaceControl: protected and bound fd=$fd to $physicalNetwork")
+                } finally {
+                    pfd.detachFd()
+                }
+            }.onFailure { e ->
+                Log.w(TAG, "autoDetectInterfaceControl: bind physical network failed for fd=$fd: ${e.message}")
             }
         }
     }

@@ -7153,7 +7153,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\repository\\LatencyTester.kt",
       "source_location": "L1",
       "id": "latencytester",
-      "community": 105
+      "community": 106
     },
     {
       "label": "LatencyTester",
@@ -7161,7 +7161,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\repository\\LatencyTester.kt",
       "source_location": "L16",
       "id": "latencytester_latencytester",
-      "community": 105
+      "community": 106
     },
     {
       "label": ".testNode()",
@@ -7169,7 +7169,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\repository\\LatencyTester.kt",
       "source_location": "L29",
       "id": "latencytester_latencytester_testnode",
-      "community": 105
+      "community": 106
     },
     {
       "label": ".testBatch()",
@@ -7177,7 +7177,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\repository\\LatencyTester.kt",
       "source_location": "L78",
       "id": "latencytester_latencytester_testbatch",
-      "community": 105
+      "community": 106
     },
     {
       "label": ".cancelAll()",
@@ -7185,7 +7185,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\repository\\LatencyTester.kt",
       "source_location": "L95",
       "id": "latencytester_latencytester_cancelall",
-      "community": 105
+      "community": 106
     },
     {
       "label": ".isTestingNode()",
@@ -7193,7 +7193,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\repository\\LatencyTester.kt",
       "source_location": "L104",
       "id": "latencytester_latencytester_istestingnode",
-      "community": 105
+      "community": 106
     },
     {
       "label": ".getActiveTestCount()",
@@ -7201,7 +7201,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\repository\\LatencyTester.kt",
       "source_location": "L110",
       "id": "latencytester_latencytester_getactivetestcount",
-      "community": 105
+      "community": 106
     },
     {
       "label": "LogRepository.kt",
@@ -11577,7 +11577,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\SubscriptionAutoUpdateWorker.kt",
       "source_location": "L1",
       "id": "subscriptionautoupdateworker",
-      "community": 106
+      "community": 107
     },
     {
       "label": "SubscriptionAutoUpdateWorker",
@@ -11585,7 +11585,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\SubscriptionAutoUpdateWorker.kt",
       "source_location": "L16",
       "id": "subscriptionautoupdateworker_subscriptionautoupdateworker",
-      "community": 106
+      "community": 107
     },
     {
       "label": "schedule()",
@@ -11593,7 +11593,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\SubscriptionAutoUpdateWorker.kt",
       "source_location": "L28",
       "id": "subscriptionautoupdateworker_schedule",
-      "community": 106
+      "community": 107
     },
     {
       "label": "cancel()",
@@ -11601,7 +11601,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\SubscriptionAutoUpdateWorker.kt",
       "source_location": "L69",
       "id": "subscriptionautoupdateworker_cancel",
-      "community": 106
+      "community": 107
     },
     {
       "label": "cancelAll()",
@@ -11609,7 +11609,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\SubscriptionAutoUpdateWorker.kt",
       "source_location": "L77",
       "id": "subscriptionautoupdateworker_cancelall",
-      "community": 106
+      "community": 107
     },
     {
       "label": "rescheduleAll()",
@@ -11617,7 +11617,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\SubscriptionAutoUpdateWorker.kt",
       "source_location": "L84",
       "id": "subscriptionautoupdateworker_rescheduleall",
-      "community": 106
+      "community": 107
     },
     {
       "label": ".doWork()",
@@ -11625,7 +11625,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\SubscriptionAutoUpdateWorker.kt",
       "source_location": "L102",
       "id": "subscriptionautoupdateworker_subscriptionautoupdateworker_dowork",
-      "community": 106
+      "community": 107
     },
     {
       "label": "VpnKeepaliveWorker.kt",
@@ -11633,7 +11633,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\VpnKeepaliveWorker.kt",
       "source_location": "L1",
       "id": "vpnkeepaliveworker",
-      "community": 107
+      "community": 108
     },
     {
       "label": "VpnKeepaliveWorker",
@@ -11641,7 +11641,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\VpnKeepaliveWorker.kt",
       "source_location": "L17",
       "id": "vpnkeepaliveworker_vpnkeepaliveworker",
-      "community": 107
+      "community": 108
     },
     {
       "label": "schedule()",
@@ -11649,7 +11649,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\VpnKeepaliveWorker.kt",
       "source_location": "L31",
       "id": "vpnkeepaliveworker_schedule",
-      "community": 107
+      "community": 108
     },
     {
       "label": "cancel()",
@@ -11657,7 +11657,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\VpnKeepaliveWorker.kt",
       "source_location": "L56",
       "id": "vpnkeepaliveworker_cancel",
-      "community": 107
+      "community": 108
     },
     {
       "label": "isBackgroundProcessAlive()",
@@ -11665,7 +11665,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\VpnKeepaliveWorker.kt",
       "source_location": "L63",
       "id": "vpnkeepaliveworker_isbackgroundprocessalive",
-      "community": 107
+      "community": 108
     },
     {
       "label": ".doWork()",
@@ -11673,7 +11673,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\VpnKeepaliveWorker.kt",
       "source_location": "L72",
       "id": "vpnkeepaliveworker_vpnkeepaliveworker_dowork",
-      "community": 107
+      "community": 108
     },
     {
       "label": ".attemptVpnRecovery()",
@@ -11681,7 +11681,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\VpnKeepaliveWorker.kt",
       "source_location": "L114",
       "id": "vpnkeepaliveworker_vpnkeepaliveworker_attemptvpnrecovery",
-      "community": 107
+      "community": 108
     },
     {
       "label": "VpnTileService.kt",
@@ -13372,10 +13372,18 @@
       "community": 7
     },
     {
+      "label": "shouldBindProtectedSocketToPhysicalNetwork()",
+      "file_type": "code",
+      "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
+      "source_location": "L65",
+      "id": "platforminterfaceimpl_shouldbindprotectedsockettophysicalnetwork",
+      "community": 7
+    },
+    {
       "label": "getConnectivityManager()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L73",
+      "source_location": "L80",
       "id": "platforminterfaceimpl_getconnectivitymanager",
       "community": 7
     },
@@ -13383,7 +13391,7 @@
       "label": "setUnderlyingNetworks()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L75",
+      "source_location": "L82",
       "id": "platforminterfaceimpl_setunderlyingnetworks",
       "community": 7
     },
@@ -13391,7 +13399,7 @@
       "label": "setLastKnownNetwork()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L79",
+      "source_location": "L86",
       "id": "platforminterfaceimpl_setlastknownnetwork",
       "community": 7
     },
@@ -13399,7 +13407,7 @@
       "label": "getLastKnownNetwork()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L83",
+      "source_location": "L90",
       "id": "platforminterfaceimpl_getlastknownnetwork",
       "community": 7
     },
@@ -13407,7 +13415,7 @@
       "label": "updateInterfaceListener()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L85",
+      "source_location": "L92",
       "id": "platforminterfaceimpl_updateinterfacelistener",
       "community": 7
     },
@@ -13415,7 +13423,7 @@
       "label": "isRunning()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L89",
+      "source_location": "L96",
       "id": "platforminterfaceimpl_isrunning",
       "community": 7
     },
@@ -13423,7 +13431,7 @@
       "label": "requestCoreNetworkRecovery()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L91",
+      "source_location": "L98",
       "id": "platforminterfaceimpl_requestcorenetworkrecovery",
       "community": 7
     },
@@ -13431,7 +13439,7 @@
       "label": "Callbacks",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L98",
+      "source_location": "L105",
       "id": "platforminterfaceimpl_callbacks",
       "community": 7
     },
@@ -13439,7 +13447,7 @@
       "label": ".protect()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L99",
+      "source_location": "L106",
       "id": "platforminterfaceimpl_callbacks_protect",
       "community": 7
     },
@@ -13447,7 +13455,7 @@
       "label": ".openTun()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L100",
+      "source_location": "L107",
       "id": "platforminterfaceimpl_callbacks_opentun",
       "community": 7
     },
@@ -13455,7 +13463,7 @@
       "label": ".getConnectivityManager()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L102",
+      "source_location": "L109",
       "id": "platforminterfaceimpl_callbacks_getconnectivitymanager",
       "community": 7
     },
@@ -13463,7 +13471,7 @@
       "label": ".getCurrentNetwork()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L103",
+      "source_location": "L110",
       "id": "platforminterfaceimpl_callbacks_getcurrentnetwork",
       "community": 7
     },
@@ -13471,7 +13479,7 @@
       "label": ".getLastKnownNetwork()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L104",
+      "source_location": "L111",
       "id": "platforminterfaceimpl_callbacks_getlastknownnetwork",
       "community": 7
     },
@@ -13479,7 +13487,7 @@
       "label": ".setLastKnownNetwork()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L105",
+      "source_location": "L112",
       "id": "platforminterfaceimpl_callbacks_setlastknownnetwork",
       "community": 7
     },
@@ -13487,7 +13495,7 @@
       "label": ".markVpnStarted()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L106",
+      "source_location": "L113",
       "id": "platforminterfaceimpl_callbacks_markvpnstarted",
       "community": 7
     },
@@ -13495,7 +13503,7 @@
       "label": ".requestCoreNetworkReset()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L108",
+      "source_location": "L115",
       "id": "platforminterfaceimpl_callbacks_requestcorenetworkreset",
       "community": 7
     },
@@ -13503,7 +13511,7 @@
       "label": ".resetConnectionsOptimal()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L109",
+      "source_location": "L116",
       "id": "platforminterfaceimpl_callbacks_resetconnectionsoptimal",
       "community": 7
     },
@@ -13511,7 +13519,7 @@
       "label": ".setUnderlyingNetworks()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L110",
+      "source_location": "L117",
       "id": "platforminterfaceimpl_callbacks_setunderlyingnetworks",
       "community": 7
     },
@@ -13519,7 +13527,7 @@
       "label": ".isRunning()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L112",
+      "source_location": "L119",
       "id": "platforminterfaceimpl_callbacks_isrunning",
       "community": 7
     },
@@ -13527,7 +13535,7 @@
       "label": ".isStarting()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L113",
+      "source_location": "L120",
       "id": "platforminterfaceimpl_callbacks_isstarting",
       "community": 7
     },
@@ -13535,7 +13543,7 @@
       "label": ".isManuallyStopped()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L114",
+      "source_location": "L121",
       "id": "platforminterfaceimpl_callbacks_ismanuallystopped",
       "community": 7
     },
@@ -13543,7 +13551,7 @@
       "label": ".getLastConfigPath()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L115",
+      "source_location": "L122",
       "id": "platforminterfaceimpl_callbacks_getlastconfigpath",
       "community": 7
     },
@@ -13551,7 +13559,7 @@
       "label": ".getCurrentSettings()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L116",
+      "source_location": "L123",
       "id": "platforminterfaceimpl_callbacks_getcurrentsettings",
       "community": 7
     },
@@ -13559,7 +13567,7 @@
       "label": ".incrementConnectionOwnerCalls()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L118",
+      "source_location": "L125",
       "id": "platforminterfaceimpl_callbacks_incrementconnectionownercalls",
       "community": 7
     },
@@ -13567,7 +13575,7 @@
       "label": ".incrementConnectionOwnerInvalidArgs()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L119",
+      "source_location": "L126",
       "id": "platforminterfaceimpl_callbacks_incrementconnectionownerinvalidargs",
       "community": 7
     },
@@ -13575,7 +13583,7 @@
       "label": ".incrementConnectionOwnerUidResolved()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L120",
+      "source_location": "L127",
       "id": "platforminterfaceimpl_callbacks_incrementconnectionowneruidresolved",
       "community": 7
     },
@@ -13583,7 +13591,7 @@
       "label": ".incrementConnectionOwnerSecurityDenied()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L121",
+      "source_location": "L128",
       "id": "platforminterfaceimpl_callbacks_incrementconnectionownersecuritydenied",
       "community": 7
     },
@@ -13591,7 +13599,7 @@
       "label": ".incrementConnectionOwnerOtherException()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L122",
+      "source_location": "L129",
       "id": "platforminterfaceimpl_callbacks_incrementconnectionownerotherexception",
       "community": 7
     },
@@ -13599,7 +13607,7 @@
       "label": ".setConnectionOwnerLastEvent()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L123",
+      "source_location": "L130",
       "id": "platforminterfaceimpl_callbacks_setconnectionownerlastevent",
       "community": 7
     },
@@ -13607,7 +13615,7 @@
       "label": ".setConnectionOwnerLastUid()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L124",
+      "source_location": "L131",
       "id": "platforminterfaceimpl_callbacks_setconnectionownerlastuid",
       "community": 7
     },
@@ -13615,7 +13623,7 @@
       "label": ".isConnectionOwnerPermissionDeniedLogged()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L125",
+      "source_location": "L132",
       "id": "platforminterfaceimpl_callbacks_isconnectionownerpermissiondeniedlogged",
       "community": 7
     },
@@ -13623,7 +13631,7 @@
       "label": ".setConnectionOwnerPermissionDeniedLogged()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L126",
+      "source_location": "L133",
       "id": "platforminterfaceimpl_callbacks_setconnectionownerpermissiondeniedlogged",
       "community": 7
     },
@@ -13631,7 +13639,7 @@
       "label": ".cacheUidToPackage()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L127",
+      "source_location": "L134",
       "id": "platforminterfaceimpl_callbacks_cacheuidtopackage",
       "community": 7
     },
@@ -13639,7 +13647,7 @@
       "label": ".getUidFromCache()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L128",
+      "source_location": "L135",
       "id": "platforminterfaceimpl_callbacks_getuidfromcache",
       "community": 7
     },
@@ -13647,7 +13655,7 @@
       "label": ".findBestPhysicalNetwork()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L130",
+      "source_location": "L137",
       "id": "platforminterfaceimpl_callbacks_findbestphysicalnetwork",
       "community": 7
     },
@@ -13655,7 +13663,7 @@
       "label": ".localDNSTransport()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L154",
+      "source_location": "L161",
       "id": "platforminterfaceimpl_platforminterfaceimpl_localdnstransport",
       "community": 7
     },
@@ -13663,7 +13671,7 @@
       "label": ".autoDetectInterfaceControl()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L158",
+      "source_location": "L165",
       "id": "platforminterfaceimpl_platforminterfaceimpl_autodetectinterfacecontrol",
       "community": 7
     },
@@ -13671,7 +13679,7 @@
       "label": ".openTun()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L169",
+      "source_location": "L192",
       "id": "platforminterfaceimpl_platforminterfaceimpl_opentun",
       "community": 7
     },
@@ -13679,7 +13687,7 @@
       "label": ".usePlatformAutoDetectInterfaceControl()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L211",
+      "source_location": "L234",
       "id": "platforminterfaceimpl_platforminterfaceimpl_useplatformautodetectinterfacecontrol",
       "community": 7
     },
@@ -13687,7 +13695,7 @@
       "label": ".getProcFsReadable()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L213",
+      "source_location": "L236",
       "id": "platforminterfaceimpl_platforminterfaceimpl_getprocfsreadable",
       "community": 7
     },
@@ -13695,7 +13703,7 @@
       "label": ".useProcFS()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L250",
+      "source_location": "L273",
       "id": "platforminterfaceimpl_platforminterfaceimpl_useprocfs",
       "community": 7
     },
@@ -13703,7 +13711,7 @@
       "label": ".findConnectionOwner()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L260",
+      "source_location": "L283",
       "id": "platforminterfaceimpl_platforminterfaceimpl_findconnectionowner",
       "community": 7
     },
@@ -13711,7 +13719,7 @@
       "label": ".isUsableInitialNetwork()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L433",
+      "source_location": "L456",
       "id": "platforminterfaceimpl_platforminterfaceimpl_isusableinitialnetwork",
       "community": 7
     },
@@ -13719,7 +13727,7 @@
       "label": ".startDefaultInterfaceMonitor()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L441",
+      "source_location": "L464",
       "id": "platforminterfaceimpl_platforminterfaceimpl_startdefaultinterfacemonitor",
       "community": 7
     },
@@ -13727,7 +13735,7 @@
       "label": ".registerNetworkCallbacksDeferred()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L501",
+      "source_location": "L524",
       "id": "platforminterfaceimpl_platforminterfaceimpl_registernetworkcallbacksdeferred",
       "community": 7
     },
@@ -13735,7 +13743,7 @@
       "label": ".closeDefaultInterfaceMonitor()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L665",
+      "source_location": "L688",
       "id": "platforminterfaceimpl_platforminterfaceimpl_closedefaultinterfacemonitor",
       "community": 7
     },
@@ -13743,7 +13751,7 @@
       "label": ".getInterfaces()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L686",
+      "source_location": "L709",
       "id": "platforminterfaceimpl_platforminterfaceimpl_getinterfaces",
       "community": 7
     },
@@ -13751,7 +13759,7 @@
       "label": ".underNetworkExtension()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L726",
+      "source_location": "L749",
       "id": "platforminterfaceimpl_platforminterfaceimpl_undernetworkextension",
       "community": 7
     },
@@ -13759,7 +13767,7 @@
       "label": ".includeAllNetworks()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L728",
+      "source_location": "L751",
       "id": "platforminterfaceimpl_platforminterfaceimpl_includeallnetworks",
       "community": 7
     },
@@ -13767,7 +13775,7 @@
       "label": ".readWIFIState()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L730",
+      "source_location": "L753",
       "id": "platforminterfaceimpl_platforminterfaceimpl_readwifistate",
       "community": 7
     },
@@ -13775,7 +13783,7 @@
       "label": ".clearDNSCache()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L732",
+      "source_location": "L755",
       "id": "platforminterfaceimpl_platforminterfaceimpl_cleardnscache",
       "community": 7
     },
@@ -13783,7 +13791,7 @@
       "label": ".sendNotification()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L734",
+      "source_location": "L757",
       "id": "platforminterfaceimpl_platforminterfaceimpl_sendnotification",
       "community": 7
     },
@@ -13791,7 +13799,7 @@
       "label": ".systemCertificates()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L736",
+      "source_location": "L759",
       "id": "platforminterfaceimpl_platforminterfaceimpl_systemcertificates",
       "community": 7
     },
@@ -13799,7 +13807,7 @@
       "label": ".updateDefaultInterface()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L738",
+      "source_location": "L761",
       "id": "platforminterfaceimpl_platforminterfaceimpl_updatedefaultinterface",
       "community": 7
     },
@@ -13807,7 +13815,7 @@
       "label": "StringIteratorImpl",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L743",
+      "source_location": "L766",
       "id": "platforminterfaceimpl_stringiteratorimpl",
       "community": 7
     },
@@ -13815,7 +13823,7 @@
       "label": ".hasNext()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L745",
+      "source_location": "L768",
       "id": "platforminterfaceimpl_stringiteratorimpl_hasnext",
       "community": 7
     },
@@ -13823,7 +13831,7 @@
       "label": ".next()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L746",
+      "source_location": "L769",
       "id": "platforminterfaceimpl_stringiteratorimpl_next",
       "community": 7
     },
@@ -13831,7 +13839,7 @@
       "label": ".len()",
       "file_type": "code",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L747",
+      "source_location": "L770",
       "id": "platforminterfaceimpl_stringiteratorimpl_len",
       "community": 7
     },
@@ -16729,7 +16737,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\scanner\\SquareViewFinderView.kt",
       "source_location": "L1",
       "id": "squareviewfinderview",
-      "community": 108
+      "community": 109
     },
     {
       "label": "SquareViewFinderView",
@@ -16737,7 +16745,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\scanner\\SquareViewFinderView.kt",
       "source_location": "L15",
       "id": "squareviewfinderview_squareviewfinderview",
-      "community": 108
+      "community": 109
     },
     {
       "label": ".onDraw()",
@@ -16745,7 +16753,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\scanner\\SquareViewFinderView.kt",
       "source_location": "L48",
       "id": "squareviewfinderview_squareviewfinderview_ondraw",
-      "community": 108
+      "community": 109
     },
     {
       "label": ".calculateSquareFrame()",
@@ -16753,7 +16761,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\scanner\\SquareViewFinderView.kt",
       "source_location": "L83",
       "id": "squareviewfinderview_squareviewfinderview_calculatesquareframe",
-      "community": 108
+      "community": 109
     },
     {
       "label": ".drawCorners()",
@@ -16761,7 +16769,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\scanner\\SquareViewFinderView.kt",
       "source_location": "L106",
       "id": "squareviewfinderview_squareviewfinderview_drawcorners",
-      "community": 108
+      "community": 109
     },
     {
       "label": ".drawLaser()",
@@ -16769,7 +16777,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\scanner\\SquareViewFinderView.kt",
       "source_location": "L125",
       "id": "squareviewfinderview_squareviewfinderview_drawlaser",
-      "community": 108
+      "community": 109
     },
     {
       "label": ".onSizeChanged()",
@@ -16777,7 +16785,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\scanner\\SquareViewFinderView.kt",
       "source_location": "L147",
       "id": "squareviewfinderview_squareviewfinderview_onsizechanged",
-      "community": 108
+      "community": 109
     },
     {
       "label": "AppGroupsScreen.kt",
@@ -17105,7 +17113,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\screens\\NodeDetailScreen.kt",
       "source_location": "L1",
       "id": "nodedetailscreen",
-      "community": 109
+      "community": 110
     },
     {
       "label": "NodeDetailScreen()",
@@ -17113,7 +17121,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\screens\\NodeDetailScreen.kt",
       "source_location": "L103",
       "id": "nodedetailscreen_nodedetailscreen",
-      "community": 109
+      "community": 110
     },
     {
       "label": "SectionHeader()",
@@ -17121,7 +17129,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\screens\\NodeDetailScreen.kt",
       "source_location": "L1214",
       "id": "nodedetailscreen_sectionheader",
-      "community": 109
+      "community": 110
     },
     {
       "label": "DetourNodeSelectDialog()",
@@ -17129,7 +17137,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\screens\\NodeDetailScreen.kt",
       "source_location": "L1224",
       "id": "nodedetailscreen_detournodeselectdialog",
-      "community": 109
+      "community": 110
     },
     {
       "label": "createEmptyOutbound()",
@@ -17137,7 +17145,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\screens\\NodeDetailScreen.kt",
       "source_location": "L1427",
       "id": "nodedetailscreen_createemptyoutbound",
-      "community": 109
+      "community": 110
     },
     {
       "label": "formatHeaderLines()",
@@ -17145,7 +17153,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\screens\\NodeDetailScreen.kt",
       "source_location": "L1456",
       "id": "nodedetailscreen_formatheaderlines",
-      "community": 109
+      "community": 110
     },
     {
       "label": "parseHeaderLines()",
@@ -17153,7 +17161,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\ui\\screens\\NodeDetailScreen.kt",
       "source_location": "L1464",
       "id": "nodedetailscreen_parseheaderlines",
-      "community": 109
+      "community": 110
     },
     {
       "label": "NodesScreen.kt",
@@ -17817,7 +17825,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\BatteryOptimizationHelper.kt",
       "source_location": "L1",
       "id": "batteryoptimizationhelper",
-      "community": 110
+      "community": 111
     },
     {
       "label": "BatteryOptimizationHelper",
@@ -17825,7 +17833,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\BatteryOptimizationHelper.kt",
       "source_location": "L13",
       "id": "batteryoptimizationhelper_batteryoptimizationhelper",
-      "community": 110
+      "community": 111
     },
     {
       "label": ".isIgnoringBatteryOptimizations()",
@@ -17833,7 +17841,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\BatteryOptimizationHelper.kt",
       "source_location": "L16",
       "id": "batteryoptimizationhelper_batteryoptimizationhelper_isignoringbatteryoptimizations",
-      "community": 110
+      "community": 111
     },
     {
       "label": ".requestIgnoreBatteryOptimizations()",
@@ -17841,7 +17849,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\BatteryOptimizationHelper.kt",
       "source_location": "L28",
       "id": "batteryoptimizationhelper_batteryoptimizationhelper_requestignorebatteryoptimizations",
-      "community": 110
+      "community": 111
     },
     {
       "label": ".openBatteryOptimizationSettings()",
@@ -17849,7 +17857,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\BatteryOptimizationHelper.kt",
       "source_location": "L61",
       "id": "batteryoptimizationhelper_batteryoptimizationhelper_openbatteryoptimizationsettings",
-      "community": 110
+      "community": 111
     },
     {
       "label": ".getManufacturerBatteryIntent()",
@@ -17857,7 +17865,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\BatteryOptimizationHelper.kt",
       "source_location": "L83",
       "id": "batteryoptimizationhelper_batteryoptimizationhelper_getmanufacturerbatteryintent",
-      "community": 110
+      "community": 111
     },
     {
       "label": ".checkAndRequestBatteryOptimization()",
@@ -17865,7 +17873,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\BatteryOptimizationHelper.kt",
       "source_location": "L147",
       "id": "batteryoptimizationhelper_batteryoptimizationhelper_checkandrequestbatteryoptimization",
-      "community": 110
+      "community": 111
     },
     {
       "label": "DeepLinkHandler.kt",
@@ -18201,7 +18209,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\LocaleHelper.kt",
       "source_location": "L1",
       "id": "localehelper",
-      "community": 111
+      "community": 112
     },
     {
       "label": "LocaleHelper",
@@ -18209,7 +18217,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\LocaleHelper.kt",
       "source_location": "L10",
       "id": "localehelper_localehelper",
-      "community": 111
+      "community": 112
     },
     {
       "label": ".setLocale()",
@@ -18217,7 +18225,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\LocaleHelper.kt",
       "source_location": "L14",
       "id": "localehelper_localehelper_setlocale",
-      "community": 111
+      "community": 112
     },
     {
       "label": ".getSystemLocale()",
@@ -18225,7 +18233,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\LocaleHelper.kt",
       "source_location": "L26",
       "id": "localehelper_localehelper_getsystemlocale",
-      "community": 111
+      "community": 112
     },
     {
       "label": ".updateResources()",
@@ -18233,7 +18241,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\LocaleHelper.kt",
       "source_location": "L37",
       "id": "localehelper_localehelper_updateresources",
-      "community": 111
+      "community": 112
     },
     {
       "label": ".getLanguageDisplayName()",
@@ -18241,7 +18249,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\LocaleHelper.kt",
       "source_location": "L52",
       "id": "localehelper_localehelper_getlanguagedisplayname",
-      "community": 111
+      "community": 112
     },
     {
       "label": ".wrap()",
@@ -18249,7 +18257,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\LocaleHelper.kt",
       "source_location": "L62",
       "id": "localehelper_localehelper_wrap",
-      "community": 111
+      "community": 112
     },
     {
       "label": "NetworkClient.kt",
@@ -18577,7 +18585,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\SecurityUtils.kt",
       "source_location": "L1",
       "id": "securityutils",
-      "community": 112
+      "community": 113
     },
     {
       "label": "SecurityUtils",
@@ -18585,7 +18593,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\SecurityUtils.kt",
       "source_location": "L14",
       "id": "securityutils_securityutils",
-      "community": 112
+      "community": 113
     },
     {
       "label": ".getOrCreateSecretKey()",
@@ -18593,7 +18601,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\SecurityUtils.kt",
       "source_location": "L21",
       "id": "securityutils_securityutils_getorcreatesecretkey",
-      "community": 112
+      "community": 113
     },
     {
       "label": ".encrypt()",
@@ -18601,7 +18609,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\SecurityUtils.kt",
       "source_location": "L47",
       "id": "securityutils_securityutils_encrypt",
-      "community": 112
+      "community": 113
     },
     {
       "label": ".decrypt()",
@@ -18609,7 +18617,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\SecurityUtils.kt",
       "source_location": "L64",
       "id": "securityutils_securityutils_decrypt",
-      "community": 112
+      "community": 113
     },
     {
       "label": ".encryptSensitiveConfig()",
@@ -18617,7 +18625,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\SecurityUtils.kt",
       "source_location": "L84",
       "id": "securityutils_securityutils_encryptsensitiveconfig",
-      "community": 112
+      "community": 113
     },
     {
       "label": ".decryptSensitiveConfig()",
@@ -18625,7 +18633,7 @@
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\utils\\SecurityUtils.kt",
       "source_location": "L89",
       "id": "securityutils_securityutils_decryptsensitiveconfig",
-      "community": 112
+      "community": 113
     },
     {
       "label": "StringBuilderPool.kt",
@@ -24257,7 +24265,7 @@
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
       "source_location": "L1",
       "id": "platforminterfaceimpltest",
-      "community": 113
+      "community": 105
     },
     {
       "label": "PlatformInterfaceImplTest",
@@ -24265,7 +24273,7 @@
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
       "source_location": "L11",
       "id": "platforminterfaceimpltest_platforminterfaceimpltest",
-      "community": 113
+      "community": 105
     },
     {
       "label": ".testShouldExposeProcFsToLibboxDisabledWhenRuleModeHasAppRules()",
@@ -24273,7 +24281,7 @@
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
       "source_location": "L13",
       "id": "platforminterfaceimpltest_platforminterfaceimpltest_testshouldexposeprocfstolibboxdisabledwhenrulemodehasapprules",
-      "community": 113
+      "community": 105
     },
     {
       "label": ".testShouldExposeProcFsToLibboxDisabledWhenRuleModeHasAppGroups()",
@@ -24281,7 +24289,7 @@
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
       "source_location": "L28",
       "id": "platforminterfaceimpltest_platforminterfaceimpltest_testshouldexposeprocfstolibboxdisabledwhenrulemodehasappgroups",
-      "community": 113
+      "community": 105
     },
     {
       "label": ".testShouldExposeProcFsToLibboxKeepsProcFsForNonAppRouting()",
@@ -24289,7 +24297,7 @@
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
       "source_location": "L43",
       "id": "platforminterfaceimpltest_platforminterfaceimpltest_testshouldexposeprocfstolibboxkeepsprocfsfornonapprouting",
-      "community": 113
+      "community": 105
     },
     {
       "label": ".testPlatformInterfaceHandoverAllowsActivePhysicalNetworkBeforeValidated()",
@@ -24297,15 +24305,23 @@
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
       "source_location": "L53",
       "id": "platforminterfaceimpltest_platforminterfaceimpltest_testplatforminterfacehandoverallowsactivephysicalnetworkbeforevalidated",
-      "community": 113
+      "community": 105
+    },
+    {
+      "label": ".testShouldProtectAndBindPhysicalNetworkForOutboundSockets()",
+      "file_type": "code",
+      "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
+      "source_location": "L64",
+      "id": "platforminterfaceimpltest_platforminterfaceimpltest_testshouldprotectandbindphysicalnetworkforoutboundsockets",
+      "community": 105
     },
     {
       "label": ".testConnectManagerHandoverAllowsActivePhysicalNetworkBeforeValidated()",
       "file_type": "code",
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
-      "source_location": "L64",
+      "source_location": "L74",
       "id": "platforminterfaceimpltest_platforminterfaceimpltest_testconnectmanagerhandoverallowsactivephysicalnetworkbeforevalidated",
-      "community": 113
+      "community": 105
     },
     {
       "label": "RouteGroupSelectorTest.kt",
@@ -44489,7 +44505,19 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L73",
+      "source_location": "L65",
+      "weight": 1.0,
+      "_src": "platforminterfaceimpl",
+      "_tgt": "platforminterfaceimpl_shouldbindprotectedsockettophysicalnetwork",
+      "source": "platforminterfaceimpl",
+      "target": "platforminterfaceimpl_shouldbindprotectedsockettophysicalnetwork",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
+      "source_location": "L80",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_getconnectivitymanager",
@@ -44501,7 +44529,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L75",
+      "source_location": "L82",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_setunderlyingnetworks",
@@ -44513,7 +44541,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L79",
+      "source_location": "L86",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_setlastknownnetwork",
@@ -44525,7 +44553,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L83",
+      "source_location": "L90",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_getlastknownnetwork",
@@ -44537,7 +44565,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L85",
+      "source_location": "L92",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_updateinterfacelistener",
@@ -44549,7 +44577,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L89",
+      "source_location": "L96",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_isrunning",
@@ -44561,7 +44589,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L91",
+      "source_location": "L98",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_requestcorenetworkrecovery",
@@ -44573,7 +44601,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L98",
+      "source_location": "L105",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_callbacks",
@@ -44585,7 +44613,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L743",
+      "source_location": "L766",
       "weight": 1.0,
       "_src": "platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_stringiteratorimpl",
@@ -44597,7 +44625,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L154",
+      "source_location": "L161",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_localdnstransport",
@@ -44609,7 +44637,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L158",
+      "source_location": "L165",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_autodetectinterfacecontrol",
@@ -44621,7 +44649,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L169",
+      "source_location": "L192",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_opentun",
@@ -44633,7 +44661,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L211",
+      "source_location": "L234",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_useplatformautodetectinterfacecontrol",
@@ -44645,7 +44673,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L213",
+      "source_location": "L236",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_getprocfsreadable",
@@ -44657,7 +44685,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L250",
+      "source_location": "L273",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_useprocfs",
@@ -44669,7 +44697,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L260",
+      "source_location": "L283",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_findconnectionowner",
@@ -44681,7 +44709,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L433",
+      "source_location": "L456",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_isusableinitialnetwork",
@@ -44693,7 +44721,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L441",
+      "source_location": "L464",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_startdefaultinterfacemonitor",
@@ -44705,7 +44733,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L501",
+      "source_location": "L524",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_registernetworkcallbacksdeferred",
@@ -44717,7 +44745,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L665",
+      "source_location": "L688",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_closedefaultinterfacemonitor",
@@ -44729,7 +44757,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L686",
+      "source_location": "L709",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_getinterfaces",
@@ -44741,7 +44769,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L726",
+      "source_location": "L749",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_undernetworkextension",
@@ -44753,7 +44781,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L728",
+      "source_location": "L751",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_includeallnetworks",
@@ -44765,7 +44793,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L730",
+      "source_location": "L753",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_readwifistate",
@@ -44777,7 +44805,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L732",
+      "source_location": "L755",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_cleardnscache",
@@ -44789,7 +44817,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L734",
+      "source_location": "L757",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_sendnotification",
@@ -44801,7 +44829,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L736",
+      "source_location": "L759",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_systemcertificates",
@@ -44813,7 +44841,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L738",
+      "source_location": "L761",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_platforminterfaceimpl",
       "_tgt": "platforminterfaceimpl_platforminterfaceimpl_updatedefaultinterface",
@@ -44825,7 +44853,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L99",
+      "source_location": "L106",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_protect",
@@ -44837,7 +44865,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L100",
+      "source_location": "L107",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_opentun",
@@ -44849,7 +44877,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L102",
+      "source_location": "L109",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_getconnectivitymanager",
@@ -44861,7 +44889,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L103",
+      "source_location": "L110",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_getcurrentnetwork",
@@ -44873,7 +44901,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L104",
+      "source_location": "L111",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_getlastknownnetwork",
@@ -44885,7 +44913,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L105",
+      "source_location": "L112",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_setlastknownnetwork",
@@ -44897,7 +44925,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L106",
+      "source_location": "L113",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_markvpnstarted",
@@ -44909,7 +44937,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L108",
+      "source_location": "L115",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_requestcorenetworkreset",
@@ -44921,7 +44949,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L109",
+      "source_location": "L116",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_resetconnectionsoptimal",
@@ -44933,7 +44961,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L110",
+      "source_location": "L117",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_setunderlyingnetworks",
@@ -44945,7 +44973,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L112",
+      "source_location": "L119",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_isrunning",
@@ -44957,7 +44985,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L113",
+      "source_location": "L120",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_isstarting",
@@ -44969,7 +44997,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L114",
+      "source_location": "L121",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_ismanuallystopped",
@@ -44981,7 +45009,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L115",
+      "source_location": "L122",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_getlastconfigpath",
@@ -44993,7 +45021,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L116",
+      "source_location": "L123",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_getcurrentsettings",
@@ -45005,7 +45033,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L118",
+      "source_location": "L125",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_incrementconnectionownercalls",
@@ -45017,7 +45045,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L119",
+      "source_location": "L126",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_incrementconnectionownerinvalidargs",
@@ -45029,7 +45057,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L120",
+      "source_location": "L127",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_incrementconnectionowneruidresolved",
@@ -45041,7 +45069,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L121",
+      "source_location": "L128",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_incrementconnectionownersecuritydenied",
@@ -45053,7 +45081,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L122",
+      "source_location": "L129",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_incrementconnectionownerotherexception",
@@ -45065,7 +45093,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L123",
+      "source_location": "L130",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_setconnectionownerlastevent",
@@ -45077,7 +45105,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L124",
+      "source_location": "L131",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_setconnectionownerlastuid",
@@ -45089,7 +45117,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L125",
+      "source_location": "L132",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_isconnectionownerpermissiondeniedlogged",
@@ -45101,7 +45129,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L126",
+      "source_location": "L133",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_setconnectionownerpermissiondeniedlogged",
@@ -45113,7 +45141,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L127",
+      "source_location": "L134",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_cacheuidtopackage",
@@ -45125,7 +45153,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L128",
+      "source_location": "L135",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_getuidfromcache",
@@ -45137,7 +45165,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L130",
+      "source_location": "L137",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_callbacks",
       "_tgt": "platforminterfaceimpl_callbacks_findbestphysicalnetwork",
@@ -45149,7 +45177,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L745",
+      "source_location": "L768",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_stringiteratorimpl",
       "_tgt": "platforminterfaceimpl_stringiteratorimpl_hasnext",
@@ -45161,7 +45189,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L746",
+      "source_location": "L769",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_stringiteratorimpl",
       "_tgt": "platforminterfaceimpl_stringiteratorimpl_next",
@@ -45173,7 +45201,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\main\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImpl.kt",
-      "source_location": "L747",
+      "source_location": "L770",
       "weight": 1.0,
       "_src": "platforminterfaceimpl_stringiteratorimpl",
       "_tgt": "platforminterfaceimpl_stringiteratorimpl_len",
@@ -59406,6 +59434,18 @@
       "confidence": "EXTRACTED",
       "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
       "source_location": "L64",
+      "weight": 1.0,
+      "_src": "platforminterfaceimpltest_platforminterfaceimpltest",
+      "_tgt": "platforminterfaceimpltest_platforminterfaceimpltest_testshouldprotectandbindphysicalnetworkforoutboundsockets",
+      "source": "platforminterfaceimpltest_platforminterfaceimpltest",
+      "target": "platforminterfaceimpltest_platforminterfaceimpltest_testshouldprotectandbindphysicalnetworkforoutboundsockets",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "app\\src\\test\\java\\com\\kunk\\singbox\\service\\manager\\PlatformInterfaceImplTest.kt",
+      "source_location": "L74",
       "weight": 1.0,
       "_src": "platforminterfaceimpltest_platforminterfaceimpltest",
       "_tgt": "platforminterfaceimpltest_platforminterfaceimpltest_testconnectmanagerhandoverallowsactivephysicalnetworkbeforevalidated",
