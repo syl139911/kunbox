@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.13.1](https://github.com/roseforljh/KunBox/compare/v2.13.0...v2.13.1) (2026-04-24)
+
+
+### Bug Fixes
+
+* 修复VMess http导入传输解析 ([891ed61](https://github.com/roseforljh/KunBox/commit/891ed6136f49d39020e52910116013fc73474738))
+* 修复出站 socket 物理网络绑定 ([24ca01b](https://github.com/roseforljh/KunBox/commit/24ca01b82b428f977d61de2f79acb29a1b1b0574))
+* 修复禁用SNI配置生成 ([d757e3b](https://github.com/roseforljh/KunBox/commit/d757e3bbaf24f82a0865af216864e5b99d6fd949))
+* 统一双栈 IP 模式与 DNS 路由 ([4935a93](https://github.com/roseforljh/KunBox/commit/4935a93db0b4b7c37dc305f1190f598a7000763f))
+* 补充VMess http导入回归验证 ([fbf2fd3](https://github.com/roseforljh/KunBox/commit/fbf2fd31740d45d3ac1c425545a3208f418a4022))
+
 ## [2.13.0](https://github.com/roseforljh/KunBox/compare/v2.12.1...v2.13.0) (2026-04-24)
 
 
