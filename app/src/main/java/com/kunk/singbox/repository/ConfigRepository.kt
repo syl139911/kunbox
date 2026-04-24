@@ -496,34 +496,43 @@ class ConfigRepository(private val context: Context) {
         }
 
         @JvmStatic
-        internal fun detectRuleSetRuleTypeForTest(file: java.io.File): RuleSetRuleType {
-            return detectRuleSetRuleTypeFromFile(file)
+        internal fun detectRuleSetRuleTypeForTest(file: java.io.File, tag: String = ""): RuleSetRuleType {
+            return detectRuleSetRuleTypeFromFile(file, tag)
         }
 
         @JvmStatic
-        fun detectRuleSetRuleTypeStatic(file: java.io.File): RuleSetRuleType {
-            return detectRuleSetRuleTypeFromFile(file)
+        fun detectRuleSetRuleTypeStatic(file: java.io.File, tag: String = ""): RuleSetRuleType {
+            return detectRuleSetRuleTypeFromFile(file, tag)
         }
 
-        private fun detectRuleSetRuleTypeFromFile(file: java.io.File): RuleSetRuleType {
+        private fun detectRuleSetRuleTypeFromFile(file: java.io.File, tag: String = ""): RuleSetRuleType {
+            val tagRuleType = detectRuleSetRuleTypeFromTag(tag)
+            if (tagRuleType != RuleSetRuleType.UNKNOWN) return tagRuleType
             if (!file.exists() || file.length() < RULE_SET_MIN_SIZE_BYTES) {
                 return RuleSetRuleType.UNKNOWN
             }
             return try {
                 val sample = readRuleSetSampleFromFile(file)
-                if (sample.isEmpty()) return RuleSetRuleType.UNKNOWN
-
-                val text = if (isLikelyTextRuleSetFromBytes(sample)) {
-                    sample.toString(Charsets.UTF_8)
-                } else {
-                    return RuleSetRuleType.IP
-                }
-
-                detectRuleTypeFromTextContent(text)
+                detectRuleSetRuleTypeFromSample(sample)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to detect rule set type: ${file.name}", e)
                 RuleSetRuleType.UNKNOWN
             }
+        }
+
+        private fun detectRuleSetRuleTypeFromTag(tag: String): RuleSetRuleType {
+            val normalizedTag = tag.trim().lowercase()
+            return when {
+                normalizedTag.startsWith("geosite-") || normalizedTag.contains("geosite") -> RuleSetRuleType.DOMAIN
+                normalizedTag.startsWith("geoip-") || normalizedTag.contains("geoip") -> RuleSetRuleType.IP
+                else -> RuleSetRuleType.UNKNOWN
+            }
+        }
+
+        private fun detectRuleSetRuleTypeFromSample(sample: ByteArray): RuleSetRuleType {
+            if (sample.isEmpty()) return RuleSetRuleType.UNKNOWN
+            if (!isLikelyTextRuleSetFromBytes(sample)) return RuleSetRuleType.IP
+            return detectRuleTypeFromTextContent(sample.toString(Charsets.UTF_8))
         }
 
         private fun detectRuleTypeFromTextContent(text: String): RuleSetRuleType {
@@ -4399,7 +4408,7 @@ class ConfigRepository(private val context: Context) {
                 val ruleSetConfig = validRuleSets.find { it.tag == tag }
                 val ruleSetPath = ruleSetConfig?.path ?: return@forEach
                 val ruleSetFile = File(ruleSetPath)
-                val ruleType = detectRuleSetRuleTypeStatic(ruleSetFile)
+                val ruleType = detectRuleSetRuleTypeStatic(ruleSetFile, tag)
 
                 // Only add domain-based or mixed rulesets to DNS rules.
                 // Pure IP rulesets (like GeoIP) should only be used in Route rules.

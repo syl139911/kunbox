@@ -1,6 +1,7 @@
 package com.kunk.singbox.utils.parser
 
 import com.google.gson.Gson
+import com.kunk.singbox.repository.config.OutboundFixer
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -610,6 +611,37 @@ class NodeLinkParserTest {
 
         assertNotNull(outbound)
         assertEquals(true, outbound?.zeroRttHandshake)
+    }
+
+    @Test
+    fun testRealTuicLinkDisablesSniInRuntimeTlsOptions() {
+        val link = "tuic://a06ded63-e9b9-41ac-b721-c1372fe3d700:YhUro1WIFk@cdn4.eu.org:27017" +
+            "?security=tls&sni=cdn4.eu.org&alpn=h3&congestion_control=bbr#%F0%9F%87%B0%F0%9F%87%B7%20" +
+            "%E9%A6%96%E5%B0%944-T"
+        val outbound = parser.parse(link)?.copy(disableSni = true)
+
+        val runtime = outbound?.let { OutboundFixer.buildForRuntimeWithDialConfigForTest(it) }
+        val json = gson.toJson(runtime)
+
+        assertNotNull(runtime)
+        assertNull(runtime?.disableSni)
+        assertEquals(true, runtime?.tls?.disableSni)
+        assertFalse(json.contains("\"server_name\""))
+    }
+
+    @Test
+    fun testRealHysteria2LinkDisablesSniInRuntimeTlsOptions() {
+        val link = "hysteria2://YhUro1WIFk@cdn4.eu.org:52011?security=tls&sni=cdn4.eu.org&alpn=&fastopen=0" +
+            "#%F0%9F%87%B0%F0%9F%87%B7%20%E9%A6%96%E5%B0%944-H"
+        val outbound = parser.parse(link)?.copy(disableSni = true)
+
+        val runtime = outbound?.let { OutboundFixer.buildForRuntimeWithDialConfigForTest(it) }
+        val json = gson.toJson(runtime)
+
+        assertNotNull(runtime)
+        assertNull(runtime?.disableSni)
+        assertEquals(true, runtime?.tls?.disableSni)
+        assertFalse(json.contains("\"server_name\""))
     }
 
     // ==================== AnyTLS ====================

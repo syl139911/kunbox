@@ -1354,6 +1354,22 @@ class ConfigRepositoryTest {
         assertEquals(ConfigRepository.RuleSetRuleType.UNKNOWN, ruleType)
     }
 
+    @Test
+    fun testDetectRuleSetRuleTypeUsesGeositeTagForBinaryRuleSet() {
+        val tempFile = createTempRuleSetBytes(byteArrayOf(0, 1, 2, 3))
+
+        val ruleType = ConfigRepository.detectRuleSetRuleTypeForTest(tempFile, "geosite-cn")
+
+        assertEquals(ConfigRepository.RuleSetRuleType.DOMAIN, ruleType)
+    }
+
+    private fun createTempRuleSetBytes(content: ByteArray): java.io.File {
+        val tempFile = java.io.File.createTempFile("ruleset_test_", ".srs")
+        tempFile.writeBytes(content)
+        tempFile.deleteOnExit()
+        return tempFile
+    }
+
     private fun createTempRuleSetFile(content: String): java.io.File {
         val tempFile = java.io.File.createTempFile("ruleset_test_", ".srs")
         tempFile.writeText(content)

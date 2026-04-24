@@ -276,6 +276,7 @@ data class ObfsConfig(
 @Keep
 data class TlsConfig(
     @SerializedName("enabled") val enabled: Boolean? = null,
+    @SerializedName("disable_sni") val disableSni: Boolean? = null,
     @SerializedName("server_name") val serverName: String? = null,
     @SerializedName("insecure") val insecure: Boolean? = null,
     @SerializedName("alpn") val alpn: List<String>? = null,

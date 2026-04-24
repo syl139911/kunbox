@@ -213,12 +213,14 @@ object OutboundFixer {
             }
         }
 
-        if (result.type == "tuic") {
+        if (result.type == "tuic" || result.type == "hysteria2") {
             val currentTls = result.tls ?: TlsConfig(enabled = true)
             result = if (result.disableSni == true) {
                 result.copy(
+                    disableSni = null,
                     tls = currentTls.copy(
                         enabled = true,
+                        disableSni = true,
                         serverName = null
                     )
                 )
@@ -523,7 +525,6 @@ object OutboundFixer {
                 udpRelayMode = fixed.udpRelayMode,
                 zeroRttHandshake = fixed.zeroRttHandshake,
                 heartbeat = fixed.heartbeat,
-                disableSni = fixed.disableSni,
                 mtu = fixed.mtu,
                 tls = fixed.tls,
                 multiplex = fixed.multiplex,

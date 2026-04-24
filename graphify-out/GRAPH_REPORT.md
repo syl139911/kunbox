@@ -1,21 +1,21 @@
 # Graph Report - .  (2026-04-24)
 
 ## Corpus Check
-- 201 files ， ~203,654 words
+- 201 files ， ~203,981 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3147 nodes ， 2948 edges ， 201 communities detected
+- 3154 nodes ， 2955 edges ， 201 communities detected
 - Extraction: 100% EXTRACTED ， 0% INFERRED ， 0% AMBIGUOUS
 - Token cost: 0 input ， 0 output
 
 ## God Nodes (most connected - your core abstractions)
 1. `ConfigRepository` - 149 edges
-2. `ConfigRepositoryTest` - 93 edges
+2. `ConfigRepositoryTest` - 95 edges
 3. `SingBoxService` - 82 edges
 4. `SettingsViewModel` - 74 edges
 5. `SettingsRepository` - 64 edges
-6. `NodeLinkParserTest` - 52 edges
+6. `NodeLinkParserTest` - 54 edges
 7. `BoxWrapperManager` - 44 edges
 8. `VpnStateStore` - 43 edges
 9. `SingBoxRemote` - 42 edges
@@ -68,15 +68,15 @@ Nodes (8): Callbacks, Cancelled, Failed, NeedPermission, ParallelInitResult, Sta
 
 ### Community 10 - "Community 10"
 Cohesion: 0.04
-Nodes (7): AlreadyConnected, DisconnectedStopState, Failed, HotReloadResult, Recovering, RecoveryResult, SingBoxRemote
+Nodes (1): NodeLinkParserTest
 
 ### Community 11 - "Community 11"
 Cohesion: 0.04
-Nodes (0): 
+Nodes (7): AlreadyConnected, DisconnectedStopState, Failed, HotReloadResult, Recovering, RecoveryResult, SingBoxRemote
 
 ### Community 12 - "Community 12"
 Cohesion: 0.04
-Nodes (1): NodeLinkParserTest
+Nodes (0): 
 
 ### Community 13 - "Community 13"
 Cohesion: 0.04
@@ -592,35 +592,35 @@ Nodes (1): VpnStateStoreTest
 
 ### Community 141 - "Community 141"
 Cohesion: 0.4
-Nodes (1): LatencyProbePolicyTest
+Nodes (1): ModelSerializationTest
 
 ### Community 142 - "Community 142"
 Cohesion: 0.4
-Nodes (1): NodeLinkExporterTest
+Nodes (1): LatencyProbePolicyTest
 
 ### Community 143 - "Community 143"
 Cohesion: 0.4
-Nodes (1): NetworkSwitchManagerTest
+Nodes (1): NodeLinkExporterTest
 
 ### Community 144 - "Community 144"
 Cohesion: 0.4
-Nodes (1): RouteGroupSelectorTest
+Nodes (1): NetworkSwitchManagerTest
 
 ### Community 145 - "Community 145"
 Cohesion: 0.4
-Nodes (1): StartupManagerTest
+Nodes (1): RouteGroupSelectorTest
 
 ### Community 146 - "Community 146"
-Cohesion: 0.5
-Nodes (1): ProfileEntity
+Cohesion: 0.4
+Nodes (1): StartupManagerTest
 
 ### Community 147 - "Community 147"
 Cohesion: 0.5
-Nodes (3): GithubFile, GithubTreeItem, GithubTreeResponse
+Nodes (1): ProfileEntity
 
 ### Community 148 - "Community 148"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (3): GithubFile, GithubTreeItem, GithubTreeResponse
 
 ### Community 149 - "Community 149"
 Cohesion: 0.5
@@ -632,23 +632,23 @@ Nodes (0):
 
 ### Community 151 - "Community 151"
 Cohesion: 0.5
-Nodes (1): NodeDisplaySettings
+Nodes (0): 
 
 ### Community 152 - "Community 152"
 Cohesion: 0.5
-Nodes (1): AppShortcutsResourceTest
+Nodes (1): NodeDisplaySettings
 
 ### Community 153 - "Community 153"
 Cohesion: 0.5
-Nodes (1): SafeLatencyTesterTest
+Nodes (1): AppShortcutsResourceTest
 
 ### Community 154 - "Community 154"
 Cohesion: 0.5
-Nodes (1): VpnServiceManagerTest
+Nodes (1): SafeLatencyTesterTest
 
 ### Community 155 - "Community 155"
 Cohesion: 0.5
-Nodes (1): ModelSerializationTest
+Nodes (1): VpnServiceManagerTest
 
 ### Community 156 - "Community 156"
 Cohesion: 0.5

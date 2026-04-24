@@ -449,6 +449,8 @@ fun NodeDetailScreen(
                             icon = Icons.Rounded.Bolt,
                             onCheckedChange = { editingOutbound = outbound.copy(zeroRttHandshake = it) }
                         )
+                    }
+                    if (type == "tuic" || type == "hysteria2") {
                         SettingSwitchItem(
                             title = stringResource(R.string.node_detail_disable_sni),
                             checked = outbound.disableSni == true,

@@ -187,7 +187,8 @@ class OutboundFixerTest {
 
         val runtime = OutboundFixer.buildForRuntimeWithDialConfigForTest(outbound)
 
-        assertEquals(true, runtime?.disableSni)
+        assertNull(runtime?.disableSni)
+        assertEquals(true, runtime?.tls?.disableSni)
         assertEquals(true, runtime?.tls?.enabled)
         assertNull(runtime?.tls?.serverName)
     }

@@ -1,7 +1,10 @@
 package com.kunk.singbox.model
 
 import com.google.gson.Gson
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ModelSerializationTest {
@@ -41,5 +44,27 @@ class ModelSerializationTest {
         assertNotNull(decoded.outbounds)
         assertEquals(2, decoded.outbounds?.size)
         assertEquals("proxy", decoded.outbounds?.get(1)?.tag)
+    }
+
+    @Test
+    fun testTuicDisableSniSerializesInsideTlsOptions() {
+        val outbound = Outbound(
+            type = "tuic",
+            tag = "tuic-node",
+            server = "tuic.example.com",
+            serverPort = 443,
+            uuid = "uuid",
+            password = "secret",
+            tls = TlsConfig(
+                enabled = true,
+                disableSni = true
+            )
+        )
+
+        val json = gson.toJson(outbound)
+
+        assertTrue(json.contains("\"tls\""))
+        assertTrue(json.contains("\"disable_sni\":true"))
+        assertFalse(json.contains("\"server_name\""))
     }
 }
