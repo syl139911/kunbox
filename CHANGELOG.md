@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.13.0](https://github.com/roseforljh/KunBox/compare/v2.12.1...v2.13.0) (2026-04-24)
+
+
+### Features
+
+* align custom config node selection UI with rule sets node selection UI ([0f78055](https://github.com/roseforljh/KunBox/commit/0f78055caffe6954bfce0c6459a9e7a2119f42a7))
+* 内核更新 ([36cd825](https://github.com/roseforljh/KunBox/commit/36cd82527d58defcf712fcb97f847b83cd4ea2c3))
+
+
+### Bug Fixes
+
+* 从 SagerNet API 同时获取 geosite 和 geoip 在线规则集 ([63fed50](https://github.com/roseforljh/KunBox/commit/63fed50304fa685a28a93eccf5ba0795b67b451d))
+* 修复 VLESS WebSocket early data 导入 ([5d44109](https://github.com/roseforljh/KunBox/commit/5d441094552e7464049594f36c775fcd213b4c81))
+* 修复 VMess http 导入与单节点测速误判 ([d7ea395](https://github.com/roseforljh/KunBox/commit/d7ea3952cb57b55a14edce205d27c7365f2faf19))
+* 修复TUIC禁用SNI配置冲突 ([c97e56d](https://github.com/roseforljh/KunBox/commit/c97e56d47b3694286dedbe4ca37aaa5748a368cd))
+* 修复云规则地址重复添加 raw.githubusercontent.com 前缀的问题 ([aed1dce](https://github.com/roseforljh/KunBox/commit/aed1dce1618e78a19d8103c04c99c04931fca717))
+* 修复规则集Hub添加云规则时URL重复拼接协议前缀的bug ([aa3d859](https://github.com/roseforljh/KunBox/commit/aa3d859cbff68dfc11eb6f345aaaff208a8e7e2f))
+* 在配置导入入口接通自定义配置弹窗 ([cb35298](https://github.com/roseforljh/KunBox/commit/cb352983a12ef86667f8d77819fef9f34255787c))
+* 收敛外部 VPN revoke 后的停止与恢复状态 ([9bfd67b](https://github.com/roseforljh/KunBox/commit/9bfd67b5043a241810d669b236e8137aafaa9a72))
+* 智能识别 GeoIP 规则类型，防止 IP 规则错误添加到 DNS 层 ([1709180](https://github.com/roseforljh/KunBox/commit/17091802997956334f2a48d45188448c502b8ce5))
+* 添加内置 geoip 规则集支持，修复搜索 geoip 无结果的问题 ([1f90f94](https://github.com/roseforljh/KunBox/commit/1f90f94b3b8620b13a9e59551e373b1fed3fcd90))
+* 自定义配置顺序 ([9e4e665](https://github.com/roseforljh/KunBox/commit/9e4e6656f396e5f9aedcc4fcc5816722dafb138a))
+* 补齐自定义配置的数据创建链路 ([53e99f5](https://github.com/roseforljh/KunBox/commit/53e99f5f10636ac5ba4a06ea4074021366429f60))
+* 规则集页面补上和配置页一致的平滑拖拽与松手归位动画 ([e1a2d0a](https://github.com/roseforljh/KunBox/commit/e1a2d0ac29ad1d2fb8f49a541c70429589885149))
+
 ## [2.12.1](https://github.com/roseforljh/KunBox/compare/v2.12.0...v2.12.1) (2026-04-18)
 
 
