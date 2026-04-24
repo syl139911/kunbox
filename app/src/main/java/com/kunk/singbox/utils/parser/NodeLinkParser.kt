@@ -486,13 +486,22 @@ class NodeLinkParser(private val gson: Gson) {
                     path = if (path.isBlank()) "/" else path,
                     headers = if (host.isNotBlank()) mapOf("Host" to host) else null
                 )
+                "tcp" -> if (type == "http") {
+                    TransportConfig(
+                        type = "http",
+                        host = parseHostList(host),
+                        path = path
+                    )
+                } else {
+                    null
+                }
                 "grpc" -> TransportConfig(
                     type = "grpc",
                     serviceName = path
                 )
                 "h2", "http" -> TransportConfig(
                     type = "http",
-                    host = if (host.isNotBlank()) listOf(host) else null,
+                    host = parseHostList(host),
                     path = path
                 )
                 "xhttp", "splithttp" -> TransportConfig(

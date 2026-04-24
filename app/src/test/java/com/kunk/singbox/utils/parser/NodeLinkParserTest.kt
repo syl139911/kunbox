@@ -96,6 +96,23 @@ class NodeLinkParserTest {
     // ==================== VMess ====================
 
     @Test
+    fun testParseVMessTcpHttpTypeBuildsHttpTransport() {
+        val link = "vmess://" +
+            "eyJhZGQiOiI5NC4xNzcuOS42NiIsImFpZCI6IjAiLCJhbHBuIjoiIiwiZnAiOiIiLCJob3N0Ijoi" +
+            "ZGluZ3RhbGsuY29tIiwiaWQiOiIxOTMzYTQyNS0yODQyLTRkMmItODU4OS05Y2EyMjQyZDc0" +
+            "MTUiLCJuZXQiOiJ0Y3AiLCJwYXRoIjoiLyIsInBvcnQiOiIyOTgyNSIsInBzIjoiQVQg" +
+            "8J+HpvCfh7kgIC1cdTAwM2UgIOKtkCDigIvlpaXlnLDliKkt5Y6f55SfLeWkp+W4puWu" +
+            "vS0yOTgyNSIsInNjeSI6ImF1dG8iLCJzbmkiOiIiLCJ0bHMiOiIiLCJ0eXBlIjoiaHR0" +
+            "cCIsInYiOiIyIn0="
+
+        val outbound = parser.parse(link)
+
+        assertNotNull(outbound)
+        assertEquals("vmess", outbound?.type)
+        assertEquals("http", outbound?.transport?.type)
+    }
+
+    @Test
     fun testParseVMessHttpTransportKeepsHttp() {
         val vmessJson = """
             {
@@ -163,6 +180,7 @@ class NodeLinkParserTest {
         assertNotNull(outbound)
         assertEquals("vmess", outbound?.type)
         assertEquals("http", outbound?.transport?.type)
+        assertNull(outbound?.transport?.host)
     }
 
     @Test
