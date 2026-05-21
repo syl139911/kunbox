@@ -863,6 +863,38 @@ fun NodeDetailScreen(
                             )
                         }
 
+                        if (currentType == "http") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            EditableTextItem(
+                                title = stringResource(R.string.node_detail_server_port),
+                                value = outbound.serverPort?.toString() ?: "443",
+                                icon = Icons.Rounded.Numbers,
+                                onValueChange = { editingOutbound = outbound.copy(serverPort = it.toIntOrNull() ?: 443) }
+                            )
+                            SettingSwitchItem(
+                                title = stringResource(R.string.node_detail_http_first),
+                                checked = transport.httpFirst == true,
+                                icon = Icons.Rounded.Bolt,
+                                onCheckedChange = {
+                                    editingOutbound = outbound.copy(transport = transport.copy(httpFirst = it))
+                                }
+                            )
+                            SettingSwitchItem(
+                                title = stringResource(R.string.node_detail_del_host),
+                                checked = transport.delHost == true,
+                                icon = Icons.Rounded.Delete,
+                                onCheckedChange = {
+                                    editingOutbound = outbound.copy(transport = transport.copy(delHost = it))
+                                }
+                            )
+                            SettingSwitchItem(
+                                title = stringResource(R.string.node_detail_obfuscation),
+                                checked = false,
+                                icon = Icons.Rounded.Lock,
+                                onCheckedChange = { /* Reserved for future obfuscation support */ }
+                            )
+                        }
+
                         if (currentType == "xhttp") {
                             Spacer(modifier = Modifier.height(8.dp))
                             EditableSelectionItem(

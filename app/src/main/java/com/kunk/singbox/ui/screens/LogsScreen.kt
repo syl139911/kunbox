@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,6 +59,9 @@ fun LogsScreen(navController: NavController, viewModel: LogViewModel = viewModel
                     }
                 },
                 actions = {
+                    IconButton(onClick = { navController.navigate("bug_log") }) {
+                        Icon(Icons.Rounded.BugReport, contentDescription = stringResource(R.string.bug_log_title), tint = MaterialTheme.colorScheme.onBackground)
+                    }
                     if (settings.debugLoggingEnabled) {
                         val exportSubject = "KunBox " + stringResource(R.string.logs_title)
                         val exportTitle = stringResource(R.string.logs_export)

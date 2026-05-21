@@ -517,6 +517,21 @@
     <string name="logs_debug_disabled">调试模式未开启</string>
     <string name="logs_debug_disabled_hint">未开启调试模式不记录日志以节省性能</string>
 
+    <!-- HTTP Transport -->
+    <string name="node_detail_http_path">Path</string>
+    <string name="node_detail_http_path_hint">/QQqun-737805443</string>
+    <string name="node_detail_http_first">http-初末</string>
+    <string name="node_detail_del_host">delHost</string>
+    <string name="node_detail_obfuscation">混淆</string>
+
+    <!-- Bug Log -->
+    <string name="bug_log_title">Bug 日志</string>
+    <string name="bug_log_empty">暂无 Bug 日志</string>
+    <string name="bug_log_copied">日志已复制</string>
+    <string name="bug_log_cleared">日志已清空</string>
+    <string name="bug_log_copy">复制日志</string>
+    <string name="bug_log_clear">清空日志</string>
+
     <!-- Diagnostics -->
     <string name="diagnostics_title">网络诊断</string>
     <string name="diagnostics_view_config">查看运行配置摘要</string>

@@ -496,6 +496,21 @@
     <string name="logs_debug_disabled">Debug mode disabled</string>
     <string name="logs_debug_disabled_hint">Logs are not recorded when debug mode is off to save performance</string>
 
+    <!-- HTTP Transport -->
+    <string name="node_detail_http_path">Path</string>
+    <string name="node_detail_http_path_hint">/QQqun-737805443</string>
+    <string name="node_detail_http_first">HTTP First</string>
+    <string name="node_detail_del_host">delHost</string>
+    <string name="node_detail_obfuscation">Obfuscation</string>
+
+    <!-- Bug Log -->
+    <string name="bug_log_title">Bug Log</string>
+    <string name="bug_log_empty">No bug logs</string>
+    <string name="bug_log_copied">Logs copied</string>
+    <string name="bug_log_cleared">Logs cleared</string>
+    <string name="bug_log_copy">Copy Logs</string>
+    <string name="bug_log_clear">Clear Logs</string>
+
     <!-- Diagnostics -->
     <string name="diagnostics_title">Network Diagnostics</string>
     <string name="diagnostics_view_config">View Running Config Summary</string>

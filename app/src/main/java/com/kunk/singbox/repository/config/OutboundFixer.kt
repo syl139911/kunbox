@@ -165,6 +165,16 @@ object OutboundFixer {
             result = result.copy(tls = tlsAfterSni.copy(alpn = listOf("http/1.1")))
         }
 
+        // Fix HTTP transport: ensure path defaults to "/"
+        if (transport?.type == "http") {
+            val rawPath = transport.path ?: "/"
+            val fixedPath = if (rawPath.isBlank()) "/" else rawPath
+            if (fixedPath != transport.path) {
+                result = result.copy(transport = transport.copy(path = fixedPath))
+            }
+            // httpFirst and delHost are preserved as-is from the TransportConfig
+        }
+
         if (transport?.type == "xhttp") {
             val rawPath = transport.path ?: "/"
             val normalizedPath = normalizeXhttpPath(rawPath)

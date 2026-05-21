@@ -331,7 +331,9 @@ data class TransportConfig(
     @SerializedName("sc_max_buffered_posts") val scMaxBufferedPosts: Long? = null,
     @SerializedName("x_padding_bytes") val xPaddingBytes: String? = null,
     @SerializedName("no_grpc_header") val noGRPCHeader: Boolean? = null,
-    @SerializedName("no_sse_header") val noSSEHeader: Boolean? = null
+    @SerializedName("no_sse_header") val noSSEHeader: Boolean? = null,
+    @SerializedName("http_first") val httpFirst: Boolean? = null,
+    @SerializedName("del_host") val delHost: Boolean? = null
 )
 
 @Keep
