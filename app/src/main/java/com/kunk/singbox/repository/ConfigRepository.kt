@@ -25,6 +25,7 @@ import com.kunk.singbox.repository.config.OutboundFixer
 import com.kunk.singbox.repository.config.InboundBuilder
 import com.kunk.singbox.repository.config.NodeLinkExporter
 import com.kunk.singbox.utils.parser.SubscriptionManager
+import com.kunk.singbox.utils.BugLogHelper
 import com.kunk.singbox.utils.TcpPing
 import com.kunk.singbox.database.AppDatabase
 import com.kunk.singbox.database.entity.ProfileEntity
@@ -1457,6 +1458,7 @@ class ConfigRepository(private val context: Context) {
             config
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load config for profile: $profileId", e)
+            BugLogHelper.logConfigError("Failed to load config for profile: $profileId", e)
             null
         }
     }
@@ -1551,6 +1553,7 @@ class ConfigRepository(private val context: Context) {
                 Log.d(TAG, "Saved ${profiles.size} profiles to Room in ${elapsed}ms")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save profiles", e)
+                BugLogHelper.logConfigError("Failed to save profiles to Room database", e)
             }
         }
     }
@@ -1561,6 +1564,7 @@ class ConfigRepository(private val context: Context) {
             configFile.writeText(gson.toJson(config))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to write config file for profile: $profileId", e)
+            BugLogHelper.logConfigError("Failed to write config file for profile: $profileId", e)
             throw IllegalStateException("Failed to write config for profile $profileId", e)
         }
     }
@@ -1967,6 +1971,7 @@ class ConfigRepository(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load saved profiles", e)
+            BugLogHelper.logConfigError("Failed to load saved profiles from database", e)
         }
     }
 
@@ -1999,6 +2004,7 @@ class ConfigRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load config for profile: $activeProfileId", e)
+                BugLogHelper.logConfigError("Failed to load active profile nodes: $activeProfileId", e)
             }
         }
     }
@@ -2477,6 +2483,7 @@ class ConfigRepository(private val context: Context) {
 
         lastError?.let {
             Log.e(TAG, "All User-Agent attempts failed", it)
+            BugLogHelper.logHttpError("All subscription fetch attempts failed for host=$host", it)
             throw it
         }
         return null
@@ -2554,6 +2561,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             profileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Subscription import failed", e)
+            BugLogHelper.logHttpError("Subscription import failed for URL: $url", e)
             val msg = when (e) {
                 is java.net.SocketTimeoutException -> "Connection timeout, please check your network"
                 is java.net.UnknownHostException -> "Failed to resolve domain, please check the link"
@@ -3652,6 +3660,7 @@ class ConfigRepository(private val context: Context) {
 
             updateResult
         } catch (e: Exception) {
+            BugLogHelper.logHttpError("Subscription update failed for profile: ${profile.name}", e)
             SubscriptionUpdateResult.Failed(profile.name, e.message ?: "Subscription update failed")
         }
     }
@@ -3759,6 +3768,7 @@ class ConfigRepository(private val context: Context) {
             ConfigGenerationResult(configFile.absolutePath, resolvedTag, allTags)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to generate config file", e)
+            BugLogHelper.logConfigError("Failed to generate running config file", e)
             null
         }
     }
