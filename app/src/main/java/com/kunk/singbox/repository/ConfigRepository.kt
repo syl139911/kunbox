@@ -3759,6 +3759,8 @@ class ConfigRepository(private val context: Context) {
                 allTags.contains(candidateTag) -> candidateTag
                 else -> {
                     Log.w(TAG, "Selected node tag '$candidateTag' not found in runtime outbounds, falling back to PROXY default")
+                    Log.w(TAG, "  activeNodeId=$activeNodeId, activeNode=${activeNode?.name}, nodeTagMap entry=${outboundsContext.nodeTagMap[activeNodeId]}")
+                    Log.w(TAG, "  allTags count=${allTags.size}, allTags(first 20)=${allTags.take(20)}")
                     val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
                     proxySelector?.default ?: proxySelector?.outbounds?.firstOrNull()
                 }
@@ -4665,14 +4667,18 @@ class ConfigRepository(private val context: Context) {
         }
 
         val fixedOutbounds = rawOutbounds?.mapNotNull { outbound ->
-            var processed = buildOutboundForRuntime(outbound) ?: return@mapNotNull null
+            var processed = buildOutboundForRuntime(outbound)
+            if (processed == null) {
+                Log.w(TAG, "buildRunOutbounds: outbound '${outbound.tag}' (type=${outbound.type}) filtered by buildOutboundForRuntime")
+                return@mapNotNull null
+            }
             if (dnsPreResolve && profileId != null) {
                 processed = applyDnsResolveToOutbound(profileId, processed)
             }
             if (singBoxCore.validateOutbound(processed)) {
                 processed
             } else {
-                Log.w(TAG, "Skipping invalid outbound: ${outbound.tag} (type=${outbound.type})")
+                Log.w(TAG, "buildRunOutbounds: outbound '${outbound.tag}' (type=${outbound.type}, server=${outbound.server}:${outbound.serverPort}) filtered by validateOutbound")
                 null
             }
         }?.toMutableList() ?: mutableListOf()
@@ -4754,7 +4760,10 @@ class ConfigRepository(private val context: Context) {
                         nodeTagMap[node.id] = fuzzyMatch
                         Log.w(TAG, "  Fuzzy matched node '${node.name}' to tag '$fuzzyMatch'")
                     } else {
-                        Log.w(TAG, "  WARNING: Node '${node.name}' (id=${node.id.take(8)}) not found in existingTags!")
+                        // Node name not in existingTags - outbound may have been filtered
+                        // Still map it so generateConfigFile can detect the mismatch
+                        nodeTagMap[node.id] = node.name
+                        Log.w(TAG, "  Node '${node.name}' (id=${node.id.take(8)}) not in existingTags, mapped anyway (outbound may be filtered)")
                     }
                 }
             }
