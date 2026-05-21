@@ -1,4 +1,4 @@
-﻿package com.kunk.singbox
+package com.kunk.singbox
 
 import android.app.ActivityManager
 import android.app.Application
@@ -7,6 +7,7 @@ import android.os.Process
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.kunk.singbox.lifecycle.AppLifecycleObserver
+import com.kunk.singbox.repository.BugLogRepository
 import com.kunk.singbox.repository.LogRepository
 import com.kunk.singbox.repository.SettingsRepository
 import com.kunk.singbox.service.RuleSetAutoUpdateWorker
@@ -33,6 +34,21 @@ class SingBoxApplication : Application(), Configuration.Provider {
 
         MMKV.initialize(this)
 
+        // ---- Bug Log: Global Uncaught Exception Handler ----
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                BugLogRepository.getInstance().addBugLog(
+                    title = "Uncaught Exception on ${thread.name}",
+                    detail = throwable.message ?: "Unknown error",
+                    throwable = throwable
+                )
+            } catch (_: Exception) {
+                // Avoid recursive crash
+            }
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+
         if (!isWorkManagerInitialized()) {
             WorkManager.initialize(this, workManagerConfiguration)
         }
@@ -51,6 +67,13 @@ class SingBoxApplication : Application(), Configuration.Provider {
                     AppLifecycleObserver.setBackgroundTimeout(settings.backgroundPowerSavingDelay.delayMs)
                 } catch (e: Exception) {
                     android.util.Log.w("SingBoxApp", "Failed to read power saving setting", e)
+                    try {
+                        BugLogRepository.getInstance().addBugLog(
+                            title = "App Init Error",
+                            detail = "Failed to read power saving setting: ${e.message}",
+                            throwable = e
+                        )
+                    } catch (_: Exception) {}
                 }
 
                 val cm = getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager
