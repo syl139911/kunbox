@@ -1151,17 +1151,6 @@ class NodeLinkParser(private val gson: Gson) {
         return null
     }
 
-    private fun parseQueryParams(query: String?): Map<String, String> {
-        if (query.isNullOrBlank()) return emptyMap()
-        return query.split("&").mapNotNull { param ->
-            val parts = param.split("=", limit = 2)
-            if (parts.size == 2) {
-                java.net.URLDecoder.decode(parts[0], "UTF-8") to
-                    java.net.URLDecoder.decode(parts[1], "UTF-8")
-            } else null
-        }.toMap()
-    }
-
     /**
      *       socks://[username:password@]host:port[#name]
      */
