@@ -57,16 +57,17 @@ jobs:
 
       - name: Build Release APK (arm64-v8a)
         run: |
+          mkdir -p dist
           ./gradlew assembleRelease -PabiOnly=arm64-v8a
+          find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
+          echo "=== After arm64 build ==="
+          ls -lh dist/
 
       - name: Build Release APK (armeabi-v7a)
         run: |
           ./gradlew assembleRelease -PabiOnly=armeabi-v7a
-
-      - name: Collect APKs
-        run: |
-          mkdir -p dist
-          find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
+          find app/build/outputs/apk/release -type f -name "*.apk" -exec cp -v {} dist/ \;
+          echo "=== After armeabi build ==="
           ls -lh dist/
 
       - name: Determine version
@@ -75,7 +76,6 @@ jobs:
           if [ -n "${{ github.event.inputs.version }}" ]; then
             echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
-            # Read version from build config or generate one
             VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts 2>/dev/null || echo "build-$(date +%Y%m%d%H%M%S)")
             echo "tag=${VERSION}" >> $GITHUB_OUTPUT
           fi
