@@ -3758,11 +3758,30 @@ class ConfigRepository(private val context: Context) {
                 }
                 allTags.contains(candidateTag) -> candidateTag
                 else -> {
-                    Log.w(TAG, "Selected node tag '$candidateTag' not found in runtime outbounds, falling back to PROXY default")
-                    Log.w(TAG, "  activeNodeId=$activeNodeId, activeNode=${activeNode?.name}, nodeTagMap entry=${outboundsContext.nodeTagMap[activeNodeId]}")
-                    Log.w(TAG, "  allTags count=${allTags.size}, allTags(first 20)=${allTags.take(20)}")
-                    val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
-                    proxySelector?.default ?: proxySelector?.outbounds?.firstOrNull()
+                    // === FIX: 禁止静默 fallback DIRECT，改为抛异常阻止 VPN 启动 ===
+                    val rawOutbound = config.outbounds?.find { it.tag == candidateTag }
+                    val nodeType = rawOutbound?.type ?: "unknown"
+                    val nodeServer = rawOutbound?.server ?: "null"
+                    val nodePort = rawOutbound?.serverPort?.toString() ?: "null"
+
+                    Log.e(TAG, "Selected node tag '$candidateTag' (type=$nodeType) not found in runtime outbounds!")
+                    Log.e(TAG, "  activeNodeId=$activeNodeId, activeNode=${activeNode?.name}")
+                    Log.e(TAG, "  nodeTagMap entry=${outboundsContext.nodeTagMap[activeNodeId]}")
+                    Log.e(TAG, "  allTags count=${allTags.size}, allTags=${allTags.take(30)}")
+                    Log.e(TAG, "  rawOutbound: type=$nodeType, server=$nodeServer, port=$nodePort")
+
+                    BugLogRepository.getInstance().addBugLog(
+                        "Node Not In Runtime Outbounds",
+                        "Selected node '$candidateTag' (type=$nodeType) is not available in runtime outbounds.\n" +
+                            "Server=$nodeServer, Port=$nodePort\n" +
+                            "activeNodeId=$activeNodeId\n" +
+                            "Available tags (${allTags.size}): ${allTags.joinToString(", ")}\n" +
+                            "This usually means the outbound failed validation or was filtered by OutboundFixer."
+                    )
+
+                    throw IllegalStateException(
+                        "Selected node is not available in runtime outbounds: $candidateTag (type=$nodeType)"
+                    )
                 }
             }
             val configFile = File(context.filesDir, "running_config.json")
