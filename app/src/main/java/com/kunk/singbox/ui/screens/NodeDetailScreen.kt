@@ -882,7 +882,7 @@ fun NodeDetailScreen(
                             SettingSwitchItem(
                                 title = stringResource(R.string.node_detail_del_host),
                                 checked = transport.delHost == true,
-                                icon = Icons.Rounded.Delete,
+                                icon = Icons.Rounded.Close,
                                 onCheckedChange = {
                                     editingOutbound = outbound.copy(transport = transport.copy(delHost = it))
                                 }
