@@ -639,6 +639,46 @@ object OutboundFixer {
                 connectTimeout = connectTimeout
             )
 
+            "http" -> {
+                if (fixed.server.isNullOrBlank()) {
+                    Log.w(TAG, "HTTP outbound '${fixed.tag}' has no server address, skipping")
+                    BugLogRepository.getInstance().addBugLog(
+                        "HTTP Outbound Invalid",
+                        "HTTP proxy '${fixed.tag}' has no server address. " +
+                            "Type=${fixed.type}, Port=${fixed.serverPort}"
+                    )
+                    return null
+                }
+                if (fixed.serverPort == null || fixed.serverPort <= 0) {
+                    Log.w(TAG, "HTTP outbound '${fixed.tag}' has invalid port: ${fixed.serverPort}")
+                    BugLogRepository.getInstance().addBugLog(
+                        "HTTP Outbound Invalid",
+                        "HTTP proxy '${fixed.tag}' has invalid port: ${fixed.serverPort}. " +
+                            "Server=${fixed.server}"
+                    )
+                    return null
+                }
+                Outbound(
+                    type = fixed.type,
+                    tag = fixed.tag,
+                    server = fixed.server,
+                    serverPort = fixed.serverPort,
+                    username = fixed.username,
+                    password = fixed.password,
+                    path = fixed.path,
+                    headers = fixed.headers,
+                    httpFirst = fixed.httpFirst,
+                    delHost = fixed.delHost,
+                    tls = fixed.tls,
+                    network = fixed.network,
+                    domainResolver = resolveDomainResolver(fixed),
+
+                    tcpKeepAlive = tcpKeepAliveInterval,
+                    tcpKeepAliveInterval = tcpKeepAliveInterval,
+                    connectTimeout = connectTimeout
+                )
+            }
+
             else -> fixed
         }, fixed)
     }
