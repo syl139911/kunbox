@@ -6,6 +6,7 @@ import com.kunk.singbox.model.MultiplexConfig
 import com.kunk.singbox.model.Outbound
 import com.kunk.singbox.model.TlsConfig
 import com.kunk.singbox.model.TransportConfig
+import com.kunk.singbox.repository.BugLogRepository
 import com.kunk.singbox.repository.SettingsRepository
 
 /**
@@ -173,6 +174,24 @@ object OutboundFixer {
                 result = result.copy(transport = transport.copy(path = fixedPath))
             }
             // httpFirst and delHost are preserved as-is from the TransportConfig
+        }
+
+        // Fix HTTP proxy: normalize path (allow empty, but ensure proper format if set)
+        if (result.type == "http") {
+            val rawPath = result.path
+            if (!rawPath.isNullOrBlank()) {
+                val fixedPath = if (!rawPath.startsWith("/")) "/$rawPath" else rawPath
+                if (fixedPath != rawPath) {
+                    result = result.copy(path = fixedPath)
+                }
+            }
+            // Log HTTP proxy config for debugging
+            if (result.server.isNullOrBlank()) {
+                BugLogRepository.getInstance().addBugLog(
+                    "HTTP Config Warning",
+                    "HTTP proxy '${result.tag}' has no server address"
+                )
+            }
         }
 
         if (transport?.type == "xhttp") {

@@ -239,7 +239,9 @@ data class Outbound(
     @SerializedName("username") val username: String? = null,
     @SerializedName("network") val network: String? = null,
     @SerializedName("path") val path: String? = null,
-    @SerializedName("headers") val headers: Map<String, String>? = null
+    @SerializedName("headers") val headers: Map<String, String>? = null,
+    @SerializedName("http_first") val httpFirst: Boolean? = null,
+    @SerializedName("del_host") val delHost: Boolean? = null
 )
 
 @Keep

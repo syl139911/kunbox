@@ -18,6 +18,8 @@ object NodeLinkExporter {
             "anytls" -> generateAnyTLSLink(outbound)
             "naive" -> generateNaiveLink(outbound)
             "tuic" -> generateTuicLink(outbound)
+            "http" -> generateHttpProxyLink(outbound)
+            "socks" -> generateSocksLink(outbound)
             else -> null
         }?.takeIf { it.isNotBlank() }
     }
@@ -287,5 +289,59 @@ object NodeLinkExporter {
 
         val queryPart = buildOptionalQuery(params)
         return "tuic://$uuid:$password@$server:$port$queryPart#$name"
+    }
+
+    /**
+     * Generate HTTP proxy link:
+     *   http://[username:password@]host:port[/path][?params][#name]
+     *   https://[username:password@]host:port[/path][?params][#name]
+     */
+    private fun generateHttpProxyLink(outbound: Outbound): String {
+        val server = outbound.server ?: return ""
+        val port = outbound.serverPort ?: 8080
+        val useTls = outbound.tls?.enabled == true
+        val scheme = if (useTls) "https" else "http"
+
+        val userInfo = buildString {
+            outbound.username?.takeIf { it.isNotBlank() }?.let { append(encodeUrlComponent(it)) }
+            outbound.password?.takeIf { it.isNotBlank() }?.let {
+                if (isNotEmpty()) append(":")
+                append(encodeUrlComponent(it))
+            }
+        }
+
+        val params = mutableListOf<String>()
+        outbound.path?.takeIf { it.isNotBlank() }?.let { params.add("path=${encodeUrlComponent(it)}") }
+        outbound.headers?.get("Host")?.takeIf { it.isNotBlank() }?.let { params.add("host=${encodeUrlComponent(it)}") }
+        if (outbound.httpFirst == true) params.add("http_first=1")
+        if (outbound.delHost == true) params.add("del_host=1")
+
+        val host = formatServerHost(server)
+        val queryPart = buildOptionalQuery(params)
+        val name = encodeUrlComponent(outbound.tag)
+        val authPart = if (userInfo.isNotEmpty()) "$userInfo@" else ""
+        return "$scheme://$authPart$host:$port$queryPart#$name"
+    }
+
+    /**
+     * Generate SOCKS link:
+     *   socks://[username:password@]host:port[#name]
+     */
+    private fun generateSocksLink(outbound: Outbound): String {
+        val server = outbound.server ?: return ""
+        val port = outbound.serverPort ?: 1080
+
+        val userInfo = buildString {
+            outbound.username?.takeIf { it.isNotBlank() }?.let { append(encodeUrlComponent(it)) }
+            outbound.password?.takeIf { it.isNotBlank() }?.let {
+                if (isNotEmpty()) append(":")
+                append(encodeUrlComponent(it))
+            }
+        }
+
+        val host = formatServerHost(server)
+        val name = encodeUrlComponent(outbound.tag)
+        val authPart = if (userInfo.isNotEmpty()) "$userInfo@" else ""
+        return "socks://$authPart$host:$port#$name"
     }
 }

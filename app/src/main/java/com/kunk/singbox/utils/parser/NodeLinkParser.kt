@@ -1085,7 +1085,13 @@ class NodeLinkParser(private val gson: Gson) {
     }
 
     /**
-     *       https://[username:password@]host:port[#name]
+     *       https://[username:password@]host:port[/path][?params][#name]
+     *
+     *   Supported query params:
+     *     path=...       - HTTP path (e.g. /dingtalk)
+     *     host=...       - Host header
+     *     http_first=1   - Enable http_first
+     *     del_host=1     - Enable del_host
      */
     private fun parseHttpLink(link: String, useTls: Boolean): Outbound? {
         try {
@@ -1107,6 +1113,15 @@ class NodeLinkParser(private val gson: Gson) {
                     .takeIf { it.isNotBlank() }
             }
 
+            // Parse query params
+            val queryParams = parseQueryParams(uri.query)
+            val path = queryParams["path"]?.takeIf { it.isNotBlank() }
+            val hostHeader = queryParams["host"]?.takeIf { it.isNotBlank() }
+            val httpFirst = queryParams["http_first"] == "1" || queryParams["http_first"] == "true"
+            val delHost = queryParams["del_host"] == "1" || queryParams["del_host"] == "true"
+
+            val headers = if (hostHeader != null) mapOf("Host" to hostHeader) else null
+
             return Outbound(
                 type = "http",
                 tag = name,
@@ -1114,11 +1129,15 @@ class NodeLinkParser(private val gson: Gson) {
                 serverPort = port,
                 username = username,
                 password = password,
+                path = path,
+                headers = headers,
+                httpFirst = httpFirst.takeIf { it },
+                delHost = delHost.takeIf { it },
                 tls = if (useTls) {
                     TlsConfig(
                         enabled = true,
                         serverName = defaultTlsServerName(
-                            explicitServerName = null,
+                            explicitServerName = hostHeader,
                             server = server
                         )
                     )
@@ -1130,6 +1149,17 @@ class NodeLinkParser(private val gson: Gson) {
             Log.e("NodeLinkParser", "Failed to parse HTTP/HTTPS link", e)
         }
         return null
+    }
+
+    private fun parseQueryParams(query: String?): Map<String, String> {
+        if (query.isNullOrBlank()) return emptyMap()
+        return query.split("&").mapNotNull { param ->
+            val parts = param.split("=", limit = 2)
+            if (parts.size == 2) {
+                java.net.URLDecoder.decode(parts[0], "UTF-8") to
+                    java.net.URLDecoder.decode(parts[1], "UTF-8")
+            } else null
+        }.toMap()
     }
 
     /**

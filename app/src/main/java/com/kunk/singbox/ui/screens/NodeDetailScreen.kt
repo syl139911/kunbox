@@ -712,6 +712,44 @@ fun NodeDetailScreen(
                             icon = Icons.Rounded.Password,
                             onValueChange = { editingOutbound = outbound.copy(password = if (it.isEmpty()) null else it) }
                         )
+                        // --- HTTP Path ---
+                        EditableTextItem(
+                            title = stringResource(R.string.node_detail_http_path),
+                            value = outbound.path ?: "",
+                            icon = Icons.Rounded.Route,
+                            subtitle = stringResource(R.string.node_detail_http_path_hint),
+                            onValueChange = { editingOutbound = outbound.copy(path = if (it.isEmpty()) null else it) }
+                        )
+                        // --- HTTP Host ---
+                        EditableTextItem(
+                            title = stringResource(R.string.node_detail_host),
+                            value = outbound.headers?.get("Host") ?: "",
+                            icon = Icons.Rounded.Language,
+                            onValueChange = {
+                                val newHeaders = (outbound.headers ?: emptyMap()).toMutableMap()
+                                if (it.isBlank()) newHeaders.remove("Host") else newHeaders["Host"] = it
+                                editingOutbound = outbound.copy(headers = newHeaders.ifEmpty { null })
+                            }
+                        )
+                        // --- HTTP Advanced Settings ---
+                        StandardCard {
+                            SettingSwitchItem(
+                                title = stringResource(R.string.node_detail_http_first),
+                                checked = outbound.httpFirst == true,
+                                icon = Icons.Rounded.Bolt,
+                                onCheckedChange = {
+                                    editingOutbound = outbound.copy(httpFirst = it)
+                                }
+                            )
+                            SettingSwitchItem(
+                                title = stringResource(R.string.node_detail_del_host),
+                                checked = outbound.delHost == true,
+                                icon = Icons.Rounded.Delete,
+                                onCheckedChange = {
+                                    editingOutbound = outbound.copy(delHost = it)
+                                }
+                            )
+                        }
                     }
 
                     // 11. ShadowTLS
