@@ -3758,8 +3758,9 @@ class ConfigRepository(private val context: Context) {
                 }
                 allTags.contains(candidateTag) -> candidateTag
                 else -> {
-                    Log.e(TAG, "Selected node tag '$candidateTag' not found in runtime outbounds, aborting switch")
-                    throw IllegalStateException("Selected node is not available in runtime outbounds: $candidateTag")
+                    Log.w(TAG, "Selected node tag '$candidateTag' not found in runtime outbounds, falling back to PROXY default")
+                    val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
+                    proxySelector?.default ?: proxySelector?.outbounds?.firstOrNull()
                 }
             }
             val configFile = File(context.filesDir, "running_config.json")
