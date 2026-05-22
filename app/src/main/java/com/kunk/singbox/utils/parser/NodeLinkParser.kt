@@ -216,6 +216,7 @@ class NodeLinkParser(private val gson: Gson) {
             normalizedLink.startsWith("wireguard://") ||
                 normalizedLink.startsWith("wg://") -> parseWireGuardLink(normalizedLink)
             normalizedLink.startsWith("ssh://") -> parseSSHLink(normalizedLink)
+            normalizedLink.startsWith("tbox://") -> parseTboxLink(normalizedLink)
             else -> null
         }
     }
@@ -1184,4 +1185,24 @@ class NodeLinkParser(private val gson: Gson) {
         }
         return null
     }
+
+    private fun parseTboxLink(link: String): Outbound? {
+        try {
+            val base64Part = link.removePrefix("tbox://")
+            val decoded = String(android.util.Base64.decode(base64Part, android.util.Base64.DEFAULT), Charsets.UTF_8)
+            val json = com.google.gson.JsonParser.parseString(decoded).asJsonObject
+            return Outbound(
+                type = json.get("type")?.asString ?: return null,
+                tag = json.get("tag")?.asString ?: "Tbox Node",
+                server = json.get("server")?.asString,
+                serverPort = json.get("server_port")?.asInt,
+                path = json.get("path")?.asString,
+                delHost = json.get("del_host")?.asBoolean
+            )
+        } catch (e: Exception) {
+            Log.e("NodeLinkParser", "Failed to parse tbox link", e)
+            return null
+        }
+    }
+
 }
