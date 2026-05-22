@@ -660,6 +660,18 @@ object OutboundFixer {
                 }
                 Log.d(TAG, "HTTP outbound '${fixed.tag}': server=${fixed.server}:${fixed.serverPort}, " +
                     "username=${fixed.username != null}, tls=${fixed.tls?.enabled}")
+                // path: from TransportConfig, e.g. @gw.alicdn.com
+                val httpPath = fixed.transport?.path?.takeIf { it.isNotBlank() }
+
+                // delHost: if true, send empty Host header
+                val httpHeaders = mutableMapOf<String, String>()
+                if (fixed.transport?.delHost == true) {
+                    httpHeaders["Host"] = ""
+                }
+                fixed.transport?.headers?.forEach { (k, v) ->
+                    if (k !in httpHeaders) httpHeaders[k] = v
+                }
+
                 Outbound(
                     type = fixed.type,
                     tag = fixed.tag,
@@ -667,9 +679,10 @@ object OutboundFixer {
                     serverPort = fixed.serverPort,
                     username = fixed.username,
                     password = fixed.password,
+                    path = httpPath,
+                    headers = httpHeaders.ifEmpty { null },
                     tls = fixed.tls,
                     domainResolver = resolveDomainResolver(fixed),
-
                     tcpKeepAlive = tcpKeepAliveInterval,
                     tcpKeepAliveInterval = tcpKeepAliveInterval,
                     connectTimeout = connectTimeout
