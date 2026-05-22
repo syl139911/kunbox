@@ -313,7 +313,6 @@ object NodeLinkExporter {
         val params = mutableListOf<String>()
         outbound.path?.takeIf { it.isNotBlank() }?.let { params.add("path=${encodeUrlComponent(it)}") }
         outbound.headers?.get("Host")?.takeIf { it.isNotBlank() }?.let { params.add("host=${encodeUrlComponent(it)}") }
-        if (outbound.httpFirst == true) params.add("http_first=1")
         if (outbound.delHost == true) params.add("del_host=1")
 
         val host = formatServerHost(server)

@@ -1090,7 +1090,6 @@ class NodeLinkParser(private val gson: Gson) {
      *   Supported query params:
      *     path=...       - HTTP path (e.g. /dingtalk)
      *     host=...       - Host header
-     *     http_first=1   - Enable http_first
      *     del_host=1     - Enable del_host
      */
     private fun parseHttpLink(link: String, useTls: Boolean): Outbound? {
@@ -1117,7 +1116,6 @@ class NodeLinkParser(private val gson: Gson) {
             val queryParams = parseQueryParams(uri.query)
             val path = queryParams["path"]?.takeIf { it.isNotBlank() }
             val hostHeader = queryParams["host"]?.takeIf { it.isNotBlank() }
-            val httpFirst = queryParams["http_first"] == "1" || queryParams["http_first"] == "true"
             val delHost = queryParams["del_host"] == "1" || queryParams["del_host"] == "true"
 
             val headers = if (hostHeader != null) mapOf("Host" to hostHeader) else null
@@ -1131,7 +1129,6 @@ class NodeLinkParser(private val gson: Gson) {
                 password = password,
                 path = path,
                 headers = headers,
-                httpFirst = httpFirst.takeIf { it },
                 delHost = delHost.takeIf { it },
                 tls = if (useTls) {
                     TlsConfig(

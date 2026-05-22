@@ -734,14 +734,6 @@ fun NodeDetailScreen(
                         // --- HTTP Advanced Settings ---
                         StandardCard {
                             SettingSwitchItem(
-                                title = stringResource(R.string.node_detail_http_first),
-                                checked = outbound.httpFirst == true,
-                                icon = Icons.Rounded.Bolt,
-                                onCheckedChange = {
-                                    editingOutbound = outbound.copy(httpFirst = it)
-                                }
-                            )
-                            SettingSwitchItem(
                                 title = stringResource(R.string.node_detail_del_host),
                                 checked = outbound.delHost == true,
                                 icon = Icons.Rounded.Delete,
