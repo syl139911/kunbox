@@ -23,7 +23,7 @@
  	}
  	if options.Dialer == nil {
  		client.dialer = N.SystemDialer
-@@ -62,13 +65,23 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
+@@ -62,13 +65,25 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
  	}
  	defer conn.Close()
  
@@ -35,9 +35,6 @@
 +
  	request := &http.Request{
  		Method: http.MethodConnect,
-+		URL: &url.URL{
-+			Host: target,
-+		},
  		Header: http.Header{
  			"Proxy-Connection": []string{"Keep-Alive"},
  		},
@@ -45,6 +42,8 @@
 -	if c.host != "" && c.host != destination.Fqdn {
 +
 +	if c.delHost {
++		// Raw CONNECT mode: no Host header, path injected into CONNECT line.
++		// Use Opaque URL to prevent http.Request.Write from auto-generating Host.
 +		request.URL = &url.URL{Opaque: target}
 +		request.Host = ""
 +	} else if c.host != "" && c.host != destination.Fqdn {
