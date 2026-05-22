@@ -337,12 +337,6 @@ object OutboundFixer {
     /**
      */
     private fun normalizeLegacyTransport(outbound: Outbound): Outbound {
-        // HTTP/SOCKS proxy outbounds use path/headers at the outbound level,
-        // not as transport (stream) settings. Do NOT normalize them.
-        if (outbound.type == "http" || outbound.type == "socks") {
-            return outbound
-        }
-
         val legacyNetwork = outbound.network?.takeIf { it.isNotBlank() }
         val legacyPath = outbound.path?.takeIf { it.isNotBlank() }
         val legacyHeaders = outbound.headers?.takeIf { it.isNotEmpty() }
@@ -667,16 +661,20 @@ object OutboundFixer {
                 Log.d(TAG, "HTTP outbound '${fixed.tag}': server=${fixed.server}:${fixed.serverPort}, " +
                     "username=${fixed.username != null}, tls=${fixed.tls?.enabled}")
 
-                // path: from Outbound level (set by parser/import)
+                // path: Outbound level (parser/UI) first, then transport (normalizeLegacyTransport) as fallback
                 val httpPath = fixed.path?.takeIf { it.isNotBlank() }
+                    ?: fixed.transport?.path?.takeIf { it.isNotBlank() }
 
-                // delHost: read from Outbound (where parser/UI sets it), not transport
-                // If true, set empty Host header to suppress default Host
+                // delHost: Outbound level (parser/UI sets it) — normalizeLegacyTransport
+                // doesn't move delHost to TransportConfig, so must read from Outbound
                 val httpHeaders = mutableMapOf<String, String>()
                 if (fixed.delHost == true) {
                     httpHeaders["Host"] = ""
                 }
-                fixed.headers?.forEach { (k, v) ->
+                // headers: Outbound level first, then transport as fallback
+                val sourceHeaders = fixed.headers?.takeIf { it.isNotEmpty() }
+                    ?: fixed.transport?.headers?.takeIf { it.isNotEmpty() }
+                sourceHeaders?.forEach { (k, v) ->
                     if (k !in httpHeaders) httpHeaders[k] = v
                 }
 
