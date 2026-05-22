@@ -287,6 +287,21 @@ jobs:
           fi
           echo "OK: libbox.aar verified"
 
+      - name: Commit libbox.aar to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/libs/libbox.aar
+          if git diff --cached --quiet; then
+            echo "libbox.aar unchanged, skipping commit"
+          else
+            SIZE=$(stat -c%s app/libs/libbox.aar)
+            MB=$((SIZE / 1048576))
+            git commit -m "chore: update libbox.aar (${MB}MB) [skip ci]"
+            git push
+            echo "✅ libbox.aar committed (${MB}MB)"
+          fi
+
       - name: Upload libbox.aar artifact
         uses: actions/upload-artifact@v4
         with:
