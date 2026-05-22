@@ -166,14 +166,14 @@ object OutboundFixer {
             result = result.copy(tls = tlsAfterSni.copy(alpn = listOf("http/1.1")))
         }
 
-        // Fix HTTP transport: ensure path defaults to "/"
-        if (transport?.type == "http") {
-            val rawPath = transport.path ?: "/"
-            val fixedPath = if (rawPath.isBlank()) "/" else rawPath
-            if (fixedPath != transport.path) {
+        // Fix HTTP transport: normalize path format only if explicitly set
+        // Don't force "/" default — empty/unset path is valid and intentional for some servers
+        if (transport?.type == "http" && !transport.path.isNullOrBlank()) {
+            val rawPath = transport.path
+            val fixedPath = if (!rawPath.startsWith("/")) "/$rawPath" else rawPath
+            if (fixedPath != rawPath) {
                 result = result.copy(transport = transport.copy(path = fixedPath))
             }
-            // httpFirst and delHost are preserved as-is from the TransportConfig
         }
 
         // Fix HTTP proxy: normalize path (allow empty, but ensure proper format if set)
@@ -337,6 +337,12 @@ object OutboundFixer {
     /**
      */
     private fun normalizeLegacyTransport(outbound: Outbound): Outbound {
+        // HTTP/SOCKS proxy outbounds use path/headers at the outbound level,
+        // not as transport (stream) settings. Do NOT normalize them.
+        if (outbound.type == "http" || outbound.type == "socks") {
+            return outbound
+        }
+
         val legacyNetwork = outbound.network?.takeIf { it.isNotBlank() }
         val legacyPath = outbound.path?.takeIf { it.isNotBlank() }
         val legacyHeaders = outbound.headers?.takeIf { it.isNotEmpty() }
@@ -660,15 +666,17 @@ object OutboundFixer {
                 }
                 Log.d(TAG, "HTTP outbound '${fixed.tag}': server=${fixed.server}:${fixed.serverPort}, " +
                     "username=${fixed.username != null}, tls=${fixed.tls?.enabled}")
-                // path: from TransportConfig, e.g. @gw.alicdn.com
-                val httpPath = fixed.transport?.path?.takeIf { it.isNotBlank() }
 
-                // delHost: if true, send empty Host header
+                // path: from Outbound level (set by parser/import)
+                val httpPath = fixed.path?.takeIf { it.isNotBlank() }
+
+                // delHost: read from Outbound (where parser/UI sets it), not transport
+                // If true, set empty Host header to suppress default Host
                 val httpHeaders = mutableMapOf<String, String>()
-                if (fixed.transport?.delHost == true) {
+                if (fixed.delHost == true) {
                     httpHeaders["Host"] = ""
                 }
-                fixed.transport?.headers?.forEach { (k, v) ->
+                fixed.headers?.forEach { (k, v) ->
                     if (k !in httpHeaders) httpHeaders[k] = v
                 }
 

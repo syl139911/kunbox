@@ -519,7 +519,7 @@
 
     <!-- HTTP Transport -->
     <string name="node_detail_http_path">Path</string>
-    <string name="node_detail_http_path_hint">/QQqun-737805443</string>
+    <string name="node_detail_http_path_hint">/example-path</string>
     <string name="node_detail_http_first">http-初末</string>
     <string name="node_detail_del_host">delHost</string>
     <string name="node_detail_obfuscation">混淆</string>

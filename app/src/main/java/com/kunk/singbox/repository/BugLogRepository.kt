@@ -1,7 +1,9 @@
 package com.kunk.singbox.repository
 
-import android.content.Context
 import android.os.Build
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,11 +16,21 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 class BugLogRepository private constructor() {
 
+    private val mmkv: MMKV by lazy {
+        MMKV.mmkvWithID("bug_log", MMKV.SINGLE_PROCESS_MODE)
+    }
+    private val gson = Gson()
+
     private val _bugLogs = MutableStateFlow<List<BugLogEntry>>(emptyList())
     val bugLogs: StateFlow<List<BugLogEntry>> = _bugLogs.asStateFlow()
 
     private val logs = CopyOnWriteArrayList<BugLogEntry>()
     private val maxLogSize = 200
+
+    init {
+        // Load persisted logs on init
+        loadFromDisk()
+    }
 
     fun addBugLog(title: String, detail: String, throwable: Throwable? = null) {
         val entry = BugLogEntry(
@@ -33,6 +45,8 @@ class BugLogRepository private constructor() {
             logs.removeAt(0)
         }
         _bugLogs.value = logs.toList()
+        // Persist to disk
+        saveToDisk()
     }
 
     fun getBugLogs(): List<BugLogEntry> = logs.toList()
@@ -40,6 +54,7 @@ class BugLogRepository private constructor() {
     fun clearBugLogs() {
         logs.clear()
         _bugLogs.value = emptyList()
+        mmkv.remove("bug_logs_json")
     }
 
     fun getBugLogsAsText(): String {
@@ -69,6 +84,31 @@ class BugLogRepository private constructor() {
         }
 
         return header + logContent
+    }
+
+    private fun saveToDisk() {
+        try {
+            val json = gson.toJson(logs.toList())
+            mmkv.encode("bug_logs_json", json)
+        } catch (_: Exception) {
+            // Never let persistence crash the app
+        }
+    }
+
+    private fun loadFromDisk() {
+        try {
+            val json = mmkv.decodeString("bug_logs_json")
+            if (!json.isNullOrBlank()) {
+                val type = object : TypeToken<List<BugLogEntry>>() {}.type
+                val loaded: List<BugLogEntry> = gson.fromJson(json, type) ?: emptyList()
+                logs.clear()
+                logs.addAll(loaded.takeLast(maxLogSize))
+                _bugLogs.value = logs.toList()
+            }
+        } catch (_: Exception) {
+            // Corrupted data, start fresh
+            mmkv.remove("bug_logs_json")
+        }
     }
 
     private fun getStackTrace(throwable: Throwable): String {
