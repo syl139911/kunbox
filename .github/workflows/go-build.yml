@@ -250,7 +250,7 @@ jobs:
 
           echo "=== Building libbox.aar with gomobile ==="
           gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
-            -target android/arm64 -libname=box \
+            -target android -libname=box \
             -trimpath -ldflags='-s -w -checklinkname=0' \
             -o ../app/libs/libbox.aar \
             ./experimental/libbox
@@ -264,8 +264,8 @@ jobs:
           echo "Checking exported symbols..."
           SIZE=$(stat -c%s app/libs/libbox.aar)
           echo "libbox.aar size: $SIZE bytes"
-          if [ "$SIZE" -lt 10000000 ]; then
-            echo "WARNING: libbox.aar seems too small (< 10MB), build may have failed"
+          if [ "$SIZE" -lt 50000000 ]; then
+            echo "WARNING: libbox.aar seems too small (< 50MB), build may have failed"
             exit 1
           fi
           echo "OK: libbox.aar looks reasonable"
@@ -287,12 +287,12 @@ jobs:
       - name: Build Debug APK (arm64-v8a)
         run: |
           mkdir -p dist
-          ./gradlew assembleDebug -PabiOnly=arm64-v8a
-          find app/build/outputs/apk/debug -type f -name "*.apk" -exec cp {} dist/ \;
+          ./gradlew assembleRelease -PabiOnly=arm64-v8a
+          find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
           ls -lh dist/
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kunbox-go-debug-apk
+          name: kunbox-go-release-apk
           path: dist/*.apk
