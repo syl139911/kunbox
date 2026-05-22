@@ -49,7 +49,6 @@
 
                 <data android:scheme="singbox" />
                 <data android:scheme="kunbox" />
-                <data android:scheme="tbox" />
             </intent-filter>
 
             <meta-data
