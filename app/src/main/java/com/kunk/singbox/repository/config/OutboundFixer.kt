@@ -176,15 +176,9 @@ object OutboundFixer {
             }
         }
 
-        // Fix HTTP proxy: normalize path (allow empty, but ensure proper format if set)
+        // HTTP proxy: path is injected into CONNECT line (e.g. "example.com:443@dingtalk.com"),
+        // NOT a URL path. Do NOT normalize with "/" prefix — it would break path injection.
         if (result.type == "http") {
-            val rawPath = result.path
-            if (!rawPath.isNullOrBlank()) {
-                val fixedPath = if (!rawPath.startsWith("/")) "/$rawPath" else rawPath
-                if (fixedPath != rawPath) {
-                    result = result.copy(path = fixedPath)
-                }
-            }
             // Log HTTP proxy config for debugging
             if (result.server.isNullOrBlank()) {
                 BugLogRepository.getInstance().addBugLog(
