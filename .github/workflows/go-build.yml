@@ -161,7 +161,7 @@ jobs:
           export ANDROID_NDK_HOME=$ANDROID_NDK_HOME
 
           echo "=== Building libbox.aar with gomobile ==="
-          gomobile bind -v -androidapi 24 -javapkg=com.github.sagernet \
+          gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
             -target android/arm64 -libname=box \
             -trimpath -ldflags='-s -w -checklinkname=0' \
             -o ../app/libs/libbox.aar \
