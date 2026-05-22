@@ -53,7 +53,7 @@ jobs:
           git clone --branch "$TAG" --depth 1 \
             https://github.com/SagerNet/sing-box.git upstream-sing-box
 
-      - name: Apply KunBox Go patches
+      - name: Apply KunBox Go patches (01 & 02)
         working-directory: upstream-sing-box
         run: |
           echo "=== Applying patch 01: option/simple.go ==="
@@ -64,42 +64,43 @@ jobs:
             git apply ../patches/02-outbound-go.patch
           echo "=== Patches 01 & 02 applied ==="
 
-      - name: Patch sing library (client.go)
+      - name: Vendor dependencies & patch sing client.go
         working-directory: upstream-sing-box
         run: |
-          # Find sing dependency path in go.sum / vendor
-          # sing-box uses go mod, so we patch the module cache
-          # First, resolve the sing module version
-          SING_VERSION=$(grep 'github.com/sagernet/sing ' go.sum | head -1 | awk '{print $2}')
-          echo "sing version: $SING_VERSION"
+          # Vendor dependencies so we can patch them locally
+          go mod vendor
 
-          # Download modules first
-          go mod download
+          # Find sing client.go in vendor
+          CLIENT_GO="vendor/github.com/sagernet/sing/protocol/http/client.go"
+          echo "Patching: $CLIENT_GO"
 
-          SING_PATH="$(go env GOMODCACHE)/github.com/sagernet/sing@${SING_VERSION}/protocol/http/client.go"
-          echo "Patching: $SING_PATH"
-
-          if [ ! -f "$SING_PATH" ]; then
-            echo "ERROR: sing client.go not found at $SING_PATH"
-            echo "Searching..."
-            find "$(go env GOMODCACHE)/github.com/sagernet" -name "client.go" -path "*/protocol/http/*" 2>/dev/null
+          if [ ! -f "$CLIENT_GO" ]; then
+            echo "ERROR: $CLIENT_GO not found!"
+            echo "Looking for sing http files:"
+            find vendor/github.com/sagernet/sing -name "*.go" -path "*/http/*" 2>/dev/null || true
             exit 1
           fi
 
-          # 3a: Client struct - add delHost field
-          sed -i '/host.*string/a\\tdelHost    bool' "$SING_PATH"
+          echo "=== Before patch ==="
+          head -80 "$CLIENT_GO"
 
-          # 3b: Options struct - add DelHost field
-          sed -i '/Host.*string/a\\tDelHost  bool' "$SING_PATH"
+          # 3a: Add delHost field to Client struct
+          # Find line with 'host    string' and add delHost after it
+          sed -i '/^\thost.*string$/a\\tdelHost    bool' "$CLIENT_GO"
 
-          # 3c: NewClient - add delHost assignment
-          sed -i '/host:.*options.Host,/a\\t\tdelHost:    options.DelHost,' "$SING_PATH"
+          # 3b: Add DelHost field to Options struct
+          sed -i '/^\tHost.*string$/a\\tDelHost  bool' "$CLIENT_GO"
 
-          # 3d: DialContext - add delHost branch before existing host check
-          sed -i 's/if c\.host != "" && c\.host != destination\.Fqdn {/if c.delHost {\n\t\trequest.URL = \&url.URL{Opaque: target}\n\t\trequest.Host = ""\n\t} else if c.host != "" \&\& c.host != destination.Fqdn {/' "$SING_PATH"
+          # 3c: Add delHost assignment in NewClient
+          sed -i '/^\thost:.*options\.Host,$/a\\t\tdelHost:    options.DelHost,' "$CLIENT_GO"
 
-          echo "=== sing library patched ==="
-          cat "$SING_PATH" | head -80
+          # 3d: Add delHost branch in DialContext before existing host check
+          # Match the exact line: if c.host != "" && c.host != destination.Fqdn {
+          sed -i 's/^\tif c\.host != "" && c\.host != destination\.Fqdn {$/\tif c.delHost {\n\t\trequest.URL = \&url.URL{Opaque: target}\n\t\trequest.Host = ""\n\t} else if c.host != "" \&\& c.host != destination.Fqdn {/' "$CLIENT_GO"
+
+          echo "=== After patch ==="
+          head -100 "$CLIENT_GO"
+          echo "=== Patch applied successfully ==="
 
       - name: Build libbox.aar
         run: |
@@ -120,7 +121,6 @@ jobs:
       - name: Verify libbox.aar exports
         run: |
           echo "Checking exported symbols..."
-          # Basic size check
           SIZE=$(stat -c%s app/libs/libbox.aar)
           echo "libbox.aar size: $SIZE bytes"
           if [ "$SIZE" -lt 10000000 ]; then
