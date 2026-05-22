@@ -67,6 +67,11 @@ jobs:
       - name: Vendor dependencies & patch sing client.go
         working-directory: upstream-sing-box
         run: |
+          # Add golang.org/x/mobile dependency (required by Go 1.24+)
+          echo "=== Adding golang.org/x/mobile dependency ==="
+          go get -tool golang.org/x/mobile/cmd/gobind
+          go get golang.org/x/mobile
+
           # Vendor dependencies so we can patch them locally
           go mod vendor
 
@@ -85,7 +90,6 @@ jobs:
           head -80 "$CLIENT_GO"
 
           # 3a: Add delHost field to Client struct
-          # Find line with 'host    string' and add delHost after it
           sed -i '/^\thost.*string$/a\\tdelHost    bool' "$CLIENT_GO"
 
           # 3b: Add DelHost field to Options struct
@@ -95,7 +99,6 @@ jobs:
           sed -i '/^\thost:.*options\.Host,$/a\\t\tdelHost:    options.DelHost,' "$CLIENT_GO"
 
           # 3d: Add delHost branch in DialContext before existing host check
-          # Match the exact line: if c.host != "" && c.host != destination.Fqdn {
           sed -i 's/^\tif c\.host != "" && c\.host != destination\.Fqdn {$/\tif c.delHost {\n\t\trequest.URL = \&url.URL{Opaque: target}\n\t\trequest.Host = ""\n\t} else if c.host != "" \&\& c.host != destination.Fqdn {/' "$CLIENT_GO"
 
           echo "=== After patch ==="
