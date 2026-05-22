@@ -308,6 +308,23 @@ jobs:
           name: libbox-aar
           path: app/libs/libbox.aar
 
+      - name: Prepare Keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          else
+            echo "No signing secrets found, generating temporary keystore..."
+            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore               -alias release -keyalg RSA -keysize 2048 -validity 10000               -storepass temp123 -keypass temp123               -dname "CN=KunBox, OU=Dev, O=KunBox, L=SH, ST=SH, C=CN"
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=temp123" >> $GITHUB_ENV
+            echo "KEY_ALIAS=release" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=temp123" >> $GITHUB_ENV
+          fi
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
