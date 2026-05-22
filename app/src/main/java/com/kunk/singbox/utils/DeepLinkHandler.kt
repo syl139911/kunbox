@@ -17,18 +17,6 @@ object DeepLinkHandler {
     private val _pendingSubscriptionImport = MutableStateFlow<SubscriptionImportData?>(null)
     val pendingSubscriptionImport: StateFlow<SubscriptionImportData?> = _pendingSubscriptionImport.asStateFlow()
 
-    // tbox:// single node import
-    private val _pendingTboxImport = MutableStateFlow<String?>(null)
-    val pendingTboxImport: StateFlow<String?> = _pendingTboxImport.asStateFlow()
-
-    fun setPendingTboxImport(base64Data: String) {
-        _pendingTboxImport.value = base64Data
-    }
-
-    fun clearPendingTboxImport() {
-        _pendingTboxImport.value = null
-    }
-
     /**
      * 璁剧疆寰呭鐞嗙殑璁㈤槄瀵煎叆鏁版嵁
      */
