@@ -384,8 +384,7 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
             val supportedPrefixes = listOf(
                 "vmess://", "vless://", "ss://", "trojan://",
                 "hysteria2://", "hy2://", "hysteria://",
-                "tuic://", "anytls://", "naive://", "naive+https://", "wireguard://", "ssh://",
-                "tbox://"
+                "tuic://", "anytls://", "naive://", "naive+https://", "wireguard://", "ssh://"
             )
 
             if (supportedPrefixes.none { trimmedContent.startsWith(it) }) {
@@ -408,27 +407,6 @@ class NodesViewModel(application: Application) : AndroidViewModel(application) {
                 val msg = e.message ?: getApplication<Application>().getString(R.string.nodes_add_failed)
                 _addNodeResult.value = msg
                 emitToast(msg)
-
-    fun importTboxNode(base64Data: String) {
-        viewModelScope.launch {
-            try {
-                val decoded = String(android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT), Charsets.UTF_8)
-                val json = com.google.gson.JsonParser.parseString(decoded).asJsonObject
-                val tag = json.get("tag")?.asString ?: "Tbox Node"
-                // Reconstruct as tbox:// link for parseNodeLink
-                val link = "tbox://$base64Data"
-                val result = configRepository.addSingleNode(link = link)
-                result.onSuccess { node ->
-                    emitToast("${getApplication<Application>().getString(R.string.common_add)}: ${node.displayName}")
-                }.onFailure { e ->
-                    emitToast(e.message ?: getApplication<Application>().getString(R.string.nodes_add_failed))
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to import tbox node", e)
-                emitToast("Failed to import tbox node: ${e.message}")
-            }
-        }
-    }
             }
         }
     }
