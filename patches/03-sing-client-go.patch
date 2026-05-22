@@ -1,0 +1,43 @@
+--- a/protocol/http/client.go
++++ b/protocol/http/client.go
+@@ -22,6 +22,7 @@ type Client struct {
+ 	host       string
+ 	path       string
+ 	headers    http.Header
++	delHost    bool
+ }
+ 
+ type Options struct {
+@@ -31,6 +32,7 @@ type Options struct {
+ 	Path     string
+ 	Headers  http.Header
++	DelHost  bool
+ }
+ 
+ func NewClient(options Options) *Client {
+@@ -41,6 +43,7 @@ func NewClient(options Options) *Client {
+ 		password:   options.Password,
+ 		path:       options.Path,
+ 		headers:    options.Headers,
++		delHost:    options.DelHost,
+ 	}
+ 	if options.Dialer == nil {
+ 		client.dialer = N.SystemDialer
+@@ -68,7 +71,14 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
+ 	request := &http.Request{
+ 		Method: http.MethodConnect,
+ 		Header: http.Header{
+ 			"Proxy-Connection": []string{"Keep-Alive"},
+ 		},
+ 	}
+-	if c.host != "" && c.host != destination.Fqdn {
++	if c.delHost {
++		// Use Opaque URL to prevent http.Request.Write from
++		// auto-populating Host header via URL.Host.
++		// With Opaque, URL.Host == "" so no Host is generated.
++		request.URL = &url.URL{Opaque: destination.String()}
++		request.Host = ""
++	} else if c.host != "" && c.host != destination.Fqdn {
+ 		if c.path != "" {
+ 			_ = conn.Close()
+ 			return nil, E.New("Host header and path are not allowed at the same time")
