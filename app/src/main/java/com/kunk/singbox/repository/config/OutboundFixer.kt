@@ -665,17 +665,16 @@ object OutboundFixer {
                 val httpPath = fixed.path?.takeIf { it.isNotBlank() }
                     ?: fixed.transport?.path?.takeIf { it.isNotBlank() }
 
-                // delHost: Outbound level (parser/UI sets it) — normalizeLegacyTransport
-                // doesn't move delHost to TransportConfig, so must read from Outbound
+                // delHost: Pass through to Go core via Outbound.delHost field.
+                // The Go HTTP client uses Opaque URL to prevent auto-populating Host header.
+                // Do NOT set httpHeaders["Host"] = "" here — Go's http.Request.Write
+                // would auto-fill it from the target address, making it ineffective.
                 val httpHeaders = mutableMapOf<String, String>()
-                if (fixed.delHost == true) {
-                    httpHeaders["Host"] = ""
-                }
                 // headers: Outbound level first, then transport as fallback
                 val sourceHeaders = fixed.headers?.takeIf { it.isNotEmpty() }
                     ?: fixed.transport?.headers?.takeIf { it.isNotEmpty() }
                 sourceHeaders?.forEach { (k, v) ->
-                    if (k !in httpHeaders) httpHeaders[k] = v
+                    httpHeaders[k] = v
                 }
 
                 Outbound(
@@ -687,6 +686,7 @@ object OutboundFixer {
                     password = fixed.password,
                     path = httpPath,
                     headers = httpHeaders.ifEmpty { null },
+                    delHost = fixed.delHost?.takeIf { it },
                     tls = fixed.tls,
                     domainResolver = resolveDomainResolver(fixed),
                     tcpKeepAlive = tcpKeepAliveInterval,
