@@ -1,0 +1,14 @@
+--- a/protocol/http/outbound.go
++++ b/protocol/http/outbound.go
+@@ -47,6 +47,7 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
+ 		client: sHTTP.NewClient(sHTTP.Options{
+ 			Dialer:   detour,
+ 			Server:   options.ServerOptions.Build(),
+ 			Username: options.Username,
+ 			Password: options.Password,
+ 			Path:     options.Path,
+ 			Headers:  options.Headers.Build(),
++			DelHost:  options.DelHost,
+ 		}),
+ 	}, nil
+ }
