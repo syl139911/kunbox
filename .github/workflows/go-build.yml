@@ -64,46 +64,65 @@ jobs:
             git apply ../patches/02-outbound-go.patch
           echo "=== Patches 01 & 02 applied ==="
 
-      - name: Vendor dependencies & patch sing client.go
+      - name: Patch sing dependency via replace directive
         working-directory: upstream-sing-box
         run: |
-          # Add golang.org/x/mobile dependency (required by Go 1.24+)
-          echo "=== Adding golang.org/x/mobile dependency ==="
-          go get -tool golang.org/x/mobile/cmd/gobind
-          go get golang.org/x/mobile
+          # Get the sing version from go.mod
+          SING_VERSION=$(grep 'github.com/sagernet/sing ' go.mod | awk '{print $2}')
+          echo "sing version: $SING_VERSION"
 
-          # Vendor dependencies so we can patch them locally
-          go mod vendor
+          # Download the sing module to cache
+          go mod download github.com/sagernet/sing@${SING_VERSION}
 
-          # Find sing client.go in vendor
-          CLIENT_GO="vendor/github.com/sagernet/sing/protocol/http/client.go"
+          # Find the cached module
+          SING_CACHE="$(go env GOMODCACHE)/github.com/sagernet/sing@${SING_VERSION}"
+          echo "sing cache path: $SING_CACHE"
+
+          # Copy sing to a local directory for patching
+          cp -r "$SING_CACHE" ../local-sing
+
+          # Patch client.go
+          CLIENT_GO="../local-sing/protocol/http/client.go"
           echo "Patching: $CLIENT_GO"
 
           if [ ! -f "$CLIENT_GO" ]; then
             echo "ERROR: $CLIENT_GO not found!"
-            echo "Looking for sing http files:"
-            find vendor/github.com/sagernet/sing -name "*.go" -path "*/http/*" 2>/dev/null || true
+            find ../local-sing -name "client.go" -path "*/http/*"
             exit 1
           fi
 
           echo "=== Before patch ==="
-          head -80 "$CLIENT_GO"
+          grep -n 'host\|Host\|delHost\|Fqdn' "$CLIENT_GO" || true
 
-          # 3a: Add delHost field to Client struct
+          # 3a: Add delHost field to Client struct (after 'host    string')
           sed -i '/^\thost.*string$/a\\tdelHost    bool' "$CLIENT_GO"
 
-          # 3b: Add DelHost field to Options struct
+          # 3b: Add DelHost field to Options struct (after 'Host    string' or 'Host  string')
+          # Be flexible with whitespace
           sed -i '/^\tHost.*string$/a\\tDelHost  bool' "$CLIENT_GO"
 
-          # 3c: Add delHost assignment in NewClient
+          # 3c: Add delHost assignment in NewClient (after 'host: options.Host,')
           sed -i '/^\thost:.*options\.Host,$/a\\t\tdelHost:    options.DelHost,' "$CLIENT_GO"
 
-          # 3d: Add delHost branch in DialContext before existing host check
+          # 3d: Add delHost branch before existing host check
+          # Match: if c.host != "" && c.host != destination.Fqdn {
           sed -i 's/^\tif c\.host != "" && c\.host != destination\.Fqdn {$/\tif c.delHost {\n\t\trequest.URL = \&url.URL{Opaque: target}\n\t\trequest.Host = ""\n\t} else if c.host != "" \&\& c.host != destination.Fqdn {/' "$CLIENT_GO"
 
           echo "=== After patch ==="
-          head -100 "$CLIENT_GO"
-          echo "=== Patch applied successfully ==="
+          grep -n 'delHost\|DelHost\|Opaque' "$CLIENT_GO" || true
+
+          # Add replace directive to go.mod
+          echo "" >> go.mod
+          echo "replace github.com/sagernet/sing => ../local-sing" >> go.mod
+          echo "=== go.mod replace added ==="
+          tail -3 go.mod
+
+      - name: Add golang.org/x/mobile to module
+        working-directory: upstream-sing-box
+        run: |
+          go get -tool golang.org/x/mobile/cmd/gobind
+          go get golang.org/x/mobile
+          echo "=== go.mod updated ==="
 
       - name: Build libbox.aar
         run: |
