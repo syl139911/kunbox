@@ -80,6 +80,7 @@ data class DnsRule(
     // reject/predefined action fields
     @SerializedName("method") val method: String? = null,
     @SerializedName("no_drop") val noDrop: Boolean? = null,
+    @SerializedName("rcode") val rcode: String? = null,
 
     @SerializedName("domain") val domain: List<String>? = null,
     @SerializedName("domain_suffix") val domainSuffix: List<String>? = null,
