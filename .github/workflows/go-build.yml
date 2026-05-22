@@ -84,6 +84,7 @@ jobs:
 
           # Copy sing to a local directory for patching
           cp -r "$SING_CACHE" ../local-sing
+          chmod -R u+w ../local-sing
 
           # Patch client.go
           CLIENT_GO="../local-sing/protocol/http/client.go"
