@@ -77,7 +77,7 @@ data class DnsRule(
     @SerializedName("disable_cache") val disableCache: Boolean? = null,
     @SerializedName("rewrite_ttl") val rewriteTtl: Int? = null,
     @SerializedName("client_subnet") val clientSubnet: String? = null,
-    // reject action fields
+    // reject/predefined action fields
     @SerializedName("method") val method: String? = null,
     @SerializedName("no_drop") val noDrop: Boolean? = null,
 
@@ -287,6 +287,8 @@ data class TlsConfig(
     @SerializedName("utls") val utls: UtlsConfig? = null,
     @SerializedName("reality") val reality: RealityConfig? = null,
     @SerializedName("ech") val ech: EchConfig? = null,
+    @SerializedName("query_server_name") val queryServerName: String? = null,
+    @SerializedName("x_kunbox_ech_dns_server") val dnsServer: String? = null,
     @SerializedName("ca") val ca: String? = null,
     @SerializedName("ca_path") val caPath: String? = null,
     @SerializedName("certificate") val certificate: String? = null,
