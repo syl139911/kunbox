@@ -1535,6 +1535,7 @@ class ConfigRepository(private val context: Context) {
                         activeNodeId = activeNodeId
                     ))
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     Log.e(TAG, "Failed to save active state synchronously", e)
                 }
 
@@ -1552,6 +1553,7 @@ class ConfigRepository(private val context: Context) {
                 val elapsed = System.currentTimeMillis() - startTime
                 Log.d(TAG, "Saved ${profiles.size} profiles to Room in ${elapsed}ms")
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e(TAG, "Failed to save profiles", e)
                 BugLogHelper.logConfigError("Failed to save profiles to Room database", e)
             }
