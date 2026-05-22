@@ -156,36 +156,24 @@ object OutboundFixer {
             }
         }
 
-        // Fix ALPN for WebSocket + TLS
+        // Fix ALPN for WebSocket + TLS (skip when ECH is enabled to avoid outer ClientHello conflict)
         val tlsAfterSni = result.tls
-        if (
-            result.transport?.type == "ws" &&
+        val needsWsAlpn = result.transport?.type == "ws" &&
             tlsAfterSni?.enabled == true &&
-            (tlsAfterSni.alpn == null || tlsAfterSni.alpn.isEmpty())
-        ) {
-            result = result.copy(tls = tlsAfterSni.copy(alpn = listOf("http/1.1")))
-        }
+            tlsAfterSni.ech?.enabled != true
+        if (needsWsAlpn && (tlsAfterSni?.alpn == null || tlsAfterSni.alpn.isEmpty())) {
+            result = result.copy(tls = tlsAfterSni?.copy(alpn = listOf("http/1.1")))
 
-        // Fix HTTP transport: normalize path format only if explicitly set
-        // Don't force "/" default — empty/unset path is valid and intentional for some servers
-        if (transport?.type == "http" && !transport.path.isNullOrBlank()) {
-            val rawPath = transport.path
-            val fixedPath = if (!rawPath.startsWith("/")) "/$rawPath" else rawPath
-            if (fixedPath != rawPath) {
-                result = result.copy(transport = transport.copy(path = fixedPath))
-            }
-        }
-
-        // HTTP proxy: path is injected into CONNECT line (e.g. "example.com:443@dingtalk.com"),
-        // NOT a URL path. Do NOT normalize with "/" prefix — it would break path injection.
+        // HTTP proxy: log config for debugging
         if (result.type == "http") {
-            // Log HTTP proxy config for debugging
             if (result.server.isNullOrBlank()) {
                 BugLogRepository.getInstance().addBugLog(
                     "HTTP Config Warning",
                     "HTTP proxy '${result.tag}' has no server address"
                 )
             }
+        }
+
         }
 
         if (transport?.type == "xhttp") {
@@ -206,8 +194,7 @@ object OutboundFixer {
                     )
 
             val currentAlpn = tlsForXhttp?.alpn
-            val shouldFixXhttpAlpn = tlsForXhttp != null &&
-                (currentAlpn.isNullOrEmpty() || currentAlpn != listOf("h2"))
+            val shouldFixXhttpAlpn = tlsForXhttp != null && currentAlpn.isNullOrEmpty()
 
             if (normalizedPath != rawPath || shouldFixXhttpSni || shouldFixXhttpAlpn) {
                 var updated = result.copy(
@@ -228,12 +215,6 @@ object OutboundFixer {
 
                 result = updated
             }
-
-            if (result.type == "vless" && result.packetEncoding.isNullOrBlank()) {
-                result = result.copy(packetEncoding = "")
-            } else if (result.packetEncoding == "xudp") {
-                result = result.copy(packetEncoding = "")
-            }
         }
 
         if (result.type == "tuic" || result.type == "hysteria2") {
@@ -243,8 +224,7 @@ object OutboundFixer {
                     disableSni = null,
                     tls = currentTls.copy(
                         enabled = true,
-                        disableSni = true,
-                        serverName = null
+                        disableSni = true
                     )
                 )
             } else {
@@ -313,6 +293,13 @@ object OutboundFixer {
             )
         }
         if (result.type == "vmess" && result.packetEncoding.isNullOrBlank()) {
+            result = result.copy(packetEncoding = "xudp")
+        }
+        val isVlessNeedingXudp = result.type == "vless" &&
+            result.packetEncoding.isNullOrBlank() &&
+            result.encryption.isNullOrBlank() &&
+            result.transport?.type != "xhttp"
+        if (isVlessNeedingXudp) {
             result = result.copy(packetEncoding = "xudp")
         }
 
@@ -655,16 +642,10 @@ object OutboundFixer {
                 Log.d(TAG, "HTTP outbound '${fixed.tag}': server=${fixed.server}:${fixed.serverPort}, " +
                     "username=${fixed.username != null}, tls=${fixed.tls?.enabled}")
 
-                // path: Outbound level (parser/UI) first, then transport (normalizeLegacyTransport) as fallback
                 val httpPath = fixed.path?.takeIf { it.isNotBlank() }
                     ?: fixed.transport?.path?.takeIf { it.isNotBlank() }
 
-                // delHost: Pass through to Go core via Outbound.delHost field.
-                // The Go HTTP client uses Opaque URL to prevent auto-populating Host header.
-                // Do NOT set httpHeaders["Host"] = "" here — Go's http.Request.Write
-                // would auto-fill it from the target address, making it ineffective.
                 val httpHeaders = mutableMapOf<String, String>()
-                // headers: Outbound level first, then transport as fallback
                 val sourceHeaders = fixed.headers?.takeIf { it.isNotEmpty() }
                     ?: fixed.transport?.headers?.takeIf { it.isNotEmpty() }
                 sourceHeaders?.forEach { (k, v) ->
@@ -688,6 +669,7 @@ object OutboundFixer {
                     connectTimeout = connectTimeout
                 )
             }
+
 
             else -> fixed
         }, fixed)
