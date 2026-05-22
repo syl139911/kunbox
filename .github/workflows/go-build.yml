@@ -57,13 +57,11 @@ jobs:
         working-directory: upstream-sing-box
         run: |
           echo "=== Patch 1: option/simple.go - add DelHost to HTTPOutboundOptions ==="
-          # Add 'DelHost bool' after 'Headers badoption.HTTPHeader' line
           sed -i '/Headers badoption.HTTPHeader/a\\tDelHost bool                 `json:"del_host,omitempty"`' option/simple.go
           grep -n 'DelHost' option/simple.go
 
           echo "=== Patch 2: protocol/http/outbound.go - pass DelHost to HTTP client ==="
-          # Add 'DelHost: options.DelHost,' after 'Headers: options.Headers.Build(),' line
-          sed -i '/Headers:.*options\.Headers\.Build(),/a\\t\t\t\tDelHost:  options.DelHost,' protocol/http/outbound.go
+          sed -i '/Headers:.*options\.Headers\.Build(),/a\\t\\t\\tDelHost:  options.DelHost,' protocol/http/outbound.go
           grep -n 'DelHost' protocol/http/outbound.go
 
           echo "=== Patches 01 & 02 applied ==="
@@ -99,24 +97,38 @@ jobs:
           echo "=== Before patch ==="
           grep -n 'host\|Host\|delHost\|Fqdn' "$CLIENT_GO" || true
 
-          # 3a: Add delHost field to Client struct (after 'host    string')
+          # --- Fix: match actual sing v0.8.9 struct fields ---
+
+          # 3a: Add delHost field to Client struct (after 'host       string')
           sed -i '/^\thost.*string$/a\\tdelHost    bool' "$CLIENT_GO"
 
-          # 3b: Add DelHost field to Options struct (after 'Host    string' or 'Host  string')
-          # Be flexible with whitespace
-          sed -i '/^\tHost.*string$/a\\tDelHost  bool' "$CLIENT_GO"
+          # 3b: Add DelHost field to Options struct (after 'Headers  http.Header')
+          sed -i '/^\tHeaders.*http\.Header$/a\\tDelHost  bool' "$CLIENT_GO"
 
-          # 3c: Add delHost assignment in NewClient (after 'host: options.Host,')
-          sed -i '/^\thost:.*options\.Host,$/a\\t\tdelHost:    options.DelHost,' "$CLIENT_GO"
+          # 3c: Add delHost assignment in NewClient (after 'headers:    options.Headers,')
+          sed -i '/^\theaders:.*options\.Headers,$/a\\t\\tdelHost:    options.DelHost,' "$CLIENT_GO"
 
-          # 3d: Add target variable + path injection BEFORE request creation
-          sed -i '/^\trequest := &http\.Request{$/i\\t// Build target: destination [+ path injection]\n\ttarget := destination.String()\n\tif c.path != "" {\n\t\ttarget = target + c.path\n\t}\n' "$CLIENT_GO"
-
-          # 3e: Add delHost branch before existing host check
-          sed -i 's/^\tif c\.host != "" && c\.host != destination\.Fqdn {$/\tif c.delHost {\n\t\trequest.URL = \&url.URL{Opaque: target}\n\t\trequest.Host = ""\n\t} else if c.host != "" \&\& c.host != destination.Fqdn {/' "$CLIENT_GO"
+          # 3d: Add delHost Opaque URL branch BEFORE existing host check
+          #     Insert closing brace + else if after 'if c.delHost {' opening brace
+          LINE_NUM=$(grep -n 'if c\.host != "" && c\.host != destination\.Fqdn {' "$CLIENT_GO" | head -1 | cut -d: -f1)
+          if [ -n "$LINE_NUM" ]; then
+            # Insert delHost if-block before the existing host check
+            sed -i "${LINE_NUM}i\\\\tif c.delHost {\\n\\t\\trequest.URL = \\&url.URL{Opaque: destination.String()}\\n\\t\\trequest.Host = \\\"\\\"\\n\\t} else" "$CLIENT_GO"
+            echo "Inserted delHost branch at line $LINE_NUM"
+          else
+            echo "ERROR: could not find host check line"
+            exit 1
+          fi
 
           echo "=== After patch ==="
           grep -n 'delHost\|DelHost\|Opaque' "$CLIENT_GO" || true
+
+          # Verify Options struct has DelHost
+          if ! grep -q 'DelHost.*bool' "$CLIENT_GO"; then
+            echo "ERROR: DelHost field not found in client.go after patching!"
+            exit 1
+          fi
+          echo "OK: DelHost field confirmed in client.go"
 
           # Add replace directive to go.mod
           echo "" >> go.mod
