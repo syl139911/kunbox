@@ -90,7 +90,6 @@ import androidx.navigation.NavController
 import com.kunk.singbox.model.FilterMode
 import com.kunk.singbox.model.NodeSortType
 import com.kunk.singbox.viewmodel.NodesViewModel
-import com.kunk.singbox.utils.DeepLinkHandler
 import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.ui.components.AddNodeDialog
 import com.kunk.singbox.ui.components.AddNodeTarget
@@ -142,15 +141,6 @@ fun NodesScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchExpanded by remember { mutableStateOf(false) }
     val isTesting by viewModel.isTesting.collectAsState()
-
-    // Handle tbox:// deep link import
-    val pendingTbox by DeepLinkHandler.pendingTboxImport.collectAsState()
-    androidx.compose.runtime.LaunchedEffect(pendingTbox) {
-        pendingTbox?.let { base64Data ->
-            viewModel.importTboxNode(base64Data)
-            DeepLinkHandler.clearPendingTboxImport()
-        }
-    }
 
     LaunchedEffect(Unit) {
         viewModel.toastEvents.collectLatest { message ->
