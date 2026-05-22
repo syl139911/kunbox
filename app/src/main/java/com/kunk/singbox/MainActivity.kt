@@ -208,13 +208,6 @@ fun SingBoxApp() {
 
                                 pendingNavigation = "profiles"
                             }
-                        } else if (scheme == "tbox") {
-                            // tbox://base64encodedJSON
-                            val base64Data = uri.toString().removePrefix("tbox://")
-                            if (base64Data.isNotBlank()) {
-                                DeepLinkHandler.setPendingTboxImport(base64Data)
-                                pendingNavigation = "nodes"
-                            }
                         }
                     }
                     intent.data = null
