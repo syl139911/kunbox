@@ -109,8 +109,10 @@ jobs:
           # 3c: Add delHost assignment in NewClient (after 'host: options.Host,')
           sed -i '/^\thost:.*options\.Host,$/a\\t\tdelHost:    options.DelHost,' "$CLIENT_GO"
 
-          # 3d: Add delHost branch before existing host check
-          # Match: if c.host != "" && c.host != destination.Fqdn {
+          # 3d: Add target variable + path injection BEFORE request creation
+          sed -i '/^\trequest := &http\.Request{$/i\\t// Build target: destination [+ path injection]\n\ttarget := destination.String()\n\tif c.path != "" {\n\t\ttarget = target + c.path\n\t}\n' "$CLIENT_GO"
+
+          # 3e: Add delHost branch before existing host check
           sed -i 's/^\tif c\.host != "" && c\.host != destination\.Fqdn {$/\tif c.delHost {\n\t\trequest.URL = \&url.URL{Opaque: target}\n\t\trequest.Host = ""\n\t} else if c.host != "" \&\& c.host != destination.Fqdn {/' "$CLIENT_GO"
 
           echo "=== After patch ==="
