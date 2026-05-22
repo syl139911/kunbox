@@ -262,14 +262,30 @@ jobs:
 
       - name: Verify libbox.aar exports
         run: |
-          echo "Checking exported symbols..."
-          SIZE=$(stat -c%s app/libs/libbox.aar)
-          echo "libbox.aar size: $SIZE bytes"
-          if [ "$SIZE" -lt 50000000 ]; then
-            echo "WARNING: libbox.aar seems too small (< 50MB), build may have failed"
+          echo "Checking libbox.aar..."
+          AAR="app/libs/libbox.aar"
+          if [ ! -f "$AAR" ]; then
+            echo "ERROR: libbox.aar not found!"
             exit 1
           fi
-          echo "OK: libbox.aar looks reasonable"
+          SIZE=$(stat -c%s "$AAR")
+          echo "libbox.aar size: $SIZE bytes ($(( SIZE / 1048576 )) MB)"
+          if [ "$SIZE" -lt 5000000 ]; then
+            echo "ERROR: libbox.aar too small (< 5MB), build likely failed"
+            exit 1
+          fi
+          # Verify it's a valid ZIP/AAR and contains libbox.so
+          if ! unzip -l "$AAR" | grep -q "libbox\.so"; then
+            echo "ERROR: libbox.aar does not contain libbox.so"
+            exit 1
+          fi
+          ABIS=$(unzip -l "$AAR" | grep -oP 'jni/\K[^/]+(?=/libbox\.so)' | sort)
+          echo "Found ABIs: $ABIS"
+          if [ -z "$ABIS" ]; then
+            echo "ERROR: No ABI-specific libbox.so found"
+            exit 1
+          fi
+          echo "OK: libbox.aar verified"
 
       - name: Upload libbox.aar artifact
         uses: actions/upload-artifact@v4
@@ -285,7 +301,7 @@ jobs:
           sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
 
-      - name: Build Debug APK (arm64-v8a)
+      - name: Build Release APK (arm64-v8a)
         run: |
           mkdir -p dist
           ./gradlew assembleRelease -PabiOnly=arm64-v8a
