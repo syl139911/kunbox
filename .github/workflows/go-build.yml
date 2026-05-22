@@ -56,25 +56,16 @@ jobs:
       - name: Apply KunBox Go patches (01 & 02)
         working-directory: upstream-sing-box
         run: |
-          # Fix CRLF line endings in patch files
-          sed -i 's/\r$//' ../patches/01-option-simple-go.patch
-          sed -i 's/\r$//' ../patches/02-outbound-go.patch
+          echo "=== Patch 1: option/simple.go - add DelHost to HTTPOutboundOptions ==="
+          # Add 'DelHost bool' after 'Headers badoption.HTTPHeader' line
+          sed -i '/Headers badoption.HTTPHeader/a\\tDelHost bool                 `json:"del_host,omitempty"`' option/simple.go
+          grep -n 'DelHost' option/simple.go
 
-          echo "=== Patch 01 content ==="
-          cat ../patches/01-option-simple-go.patch
-          echo ""
+          echo "=== Patch 2: protocol/http/outbound.go - pass DelHost to HTTP client ==="
+          # Add 'DelHost: options.DelHost,' after 'Headers: options.Headers.Build(),' line
+          sed -i '/Headers:.*options\.Headers\.Build(),/a\\t\t\t\tDelHost:  options.DelHost,' protocol/http/outbound.go
+          grep -n 'DelHost' protocol/http/outbound.go
 
-          echo "=== Applying patch 01: option/simple.go ==="
-          git apply --check ../patches/01-option-simple-go.patch
-          git apply ../patches/01-option-simple-go.patch
-
-          echo "=== Applying patch 02: protocol/http/outbound.go ==="
-          git apply --check ../patches/02-outbound-go.patch
-          git apply ../patches/02-outbound-go.patch
-
-          echo "=== Verify patches applied ==="
-          grep -n 'DelHost' option/simple.go || echo "WARN: DelHost not found in simple.go"
-          grep -n 'DelHost' protocol/http/outbound.go || echo "WARN: DelHost not found in outbound.go"
           echo "=== Patches 01 & 02 applied ==="
 
       - name: Patch sing dependency via replace directive
