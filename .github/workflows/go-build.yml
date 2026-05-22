@@ -250,6 +250,7 @@ jobs:
 
           echo "=== Building libbox.aar with gomobile ==="
           gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
+            -tags with_clash_api \
             -target android -libname=box \
             -trimpath -ldflags='-s -w -checklinkname=0' \
             -o ../app/libs/libbox.aar \
