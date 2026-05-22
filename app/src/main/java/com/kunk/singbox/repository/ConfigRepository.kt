@@ -3758,7 +3758,6 @@ class ConfigRepository(private val context: Context) {
                 }
                 allTags.contains(candidateTag) -> candidateTag
                 else -> {
-                    // === FIX: 禁止静默 fallback DIRECT，改为抛异常阻止 VPN 启动 ===
                     val rawOutbound = config.outbounds?.find { it.tag == candidateTag }
                     val nodeType = rawOutbound?.type ?: "unknown"
                     val nodeServer = rawOutbound?.server ?: "null"
@@ -3779,9 +3778,24 @@ class ConfigRepository(private val context: Context) {
                             "This usually means the outbound failed validation or was filtered by OutboundFixer."
                     )
 
-                    throw IllegalStateException(
-                        "Selected node is not available in runtime outbounds: $candidateTag (type=$nodeType)"
-                    )
+                    // Fallback: try to use the first available proxy node instead of crashing
+                    val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
+                    val fallbackTag = proxySelector?.default
+                        ?: proxySelector?.outbounds?.firstOrNull { it != "direct" && it != "block" }
+                        ?: proxySelector?.outbounds?.firstOrNull()
+
+                    if (fallbackTag != null) {
+                        Log.w(TAG, "Falling back to proxy default: $fallbackTag (selected node '$candidateTag' was filtered)")
+                        BugLogRepository.getInstance().addBugLog(
+                            "Node Fallback",
+                            "Selected node '$candidateTag' (type=$nodeType) was filtered, falling back to '$fallbackTag'"
+                        )
+                        fallbackTag
+                    } else {
+                        throw IllegalStateException(
+                            "Selected node is not available in runtime outbounds: $candidateTag (type=$nodeType), and no fallback available"
+                        )
+                    }
                 }
             }
             val configFile = File(context.filesDir, "running_config.json")
@@ -4689,6 +4703,15 @@ class ConfigRepository(private val context: Context) {
             var processed = buildOutboundForRuntime(outbound)
             if (processed == null) {
                 Log.w(TAG, "buildRunOutbounds: outbound '${outbound.tag}' (type=${outbound.type}) filtered by buildOutboundForRuntime")
+                if (outbound.type == "http") {
+                    BugLogRepository.getInstance().addBugLog(
+                        "HTTP Outbound Filtered",
+                        "HTTP outbound '${outbound.tag}' was filtered by OutboundFixer.buildForRuntime.\n" +
+                            "Server=${outbound.server}, Port=${outbound.serverPort}\n" +
+                            "Username=${outbound.username}, TLS=${outbound.tls?.enabled}\n" +
+                            "This usually means server is blank, port is invalid (<=0), or libbox rejected the config."
+                    )
+                }
                 return@mapNotNull null
             }
             if (dnsPreResolve && profileId != null) {

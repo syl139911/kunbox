@@ -658,6 +658,8 @@ object OutboundFixer {
                     )
                     return null
                 }
+                Log.d(TAG, "HTTP outbound '${fixed.tag}': server=${fixed.server}:${fixed.serverPort}, " +
+                    "username=${fixed.username != null}, tls=${fixed.tls?.enabled}, network=${fixed.network}")
                 Outbound(
                     type = fixed.type,
                     tag = fixed.tag,
