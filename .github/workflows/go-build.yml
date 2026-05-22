@@ -162,7 +162,7 @@ jobs:
 
           echo "=== Building libbox.aar with gomobile ==="
           gomobile bind -v -androidapi 24 -javapkg=com.github.sagernet \
-            -trimpath -ldflags='-s -w' \
+            -trimpath -ldflags='-s -w -checklinkname=0' \
             -o ../app/libs/libbox.aar \
             ./experimental/libbox
 
