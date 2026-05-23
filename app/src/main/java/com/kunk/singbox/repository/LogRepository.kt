@@ -237,27 +237,26 @@ class LogRepository private constructor() {
     }
 
     /**
-     * Format a log entry for export: insert repeat count after timestamp
-     * e.g. "[18:31:48] ERROR message" -> "18:31:48 [ERROR ×131]\nmessage"
+     * Format a log entry for export: insert repeat count into the log line.
+     * Single-line format so reloadFromFileBestEffort can parse it back correctly.
+     * e.g. "[18:31:48] ERROR message" -> "[18:31:48] [ERROR ×131] message"
      */
     private fun formatLogLineForExport(entry: LogEntry): String {
         val msg = entry.message
-        // message format: "[HH:mm:ss] LEVEL ..."
+        // message format: "[HH:mm:ss] LEVEL content"
         return if (msg.length > 11 && msg[0] == '[' && msg[9] == ']') {
             val time = msg.substring(1, 9)
             val rest = msg.substring(11)
-            // Extract log level
             val levelEnd = rest.indexOf(' ')
             val level = if (levelEnd > 0) rest.substring(0, levelEnd) else rest
             val content = if (levelEnd > 0) rest.substring(levelEnd + 1) else ""
-            buildString {
-                append("$time [$level ×${entry.count}]")
-                if (content.isNotBlank()) {
-                    append("\n$content")
-                }
+            if (content.isNotBlank()) {
+                "[$time] [$level ×${entry.count}] $content"
+            } else {
+                "[$time] [$level ×${entry.count}]"
             }
         } else {
-            "${msg} [×${entry.count}]"
+            "$msg [×${entry.count}]"
         }
     }
 
@@ -330,15 +329,24 @@ class LogRepository private constructor() {
 
     /**
      * Parse a log line back into a LogEntry.
-     * Handles both raw format "[HH:mm:ss] message" and export format with count.
+     * Handles export format: "[HH:mm:ss] [LEVEL ×N] content"
+     * Also handles raw format: "[HH:mm:ss] LEVEL content"
      */
     private fun parseLogLine(line: String): LogEntry {
-        // Check for export format with count: "HH:mm:ss [LEVEL ×N]\ncontent" or "[HH:mm:ss] message [×N]"
-        val countMatch = Regex("""\[×(\d+)]$""").find(line)
-        if (countMatch != null) {
-            val count = countMatch.groupValues[1].toIntOrNull() ?: 1
-            val msg = line.substring(0, countMatch.range.first).trimEnd()
-            return LogEntry(msg, count)
+        // Match export format: [HH:mm:ss] [LEVEL ×N] content
+        val mergedMatch = Regex("""^(\[\d{2}:\d{2}:\d{2}]) \[(\w+)\s+×(\d+)]\s*(.*)""").find(line)
+        if (mergedMatch != null) {
+            val time = mergedMatch.groupValues[1]  // [HH:mm:ss]
+            val level = mergedMatch.groupValues[2]  // LEVEL
+            val count = mergedMatch.groupValues[3].toIntOrNull() ?: 1
+            val content = mergedMatch.groupValues[4]
+            // Reconstruct original message format: "[HH:mm:ss] LEVEL content"
+            val message = if (content.isNotBlank()) {
+                "$time $level $content"
+            } else {
+                "$time $level"
+            }
+            return LogEntry(message, count)
         }
         return LogEntry(line, 1)
     }
