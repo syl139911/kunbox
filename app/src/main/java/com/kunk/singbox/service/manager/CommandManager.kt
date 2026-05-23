@@ -19,6 +19,7 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  * - 閺夆晝鍋炵敮瀛樻交閸婄喖鍤?
@@ -233,6 +234,7 @@ class CommandManager(
                 if (forceKillOnTimeout) {
 
                     Log.e(TAG, "Port $proxyPort NOT released after ${elapsed}ms, killing process to force release")
+                    BugLogHelper.logConnectionError("Proxy port $proxyPort not released after ${elapsed}ms")
                     android.os.Process.killProcess(android.os.Process.myPid())
                 } else {
                     if (enforceReleaseOnTimeout) {
@@ -394,6 +396,7 @@ class CommandManager(
                 results
             } catch (e: Exception) {
                 Log.e(TAG, "URL test failed for group $groupTag: ${e.message}")
+                BugLogHelper.logConnectionError("URL test failed for group $groupTag: ${e.message}", e)
                 emptyMap()
             } finally {
                 pendingUrlTestGroupTag = null
@@ -894,6 +897,7 @@ class CommandManager(
             Log.i(TAG, "CommandClient (Logs) resumed")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to resume Logs client", e)
+        BugLogHelper.logConnectionError("Failed to resume Logs client: ${e.message}", e)
         }
 
         try {
