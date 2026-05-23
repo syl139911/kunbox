@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.ServerSocket
+import com.kunk.singbox.utils.BugLogHelper
 
 class StartupManager(
     private val context: Context,
@@ -324,6 +325,7 @@ class StartupManager(
         } catch (e: Exception) {
             PerfTracer.end(PerfTracer.Phases.VPN_STARTUP)
             val error = parseStartError(e)
+            BugLogHelper.logVpnError("VPN startup failed: $error", e)
             callbacks.onFailed(error)
             StartResult.Failed(error, e)
         } finally {
@@ -544,6 +546,7 @@ class StartupManager(
             )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to patch config: ${e.message}")
+            BugLogHelper.logConfigError("Failed to patch config: ${e.message}", e)
         }
 
         return configContent
