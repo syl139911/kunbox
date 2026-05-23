@@ -387,6 +387,7 @@ class ProxyOnlyService : Service() {
                                 startService(newIntent)
                             } else {
                                 Log.e(TAG, "Failed to generate config file")
+                                BugLogHelper.logConfigError("Failed to generate config file in ProxyOnlyService")
                                 setLastError("Failed to generate config file")
                                 withContext(Dispatchers.Main) { stopSelf() }
                             }
@@ -502,6 +503,7 @@ class ProxyOnlyService : Service() {
 
                 val configFile = File(configPath)
                 if (!configFile.exists()) {
+                    BugLogHelper.logConfigError("Config file not found: $configPath")
                     setLastError("Config file not found: $configPath")
                     withContext(Dispatchers.Main) { stopSelf() }
                     return@launch

@@ -557,8 +557,7 @@ class CommandManager(
                     if (!msg.isNullOrBlank()) {
                         repo.addLog(msg)
                         // Core error/warn 级别日志同步到 Bug 日志
-                        if (msg.contains("ERR") || msg.contains("WARN") ||
-                            msg.contains("error", ignoreCase = true) && !msg.contains("dns: rejected")) {
+                        if (msg.contains("ERR") || msg.contains("WARN")) {
                             BugLogHelper.logVpnError("Core: $msg")
                         }
                     }
