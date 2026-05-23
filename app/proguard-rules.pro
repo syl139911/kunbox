@@ -82,6 +82,16 @@
     <init>(...);
 }
 
+# BugLogEntry - Gson ååºååéè¦ä¿çå­æ®µåï¼æ  @SerializedName æ³¨è§£ï¼
+# R8 ä¼æ··æ·å­æ®µå timestamp/title/detail/stackTraceï¼å¯¼è´ Gson æ å°å¤±è´¥ â NPE é¯é
+-keep class com.kunk.singbox.repository.BugLogEntry {
+    <fields>;
+    <init>(...);
+}
+
+# BugLogRepository - åä¾æ¨¡å¼ + MMKV + Gson åå°è°ç¨
+-keep class com.kunk.singbox.repository.BugLogRepository { *; }
+
 # ====================================================================
 # AIDL Interfaces (进程间通信)
 # ====================================================================
