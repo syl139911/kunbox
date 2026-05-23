@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.ServerSocket
+import com.kunk.singbox.utils.BugLogHelper
 
 class StartupManager(
     private val context: Context,
