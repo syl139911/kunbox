@@ -26,7 +26,7 @@ data class AppSettings(
     @SerializedName("showNotificationSpeed") val showNotificationSpeed: Boolean = true,
 
     @SerializedName("tunEnabled") val tunEnabled: Boolean = true,
-    @SerializedName("tunStack") val tunStack: TunStack = TunStack.GVISOR,
+    @SerializedName("tunStack") val tunStack: TunStack = TunStack.MIXED,
     @SerializedName("ipVersionMode") val ipVersionMode: IpVersionMode = IpVersionMode.DUAL_STACK,
     // Throughput defaults:
     // - 1280 is IPv6 minimum MTU, safe but often reduces throughput.
@@ -52,7 +52,7 @@ data class AppSettings(
     @SerializedName("localDns") val localDns: String = DEFAULT_LOCAL_DNS,
 
     @SerializedName("remoteDns") val remoteDns: String = DEFAULT_REMOTE_DNS,
-    @SerializedName("fakeDnsEnabled") val fakeDnsEnabled: Boolean = true,
+    @SerializedName("fakeDnsEnabled") val fakeDnsEnabled: Boolean = false,
     @SerializedName("fakeIpRange") val fakeIpRange: String = "198.18.0.0/15",
     @SerializedName("fakeIpExcludeDomains") val fakeIpExcludeDomains: String = "",
     @SerializedName("fakeDnsExcludedDomains") val fakeDnsExcludedDomains: String = "",
