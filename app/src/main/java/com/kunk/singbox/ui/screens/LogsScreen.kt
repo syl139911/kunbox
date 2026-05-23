@@ -1,7 +1,6 @@
 package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
-import android.content.Intent
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.asPaddingValues
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BugReport
@@ -36,7 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.kunk.singbox.repository.LogEntry
 import com.kunk.singbox.ui.theme.Neutral500
+import com.kunk.singbox.utils.LogExporter
 import com.kunk.singbox.viewmodel.LogViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,18 +65,12 @@ fun LogsScreen(navController: NavController, viewModel: LogViewModel = viewModel
                         Icon(Icons.Rounded.BugReport, contentDescription = stringResource(R.string.bug_log_title), tint = MaterialTheme.colorScheme.onBackground)
                     }
                     if (settings.debugLoggingEnabled) {
-                        val exportSubject = "KunBox " + stringResource(R.string.logs_title)
                         val exportTitle = stringResource(R.string.logs_export)
                         IconButton(onClick = {
                             val logsText = viewModel.getLogsForExport()
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, exportSubject)
-                                putExtra(Intent.EXTRA_TEXT, logsText)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, exportTitle))
+                            LogExporter.shareLogFile(context, logsText, "KunBox_Runtime_Log.txt")
                         }) {
-                            Icon(Icons.Rounded.Share, contentDescription = stringResource(R.string.logs_export), tint = MaterialTheme.colorScheme.onBackground)
+                            Icon(Icons.Rounded.Share, contentDescription = exportTitle, tint = MaterialTheme.colorScheme.onBackground)
                         }
                         IconButton(onClick = { viewModel.clearLogs() }) {
                             Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.logs_clear), tint = MaterialTheme.colorScheme.onBackground)
@@ -96,7 +92,7 @@ fun LogsScreen(navController: NavController, viewModel: LogViewModel = viewModel
                     horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Rounded.Delete, // Using Delete as placeholder if BugReport is missing or use generic info
+                        imageVector = androidx.compose.material.icons.Icons.Rounded.Delete,
                         contentDescription = null,
                         modifier = Modifier
                             .padding(bottom = 16.dp)
@@ -118,40 +114,88 @@ fun LogsScreen(navController: NavController, viewModel: LogViewModel = viewModel
                 }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                ),
-                reverseLayout = true
-            ) {
-                items(logs) { log ->
-                    // Simplify log display: remove timestamp for cleaner view, but keep it in raw log
-                    val displayLog = if (log.length > 11 && log[0] == '[' && log[9] == ']') {
-                        log.substring(11) // Skip "[HH:mm:ss] "
-                    } else {
-                        log
+            SelectionContainer {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    ),
+                    reverseLayout = true
+                ) {
+                    items(logs) { entry ->
+                        LogEntryItem(entry)
                     }
-
-                    Text(
-                        text = displayLog,
-                        color = when {
-                            log.contains("WARN", ignoreCase = true) -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                            log.contains("ERROR", ignoreCase = true) -> MaterialTheme.colorScheme.error
-                            log.contains("DEBUG", ignoreCase = true) -> Neutral500
-                            else -> MaterialTheme.colorScheme.onSurface
-                        },
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun LogEntryItem(entry: LogEntry) {
+    val msg = entry.message
+    // Parse timestamp and level from "[HH:mm:ss] LEVEL content"
+    val time: String
+    val level: String
+    val content: String
+
+    if (msg.length > 11 && msg[0] == '[' && msg[9] == ']') {
+        time = msg.substring(1, 9)
+        val rest = msg.substring(11)
+        val levelEnd = rest.indexOf(' ')
+        if (levelEnd > 0) {
+            level = rest.substring(0, levelEnd)
+            content = rest.substring(levelEnd + 1)
+        } else {
+            level = rest
+            content = ""
+        }
+    } else {
+        time = ""
+        level = ""
+        content = msg
+    }
+
+    val countSuffix = if (entry.count > 1) " ×${entry.count}" else ""
+
+    val color = when {
+        level.contains("ERROR", ignoreCase = true) || msg.contains("ERROR", ignoreCase = true) ->
+            MaterialTheme.colorScheme.error
+        level.contains("WARN", ignoreCase = true) || msg.contains("WARN", ignoreCase = true) ->
+            MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+        level.contains("DEBUG", ignoreCase = true) || msg.contains("DEBUG", ignoreCase = true) ->
+            Neutral500
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    Text(
+        text = buildString {
+            if (time.isNotBlank()) {
+                append(time)
+                append(" ")
+            }
+            if (level.isNotBlank()) {
+                append("[$level")
+                if (countSuffix.isNotBlank()) append(countSuffix)
+                append("]")
+            }
+            if (content.isNotBlank()) {
+                if (level.isNotBlank()) append("\n")
+                append(content)
+            } else if (level.isBlank()) {
+                // No parseable format, show raw message
+                append(msg)
+                if (countSuffix.isNotBlank()) append(" [$countSuffix]")
+            }
+        },
+        color = color,
+        fontFamily = FontFamily.Monospace,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        modifier = Modifier.padding(vertical = 2.dp)
+    )
 }

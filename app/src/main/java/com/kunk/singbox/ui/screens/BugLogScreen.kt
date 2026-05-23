@@ -1,10 +1,6 @@
 package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
-import android.content.ClipData
-import android.content.Intent
-import android.content.ClipboardManager
-import android.content.Context
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.asPaddingValues
@@ -18,10 +14,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BugReport
-import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.kunk.singbox.ui.components.AppNotificationManager
+import com.kunk.singbox.utils.LogExporter
 import com.kunk.singbox.viewmodel.BugLogViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -79,25 +76,11 @@ fun BugLogScreen(navController: NavController, viewModel: BugLogViewModel = view
                     }
                 },
                 actions = {
-                    val copiedMsg = stringResource(R.string.bug_log_copied)
-                    IconButton(onClick = {
-                        val logsText = viewModel.getLogsForExport()
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("KunBox Bug Log", logsText))
-                        AppNotificationManager.showMessage(context, copiedMsg)
-                    }) {
-                        Icon(Icons.Rounded.ContentCopy, contentDescription = stringResource(R.string.bug_log_copy), tint = MaterialTheme.colorScheme.onBackground)
-                    }
                     // Share/Export button
                     val shareLabel = stringResource(R.string.bug_log_share)
                     IconButton(onClick = {
                         val logsText = viewModel.getLogsForExport()
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, logsText)
-                            putExtra(Intent.EXTRA_SUBJECT, "KunBox Bug Report")
-                        }
-                        context.startActivity(Intent.createChooser(intent, shareLabel))
+                        LogExporter.shareLogFile(context, logsText, "KunBox_Bug_Log.txt")
                     }) {
                         Icon(Icons.Rounded.Share, contentDescription = shareLabel, tint = MaterialTheme.colorScheme.onBackground)
                     }
@@ -140,48 +123,51 @@ fun BugLogScreen(navController: NavController, viewModel: BugLogViewModel = view
                 }
             }
         } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 8.dp,
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                )
-            ) {
-                items(bugLogs) { entry ->
-                    val timeStr = synchronized(dateFormat) { dateFormat.format(Date(entry.timestamp)) }
-
-                    Text(
-                        text = "[$timeStr] ${entry.title}",
-                        color = MaterialTheme.colorScheme.error,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
+            SelectionContainer {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     )
+                ) {
+                    items(bugLogs) { entry ->
+                        val timeStr = synchronized(dateFormat) { dateFormat.format(Date(entry.timestamp)) }
+                        val countSuffix = if (entry.count > 1) " ×${entry.count}" else ""
 
-                    Text(
-                        text = entry.detail,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(bottom = 2.dp)
-                    )
-
-                    if (!entry.stackTrace.isNullOrBlank()) {
                         Text(
-                            text = entry.stackTrace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            text = "[$timeStr]$countSuffix ${entry.title}",
+                            color = MaterialTheme.colorScheme.error,
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
                         )
+
+                        Text(
+                            text = entry.detail,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+
+                        if (!entry.stackTrace.isNullOrBlank()) {
+                            Text(
+                                text = entry.stackTrace,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
+                                lineHeight = 14.sp,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
                     }
                 }
             }

@@ -11,29 +11,46 @@ class LogRepositoryTest {
 
     @After
     fun tearDown() {
-        repository.setEnabled(false)
         repository.clearLogs()
     }
 
     @Test
-    fun addLogIgnoresMessagesWhenDisabled() {
-        repository.setEnabled(false)
-        repository.clearLogs()
-
-        repository.addLog("INFO test log")
-
-        assertTrue(repository.getFilteredLogs().isEmpty())
-    }
-
-    @Test
-    fun addLogRecordsMessagesWhenEnabled() {
-        repository.setEnabled(true)
+    fun addLogRecordsMessages() {
         repository.clearLogs()
 
         repository.addLog("INFO test log")
 
         val logs = repository.getFilteredLogs()
         assertEquals(1, logs.size)
-        assertTrue(logs.first().contains("INFO test log"))
+        assertTrue(logs.first().message.contains("INFO test log"))
+    }
+
+    @Test
+    fun consecutiveDuplicateLogsAreMerged() {
+        repository.clearLogs()
+
+        repository.addLog("UDP is not supported by outbound: PROXY")
+        repository.addLog("UDP is not supported by outbound: PROXY")
+        repository.addLog("UDP is not supported by outbound: PROXY")
+
+        val logs = repository.getFilteredLogs()
+        assertEquals(1, logs.size)
+        assertEquals(3, logs.first().count)
+        assertTrue(logs.first().message.contains("UDP is not supported by outbound: PROXY"))
+    }
+
+    @Test
+    fun nonConsecutiveDuplicatesAreNotMerged() {
+        repository.clearLogs()
+
+        repository.addLog("UDP is not supported by outbound: PROXY")
+        repository.addLog("some other message")
+        repository.addLog("UDP is not supported by outbound: PROXY")
+
+        val logs = repository.getFilteredLogs()
+        assertEquals(3, logs.size)
+        assertEquals(1, logs[0].count)
+        assertEquals(1, logs[1].count)
+        assertEquals(1, logs[2].count)
     }
 }

@@ -20,9 +20,14 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 import android.os.Build
 
+data class LogEntry(
+    val message: String,
+    val count: Int = 1
+)
+
 class LogRepository private constructor() {
-    private val _logs = MutableStateFlow<List<String>>(emptyList())
-    val logs: StateFlow<List<String>> = _logs.asStateFlow()
+    private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
+    val logs: StateFlow<List<LogEntry>> = _logs.asStateFlow()
 
     private val _currentFilter = MutableStateFlow<String?>(null)
     val currentFilter: StateFlow<String?> = _currentFilter.asStateFlow()
@@ -34,7 +39,7 @@ class LogRepository private constructor() {
     private val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private val buffer = ArrayDeque<String>(maxLogSize)
+    private val buffer = ArrayDeque<LogEntry>(maxLogSize)
     private val logVersion = AtomicLong(0)
     private val flushRunning = AtomicBoolean(false)
     private val logUiActiveCount = AtomicInteger(0)
@@ -108,17 +113,24 @@ class LogRepository private constructor() {
             formattedLog
         }
 
-        var shouldRewriteFile = false
+        // Merge consecutive duplicate logs
         synchronized(buffer) {
-            if (buffer.size >= maxLogSize) {
-                buffer.removeFirst()
-                shouldRewriteFile = true
+            val lastEntry = buffer.peekLast()
+            if (lastEntry != null && lastEntry.message == finalLog) {
+                // Same as last log, increment count
+                buffer.removeLast()
+                buffer.addLast(LogEntry(finalLog, lastEntry.count + 1))
+            } else {
+                // Different log, add new entry
+                if (buffer.size >= maxLogSize) {
+                    buffer.removeFirst()
+                }
+                buffer.addLast(LogEntry(finalLog, 1))
             }
-            buffer.addLast(finalLog)
             logVersion.incrementAndGet()
         }
 
-        writeToFileBestEffort(finalLog, shouldRewriteFile)
+        writeToFileBestEffort()
 
         requestFlush()
     }
@@ -165,46 +177,37 @@ class LogRepository private constructor() {
         clearFileBestEffort()
     }
 
-    /**
-     */
     fun setFilter(category: String?) {
         _currentFilter.value = category
         requestFlush()
     }
 
-    /**
-     */
-    fun getFilteredLogs(): List<String> {
+    fun getFilteredLogs(): List<LogEntry> {
         val filter = _currentFilter.value
         val allLogs = synchronized(buffer) { buffer.toList() }
 
         return if (filter == null) {
             allLogs
         } else {
-            allLogs.filter { log ->
-
-                log.contains("[$filter]")
+            allLogs.filter { entry ->
+                entry.message.contains("[$filter]")
             }
         }
     }
 
-    /**
-     */
-    fun searchLogs(keyword: String): List<String> {
+    fun searchLogs(keyword: String): List<LogEntry> {
         if (keyword.isBlank()) return getFilteredLogs()
 
         val keywordLower = keyword.lowercase()
-        return getFilteredLogs().filter { log ->
-            log.lowercase().contains(keywordLower)
+        return getFilteredLogs().filter { entry ->
+            entry.message.lowercase().contains(keywordLower)
         }
     }
 
-    /**
-     */
-    fun getErrorSummary(): List<String> {
+    fun getErrorSummary(): List<LogEntry> {
         return synchronized(buffer) {
-            buffer.filter { log ->
-                log.contains("[ERR]") || log.contains("[E]") || log.contains("error", ignoreCase = true)
+            buffer.filter { entry ->
+                entry.message.contains("[ERR]") || entry.message.contains("[E]") || entry.message.contains("error", ignoreCase = true)
             }.toList()
         }
     }
@@ -212,7 +215,7 @@ class LogRepository private constructor() {
     fun getLogsAsText(): String {
         val exportDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val header = buildString {
-            appendLine("=== KunBox Logs ===")
+            appendLine("=== KunBox Runtime Log ===")
             appendLine("Export Time: ${exportDateFormat.format(Date())}")
             appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
             appendLine("Android Version: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
@@ -221,10 +224,41 @@ class LogRepository private constructor() {
         }
 
         val logContent = synchronized(buffer) {
-            buffer.joinToString("\n")
+            buffer.joinToString("\n") { entry ->
+                if (entry.count > 1) {
+                    formatLogLineForExport(entry)
+                } else {
+                    entry.message
+                }
+            }
         }
 
         return header + logContent
+    }
+
+    /**
+     * Format a log entry for export: insert repeat count after timestamp
+     * e.g. "[18:31:48] ERROR message" -> "18:31:48 [ERROR ×131]\nmessage"
+     */
+    private fun formatLogLineForExport(entry: LogEntry): String {
+        val msg = entry.message
+        // message format: "[HH:mm:ss] LEVEL ..."
+        return if (msg.length > 11 && msg[0] == '[' && msg[9] == ']') {
+            val time = msg.substring(1, 9)
+            val rest = msg.substring(11)
+            // Extract log level
+            val levelEnd = rest.indexOf(' ')
+            val level = if (levelEnd > 0) rest.substring(0, levelEnd) else rest
+            val content = if (levelEnd > 0) rest.substring(levelEnd + 1) else ""
+            buildString {
+                append("$time [$level ×${entry.count}]")
+                if (content.isNotBlank()) {
+                    append("\n$content")
+                }
+            }
+        } else {
+            "${msg} [×${entry.count}]"
+        }
     }
 
     companion object {
@@ -250,16 +284,19 @@ class LogRepository private constructor() {
         return File(ctx.filesDir, "running.log")
     }
 
-    private fun writeToFileBestEffort(line: String, rewriteAll: Boolean) {
+    private fun writeToFileBestEffort() {
         val file = getLogFile() ?: return
         runCatching {
             file.parentFile?.mkdirs()
-            if (!rewriteAll && file.exists()) {
-                file.appendText(line + "\n")
-            } else {
-                val snapshot = synchronized(buffer) { buffer.toList() }
-                file.writeText(snapshot.joinToString("\n") + if (snapshot.isNotEmpty()) "\n" else "")
-            }
+            val snapshot = synchronized(buffer) { buffer.toList() }
+            val text = snapshot.joinToString("\n") { entry ->
+                if (entry.count > 1) {
+                    formatLogLineForExport(entry)
+                } else {
+                    entry.message
+                }
+            } + if (snapshot.isNotEmpty()) "\n" else ""
+            file.writeText(text)
         }
     }
 
@@ -280,11 +317,30 @@ class LogRepository private constructor() {
             synchronized(buffer) {
                 buffer.clear()
                 for (l in lines) {
-                    if (l.isNotBlank()) buffer.addLast(l)
+                    if (l.isNotBlank()) {
+                        // Parse exported format back to LogEntry
+                        val entry = parseLogLine(l)
+                        buffer.addLast(entry)
+                    }
                 }
                 logVersion.incrementAndGet()
             }
         }
+    }
+
+    /**
+     * Parse a log line back into a LogEntry.
+     * Handles both raw format "[HH:mm:ss] message" and export format with count.
+     */
+    private fun parseLogLine(line: String): LogEntry {
+        // Check for export format with count: "HH:mm:ss [LEVEL ×N]\ncontent" or "[HH:mm:ss] message [×N]"
+        val countMatch = Regex("""\[×(\d+)]$""").find(line)
+        if (countMatch != null) {
+            val count = countMatch.groupValues[1].toIntOrNull() ?: 1
+            val msg = line.substring(0, countMatch.range.first).trimEnd()
+            return LogEntry(msg, count)
+        }
+        return LogEntry(line, 1)
     }
 
     private fun startFileSyncLoopIfNeeded() {
@@ -315,12 +371,13 @@ class LogRepository private constructor() {
             val lines = readLastLines(file, maxLogSize)
             val changed = synchronized(buffer) {
                 val current = buffer.toList()
-                if (current == lines) {
+                val newEntries = lines.filter { it.isNotBlank() }.map { parseLogLine(it) }
+                if (current.map { it.message } == newEntries.map { it.message }) {
                     false
                 } else {
                     buffer.clear()
-                    for (l in lines) {
-                        if (l.isNotBlank()) buffer.addLast(l)
+                    for (entry in newEntries) {
+                        buffer.addLast(entry)
                     }
                     logVersion.incrementAndGet()
                     true

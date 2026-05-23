@@ -39,11 +39,24 @@ class BugLogRepository private constructor() {
             detail = detail,
             stackTrace = throwable?.let { getStackTrace(it) }
         )
-        logs.add(entry)
-        // Trim if over max
-        while (logs.size > maxLogSize) {
-            logs.removeAt(0)
+
+        // Merge with last entry if title and detail match (consecutive duplicate)
+        val lastEntry = logs.lastOrNull()
+        if (lastEntry != null && lastEntry.title == title && lastEntry.detail == detail) {
+            // Same as last bug log, increment count and update timestamp
+            val merged = lastEntry.copy(
+                timestamp = entry.timestamp,
+                count = lastEntry.count + 1
+            )
+            logs[logs.size - 1] = merged
+        } else {
+            logs.add(entry)
+            // Trim if over max
+            while (logs.size > maxLogSize) {
+                logs.removeAt(0)
+            }
         }
+
         _bugLogs.value = logs.toList()
         // Persist to disk
         saveToDisk()
@@ -60,7 +73,7 @@ class BugLogRepository private constructor() {
     fun getBugLogsAsText(): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val header = buildString {
-            appendLine("=== KunBox Bug Report ===")
+            appendLine("=== KunBox Bug Log ===")
             appendLine("Export Time: ${dateFormat.format(Date())}")
             appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
             appendLine("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
@@ -71,6 +84,9 @@ class BugLogRepository private constructor() {
         val logContent = logs.joinToString("\n---\n") { entry ->
             buildString {
                 appendLine("Time: ${dateFormat.format(Date(entry.timestamp))}")
+                if (entry.count > 1) {
+                    appendLine("Repeat: ×${entry.count}")
+                }
                 appendLine("Title: ${entry.title}")
                 appendLine()
                 appendLine("Detail:")
@@ -133,5 +149,6 @@ data class BugLogEntry(
     val timestamp: Long,
     val title: String,
     val detail: String,
-    val stackTrace: String? = null
+    val stackTrace: String? = null,
+    val count: Int = 1
 )

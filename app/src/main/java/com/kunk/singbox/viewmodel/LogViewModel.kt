@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kunk.singbox.model.AppSettings
+import com.kunk.singbox.repository.LogEntry
 import com.kunk.singbox.repository.LogRepository
 import com.kunk.singbox.repository.SettingsRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +25,7 @@ class LogViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    val logs: StateFlow<List<String>> = repository.logs
+    val logs: StateFlow<List<LogEntry>> = repository.logs
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
