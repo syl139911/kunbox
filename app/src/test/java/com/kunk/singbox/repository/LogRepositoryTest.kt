@@ -29,24 +29,15 @@ class LogRepositoryTest {
     fun consecutiveDuplicateLogsAreMerged() {
         repository.clearLogs()
 
-        // Rapid-fire identical messages within the same second
-        // so they get the same timestamp and merge
+        // Same raw message should merge regardless of timestamp differences
         repeat(3) {
             repository.addLog("UDP is not supported by outbound: PROXY")
         }
 
         val logs = repository.getFilteredLogs()
-        // Should have 1 merged entry (same timestamp since same second)
-        // or 2-3 entries if timestamp crossed a second boundary
-        // Verify the last entry has count > 1 if merged
-        val totalMessages = logs.sumOf { it.count }
-        assertEquals(3, totalMessages)
-
-        // If all landed in same second, they merge into 1 entry with count=3
-        if (logs.size == 1) {
-            assertEquals(3, logs.first().count)
-            assertTrue(logs.first().message.contains("UDP is not supported by outbound: PROXY"))
-        }
+        assertEquals(1, logs.size)
+        assertEquals(3, logs.first().count)
+        assertTrue(logs.first().message.contains("UDP is not supported by outbound: PROXY"))
     }
 
     @Test
@@ -58,10 +49,10 @@ class LogRepositoryTest {
         repository.addLog("message A")
 
         val logs = repository.getFilteredLogs()
-        // All 3 are different (timestamps differ or content differs)
-        // But the raw content after timestamp differs, so they should be 3 entries
-        val totalMessages = logs.sumOf { it.count }
-        assertEquals(3, totalMessages)
+        assertEquals(3, logs.size)
+        assertEquals(1, logs[0].count)
+        assertEquals(1, logs[1].count)
+        assertEquals(1, logs[2].count)
     }
 
     @Test

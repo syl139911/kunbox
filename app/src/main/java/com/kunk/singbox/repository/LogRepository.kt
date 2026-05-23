@@ -22,7 +22,8 @@ import android.os.Build
 
 data class LogEntry(
     val message: String,
-    val count: Int = 1
+    val count: Int = 1,
+    val rawMessage: String = ""
 )
 
 class LogRepository private constructor() {
@@ -113,19 +114,19 @@ class LogRepository private constructor() {
             formattedLog
         }
 
-        // Merge consecutive duplicate logs
+        // Merge consecutive duplicate logs (compare raw content, ignore timestamp)
         synchronized(buffer) {
             val lastEntry = buffer.peekLast()
-            if (lastEntry != null && lastEntry.message == finalLog) {
+            if (lastEntry != null && lastEntry.rawMessage == message) {
                 // Same as last log, increment count
                 buffer.removeLast()
-                buffer.addLast(LogEntry(finalLog, lastEntry.count + 1))
+                buffer.addLast(LogEntry(finalLog, lastEntry.count + 1, message))
             } else {
                 // Different log, add new entry
                 if (buffer.size >= maxLogSize) {
                     buffer.removeFirst()
                 }
-                buffer.addLast(LogEntry(finalLog, 1))
+                buffer.addLast(LogEntry(finalLog, 1, message))
             }
             logVersion.incrementAndGet()
         }
@@ -348,9 +349,15 @@ class LogRepository private constructor() {
             } else {
                 "$time $level"
             }
-            return LogEntry(message, count)
+            // Reconstruct raw message (without timestamp) for comparison
+            val rawMessage = if (content.isNotBlank()) {
+                "$level $content"
+            } else {
+                level
+            }
+            return LogEntry(message, count, rawMessage)
         }
-        return LogEntry(line, 1)
+        return LogEntry(line, 1, line)
     }
 
     private fun startFileSyncLoopIfNeeded() {
