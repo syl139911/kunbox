@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.lang.ref.WeakReference
+import com.kunk.singbox.utils.BugLogHelper
 
 sealed class RecoveryResult {
     data object AlreadyConnected : RecoveryResult()
