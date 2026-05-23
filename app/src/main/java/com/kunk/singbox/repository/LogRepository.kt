@@ -334,7 +334,9 @@ class LogRepository private constructor() {
      */
     private fun parseLogLine(line: String): LogEntry {
         // Match export format: [HH:mm:ss] [LEVEL ×N] content
-        val mergedMatch = Regex("""^(\[\d{2}:\d{2}:\d{2}]) \[(\w+)\s+×(\d+)]\s*(.*)""").find(line)
+        // Only match known log levels to avoid false positives
+        // when message content itself contains [×N] patterns
+        val mergedMatch = Regex("""^(\[\d{2}:\d{2}:\d{2}]) \[(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|ERR|DBG)\s+×(\d+)]\s*(.*)""").find(line)
         if (mergedMatch != null) {
             val time = mergedMatch.groupValues[1]  // [HH:mm:ss]
             val level = mergedMatch.groupValues[2]  // LEVEL
