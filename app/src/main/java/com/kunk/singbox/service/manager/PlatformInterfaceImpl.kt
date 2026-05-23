@@ -14,7 +14,6 @@ import android.util.Log
 import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.RoutingMode
-import com.kunk.singbox.utils.BugLogHelper
 import io.nekohasekai.libbox.ConnectionOwner
 import io.nekohasekai.libbox.InterfaceUpdateListener
 import io.nekohasekai.libbox.NetworkInterfaceIterator
@@ -171,7 +170,6 @@ class PlatformInterfaceImpl(
                 com.kunk.singbox.repository.LogRepository.getInstance()
                     .addLog("ERROR: protect($fd) failed")
             }
-            BugLogHelper.logConnectionError("protect($fd) failed")
             return
         }
 
