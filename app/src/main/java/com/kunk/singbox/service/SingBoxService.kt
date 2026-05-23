@@ -45,6 +45,7 @@ import com.kunk.singbox.service.manager.NodeSwitchManager
 import com.kunk.singbox.service.manager.BackgroundPowerManager
 import com.kunk.singbox.service.manager.ServiceStateHolder
 import com.kunk.singbox.model.BackgroundPowerSavingDelay
+import com.kunk.singbox.utils.BugLogHelper
 import com.kunk.singbox.utils.L
 import com.kunk.singbox.utils.KernelHttpClient
 import com.kunk.singbox.utils.NetworkClient
@@ -672,6 +673,7 @@ class SingBoxService : VpnService() {
         override fun onFailed(error: String) {
             Log.e(TAG, error)
             setLastError(error)
+            BugLogHelper.logVpnError("Libbox start failed: $error")
             notificationManager.setSuppressUpdates(true)
             notificationManager.cancelNotification()
             updateServiceState(ServiceState.STOPPED)
@@ -2271,6 +2273,7 @@ class SingBoxService : VpnService() {
         } catch (e: Exception) {
             L.error("Restart", "Failed to restart VPN", e)
             setLastError("Failed to restart VPN: ${e.message}")
+            BugLogHelper.logVpnError("Failed to restart VPN: ${e.message}", e)
         }
     }
 
@@ -2546,6 +2549,7 @@ class SingBoxService : VpnService() {
                         } catch (e: Exception) {
                             Log.e(TAG, "Error generating config in Service", e)
                             setLastError("Error generating config: ${e.message}")
+                            BugLogHelper.logConfigError("Error generating config: ${e.message}", e)
                             withContext(Dispatchers.Main) { stopSelf() }
                         }
                     }
@@ -2840,6 +2844,7 @@ class SingBoxService : VpnService() {
             } catch (e: Exception) {
                 Log.e(TAG, "performFullRestart error", e)
                 setLastError("Full restart failed: ${e.message}")
+                BugLogHelper.logVpnError("Full restart failed: ${e.message}", e)
             }
         }
     }
@@ -3152,6 +3157,7 @@ class SingBoxService : VpnService() {
         VpnTileService.persistVpnState(applicationContext, false)
         VpnTileService.persistVpnPending(applicationContext, "")
         setLastError("VPN revoked by system (another VPN may have started)")
+        BugLogHelper.logVpnError("VPN revoked by system (another VPN may have started)")
         updateServiceState(ServiceState.STOPPED)
         requestRemoteStateUpdate(force = true)
         updateTileState()
