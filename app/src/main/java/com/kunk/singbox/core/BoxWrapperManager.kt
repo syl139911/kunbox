@@ -6,6 +6,7 @@ import io.nekohasekai.libbox.Libbox
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.kunk.singbox.utils.BugLogHelper
 
 object BoxWrapperManager {
     private const val TAG = "BoxWrapperManager"
@@ -42,6 +43,7 @@ object BoxWrapperManager {
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to init BoxWrapperManager", e)
+        BugLogHelper.logConnectionError("Failed to init BoxWrapperManager: ${e.message}", e)
             commandServer = null
             false
         }
