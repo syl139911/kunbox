@@ -1,6 +1,12 @@
 package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.asPaddingValues
@@ -14,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BugReport
@@ -123,51 +128,71 @@ fun BugLogScreen(navController: NavController, viewModel: BugLogViewModel = view
                 }
             }
         } else {
-            SelectionContainer {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                    )
-                ) {
-                    items(bugLogs) { entry ->
-                        val timeStr = synchronized(dateFormat) { dateFormat.format(Date(entry.timestamp)) }
-                        val countSuffix = if (entry.count > 1) " ×${entry.count}" else ""
+            val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val copiedText = stringResource(R.string.common_copied)
 
-                        Text(
-                            text = "[$timeStr]$countSuffix ${entry.title}",
-                            color = MaterialTheme.colorScheme.error,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
-                        )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                )
+            ) {
+                items(bugLogs) { entry ->
+                    val timeStr = synchronized(dateFormat) { dateFormat.format(Date(entry.timestamp)) }
+                    val countSuffix = if (entry.count > 1) " ×${entry.count}" else ""
 
-                        Text(
-                            text = entry.detail,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
-
+                    val titleText = "[$timeStr]$countSuffix ${entry.title}"
+                    val fullDetail = buildString {
+                        append(titleText)
+                        append("\n")
+                        append(entry.detail)
                         if (!entry.stackTrace.isNullOrBlank()) {
-                            Text(
-                                text = entry.stackTrace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                lineHeight = 14.sp,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
+                            append("\n")
+                            append(entry.stackTrace)
                         }
+                    }
+
+                    Text(
+                        text = titleText,
+                        color = MaterialTheme.colorScheme.error,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        modifier = Modifier
+                            .combinedClickable(
+                                onLongClick = {
+                                    clipboardManager.setPrimaryClip(ClipData.newPlainText("bug_log", fullDetail))
+                                    Toast.makeText(context, copiedText, Toast.LENGTH_SHORT).show()
+                                },
+                                onClick = {}
+                            )
+                            .padding(top = 6.dp, bottom = 2.dp)
+                    )
+
+                    Text(
+                        text = entry.detail,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+
+                    if (!entry.stackTrace.isNullOrBlank()) {
+                        Text(
+                            text = entry.stackTrace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
                     }
                 }
             }

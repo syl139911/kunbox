@@ -115,9 +115,14 @@ class LogRepository private constructor() {
         }
 
         // Merge consecutive duplicate logs (compare raw content, ignore timestamp)
+        // After file sync, entry.message = "[HH:mm:ss] LEVEL content" (with timestamp),
+        // but incoming `message` = "LEVEL content" (without timestamp).
+        // Always compare rawMessage to rawMessage to avoid format mismatch.
         synchronized(buffer) {
             val lastEntry = buffer.peekLast()
-            if (lastEntry != null && lastEntry.rawMessage == message) {
+            val lastRaw = lastEntry?.rawMessage
+                ?: lastEntry?.let { extractRawFromFormatted(it.message) }
+            if (lastEntry != null && lastRaw == message) {
                 // Same as last log, increment count
                 buffer.removeLast()
                 buffer.addLast(LogEntry(finalLog, lastEntry.count + 1, message))
@@ -235,6 +240,18 @@ class LogRepository private constructor() {
         }
 
         return header + logContent
+    }
+
+    /**
+     * Extract raw message (without timestamp) from a formatted log line.
+     * "[HH:mm:ss] LEVEL content" -> "LEVEL content"
+     */
+    private fun extractRawFromFormatted(message: String): String {
+        return if (message.length > 11 && message[0] == '[' && message[9] == ']') {
+            message.substring(11)
+        } else {
+            message
+        }
     }
 
     /**
