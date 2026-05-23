@@ -4,6 +4,7 @@ import android.util.Log
 import com.kunk.singbox.core.SelectorManager as CoreSelectorManager
 import io.nekohasekai.libbox.CommandClient
 import kotlinx.coroutines.flow.StateFlow
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  *
