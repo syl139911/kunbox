@@ -163,6 +163,7 @@ object OutboundFixer {
             tlsAfterSni.ech?.enabled != true
         if (needsWsAlpn && (tlsAfterSni?.alpn == null || tlsAfterSni.alpn.isEmpty())) {
             result = result.copy(tls = tlsAfterSni?.copy(alpn = listOf("http/1.1")))
+        }
 
         // HTTP proxy: log config for debugging
         if (result.type == "http") {
@@ -172,8 +173,6 @@ object OutboundFixer {
                     "HTTP proxy '${result.tag}' has no server address"
                 )
             }
-        }
-
         }
 
         if (transport?.type == "xhttp") {
@@ -318,6 +317,12 @@ object OutboundFixer {
     /**
      */
     private fun normalizeLegacyTransport(outbound: Outbound): Outbound {
+        // HTTP outbound 不走 transport 层，path/headers 是顶层字段
+        // 不能把它们移入 TransportConfig，否则 Go 核心读不到
+        if (outbound.type == "http") {
+            return outbound
+        }
+
         val legacyNetwork = outbound.network?.takeIf { it.isNotBlank() }
         val legacyPath = outbound.path?.takeIf { it.isNotBlank() }
         val legacyHeaders = outbound.headers?.takeIf { it.isNotEmpty() }
