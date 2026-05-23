@@ -903,14 +903,6 @@ fun NodeDetailScreen(
                                 onValueChange = { editingOutbound = outbound.copy(serverPort = it.toIntOrNull() ?: 443) }
                             )
                             SettingSwitchItem(
-                                title = stringResource(R.string.node_detail_http_first),
-                                checked = transport.httpFirst == true,
-                                icon = Icons.Rounded.Bolt,
-                                onCheckedChange = {
-                                    editingOutbound = outbound.copy(transport = transport.copy(httpFirst = it))
-                                }
-                            )
-                            SettingSwitchItem(
                                 title = stringResource(R.string.node_detail_del_host),
                                 checked = transport.delHost == true,
                                 icon = Icons.Rounded.Delete,

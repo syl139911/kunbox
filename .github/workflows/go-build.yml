@@ -141,20 +141,18 @@ jobs:
           GOEOF
           echo "=== KunBox custom libbox methods injected ==="
           cat experimental/libbox/kunbox_custom.go
-      - name: Apply KunBox Go patches (01, 02 & httpFirst)
+      - name: Apply KunBox Go patches (01, 02)
         working-directory: upstream-sing-box
         run: |
-          echo "=== Patch 1: option/simple.go - add DelHost & HttpFirst to HTTPOutboundOptions ==="
+          echo "=== Patch 1: option/simple.go - add DelHost to HTTPOutboundOptions ==="
           sed -i '/Headers badoption.HTTPHeader/a\	DelHost bool                 `json:"del_host,omitempty"`' option/simple.go
-          sed -i '/DelHost bool.*del_host/a\	HttpFirst bool              `json:"http_first,omitempty"`' option/simple.go
-          grep -n 'DelHost\|HttpFirst' option/simple.go
+          grep -n 'DelHost' option/simple.go
 
-          echo "=== Patch 2: protocol/http/outbound.go - pass DelHost & HttpFirst to HTTP client ==="
+          echo "=== Patch 2: protocol/http/outbound.go - pass DelHost to HTTP client ==="
           sed -i '/Headers:.*options\.Headers\.Build(),/a\				DelHost:  options.DelHost,' protocol/http/outbound.go
-          sed -i '/DelHost:.*options\.DelHost,/a\				HttpFirst: options.HttpFirst,' protocol/http/outbound.go
-          grep -n 'DelHost\|HttpFirst' protocol/http/outbound.go
+          grep -n 'DelHost' protocol/http/outbound.go
 
-          echo "=== Patches 01, 02 & httpFirst applied ==="
+          echo "=== Patches 01 & 02 applied ==="
 
       - name: Patch sing dependency via replace directive
         working-directory: upstream-sing-box
@@ -192,29 +190,18 @@ jobs:
           # 3a: Add delHost field to Client struct (after 'host       string')
           sed -i '/^\thost.*string$/a\	delHost    bool' "$CLIENT_GO"
 
-          # 3aa: Add httpFirst field to Client struct (after delHost)
-          sed -i '/^\tdelHost.*bool$/a\	httpFirst  bool' "$CLIENT_GO"
-
           # 3b: Add DelHost field to Options struct (after 'Headers  http.Header')
           sed -i '/^\tHeaders.*http\.Header$/a\	DelHost  bool' "$CLIENT_GO"
-
-          # 3bb: Add HttpFirst field to Options struct (after DelHost)
-          sed -i '/^\tDelHost.*bool$/a\	HttpFirst bool' "$CLIENT_GO"
 
           # 3c: Add delHost assignment in NewClient (after 'headers:    options.Headers,')
           sed -i '/^\theaders:.*options\.Headers,$/a\			delHost:    options.DelHost,' "$CLIENT_GO"
 
-          # 3cc: Add httpFirst assignment in NewClient (after delHost)
-          sed -i '/^\tdelHost:.*options\.DelHost,$/a\			httpFirst:  options.HttpFirst,' "$CLIENT_GO"
-
           # 3d: Add delHost Opaque URL branch BEFORE existing host check
-          #     AND add httpFirst HTTP/1.1 protocol override AFTER request creation
           python3 -c "
           import re
           with open('$CLIENT_GO', 'r') as f:
               lines = f.readlines()
           new_lines = []
-          found_request_creation = False
           for line in lines:
               if 'if c.host != \"\" && c.host != destination.Fqdn {' in line:
                   indent = line[:len(line) - len(line.lstrip())]
@@ -222,34 +209,19 @@ jobs:
                   new_lines.append(indent + '\trequest.URL = &url.URL{Opaque: destination.String()}\n')
                   new_lines.append(indent + '\trequest.Host = \"\"\n')
                   new_lines.append(indent + '} else ')
-              # After request creation (request := &http.Request{...}), add httpFirst override
-              if 'request := &http.Request{' in line:
-                  found_request_creation = True
               new_lines.append(line)
-              if found_request_creation and line.strip() == '}':
-                  found_request_creation = False
-                  indent = line[:len(line) - len(line.lstrip())]
-                  new_lines.append(indent + 'if c.httpFirst {\n')
-                  new_lines.append(indent + '\trequest.Proto = \"HTTP/1.1\"\n')
-                  new_lines.append(indent + '\trequest.ProtoMajor = 1\n')
-                  new_lines.append(indent + '\trequest.ProtoMinor = 1\n')
-                  new_lines.append(indent + '}\n')
           with open('$CLIENT_GO', 'w') as f:
               f.writelines(new_lines)
           "
           echo "=== After patch ==="
-          grep -n 'delHost\|DelHost\|Opaque\|httpFirst\|HttpFirst\|Proto' "$CLIENT_GO" || true
+          grep -n 'delHost\|DelHost\|Opaque' "$CLIENT_GO" || true
 
-          # Verify Options struct has DelHost and HttpFirst
+          # Verify Options struct has DelHost
           if ! grep -q 'DelHost.*bool' "$CLIENT_GO"; then
             echo "ERROR: DelHost field not found in client.go after patching!"
             exit 1
           fi
-          if ! grep -q 'HttpFirst.*bool' "$CLIENT_GO"; then
-            echo "ERROR: HttpFirst field not found in client.go after patching!"
-            exit 1
-          fi
-          echo "OK: DelHost and HttpFirst fields confirmed in client.go"
+          echo "OK: DelHost field confirmed in client.go"
 
           echo "=== Patched Options struct ==="
           sed -n '/type Options struct/,/^}/p' "$CLIENT_GO"
