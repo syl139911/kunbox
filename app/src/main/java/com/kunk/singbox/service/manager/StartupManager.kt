@@ -313,6 +313,9 @@ class StartupManager(
 
             callbacks.onStarted(configContent)
 
+            // Save runtime config snapshot for bug reports
+            BugLogHelper.setRuntimeConfig(configContent)
+
             val totalMs = PerfTracer.end(PerfTracer.Phases.VPN_STARTUP)
             val actualTotal = SystemClock.elapsedRealtime() - startupBeginMs
             log("========== VPN STARTUP COMPLETE: ${actualTotal}ms ==========")

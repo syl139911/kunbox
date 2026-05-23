@@ -18,6 +18,7 @@ import com.kunk.singbox.model.TunStack
 import com.kunk.singbox.model.VpnAppMode
 import com.kunk.singbox.model.VpnRouteMode
 import com.kunk.singbox.repository.LogRepository
+import com.kunk.singbox.utils.BugLogHelper
 import io.nekohasekai.libbox.TunOptions
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicBoolean
@@ -55,6 +56,11 @@ class VpnTunManager(
             Log.d(TAG, "TUN builder preallocated")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to preallocate TUN builder", e)
+            BugLogHelper.reportVpnError(
+                BugLogHelper.PHASE_CREATE_TUN,
+                "TUN builder preallocate failed",
+                e
+            )
             preallocatedBuilder = null
         }
     }
@@ -386,6 +392,13 @@ class VpnTunManager(
             try { vpnInterface?.close() } catch (_: Exception) {}
         }
 
+        // All retries exhausted - report to bug log
+        BugLogHelper.reportVpnError(
+            BugLogHelper.PHASE_CREATE_TUN,
+            "TUN interface establish failed after all retries",
+            IllegalStateException("Failed to establish TUN interface: all retry attempts exhausted"),
+            extraDetail = "All ${backoffMs.size} retry attempts failed (fd=-1)"
+        )
         return null
     }
 

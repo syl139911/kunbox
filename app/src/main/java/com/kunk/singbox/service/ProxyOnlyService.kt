@@ -35,8 +35,10 @@ import io.nekohasekai.libbox.StringIterator
 import io.nekohasekai.libbox.TunOptions
 import io.nekohasekai.libbox.WIFIState
 import io.nekohasekai.libbox.Libbox
+import com.kunk.singbox.utils.BugLogHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -104,9 +106,18 @@ class ProxyOnlyService : Service() {
     private val hasForegroundStarted = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private val serviceSupervisorJob = SupervisorJob()
-    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceSupervisorJob)
+    private val serviceExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Unhandled coroutine exception in ProxyOnlyService", throwable)
+        BugLogHelper.reportVpnError(
+            BugLogHelper.PHASE_SERVICE_LOOP,
+            "ProxyOnlyService coroutine crash",
+            throwable
+        )
+        runCatching { setLastError("Coroutine crash: ${throwable.message}") }
+    }
+    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceSupervisorJob + serviceExceptionHandler)
     private val cleanupSupervisorJob = SupervisorJob()
-    private val cleanupScope = CoroutineScope(Dispatchers.IO + cleanupSupervisorJob)
+    private val cleanupScope = CoroutineScope(Dispatchers.IO + cleanupSupervisorJob + serviceExceptionHandler)
 
     @Volatile private var isStopping: Boolean = false
     @Volatile private var stopSelfRequested: Boolean = false
@@ -391,6 +402,11 @@ class ProxyOnlyService : Service() {
                             }
                         } catch (e: Exception) {
                             Log.e(TAG, "Error generating config in Service", e)
+                            BugLogHelper.reportVpnError(
+                                BugLogHelper.PHASE_BUILD_CONFIG,
+                                "Config generation failed in ProxyOnlyService",
+                                e
+                            )
                             setLastError("Error generating config: ${e.message}")
                             withContext(Dispatchers.Main) { stopSelf() }
                         }
@@ -459,6 +475,11 @@ class ProxyOnlyService : Service() {
                         Log.i(TAG, "[PrepareRestart] Complete")
                     } catch (e: Exception) {
                         Log.e(TAG, "PrepareRestart error", e)
+                        BugLogHelper.reportVpnError(
+                            BugLogHelper.PHASE_HOT_RELOAD,
+                            "PrepareRestart failed",
+                            e
+                        )
                     }
                 }
             }
@@ -485,6 +506,11 @@ class ProxyOnlyService : Service() {
             hasForegroundStarted.set(true)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to call startForeground", e)
+            BugLogHelper.reportVpnError(
+                BugLogHelper.PHASE_PROXY_START,
+                "startForeground failed in ProxyOnlyService",
+                e
+            )
         }
 
         startJob?.cancel()
@@ -578,6 +604,12 @@ class ProxyOnlyService : Service() {
             } catch (e: Exception) {
                 val reason = "Failed to start proxy-only: ${e.javaClass.simpleName}: ${e.message}"
                 Log.e(TAG, reason, e)
+                BugLogHelper.reportVpnError(
+                    BugLogHelper.PHASE_PROXY_START,
+                    "ProxyOnlyService start failed",
+                    e,
+                    extraDetail = "ConfigPath: $configPath"
+                )
                 setLastError(reason)
                 withContext(Dispatchers.Main) {
                     isRunning = false
@@ -659,6 +691,11 @@ class ProxyOnlyService : Service() {
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to close CommandServer: ${e.message}", e)
+                    BugLogHelper.reportVpnError(
+                        BugLogHelper.PHASE_SHUTDOWN,
+                        "CommandServer close failed in ProxyOnlyService",
+                        e
+                    )
                 }
             }
 

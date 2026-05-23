@@ -103,7 +103,7 @@ object L {
     ) {
         val fullTag = "${category.prefix}/$tag"
 
-        // Logcat 閺夊牊鎸搁崵?
+        // Logcat
         if (logcatEnabled) {
             when (level) {
                 Log.VERBOSE -> Log.v(fullTag, message, throwable)
@@ -112,6 +112,15 @@ object L {
                 Log.WARN -> Log.w(fullTag, message, throwable)
                 Log.ERROR -> Log.e(fullTag, message, throwable)
             }
+        }
+
+        // ERROR/WARN level logs also go to BugLogHelper
+        if (level >= Log.WARN && category == Category.ERROR) {
+            BugLogHelper.log(
+                title = "[${category.prefix}] $tag",
+                detail = message,
+                throwable = throwable
+            )
         }
 
         if (uiLogEnabled && level >= minCategoryLevel) {

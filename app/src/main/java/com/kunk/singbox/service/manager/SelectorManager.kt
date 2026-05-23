@@ -2,6 +2,7 @@
 
 import android.util.Log
 import com.kunk.singbox.core.SelectorManager as CoreSelectorManager
+import com.kunk.singbox.utils.BugLogHelper
 import io.nekohasekai.libbox.CommandClient
 import kotlinx.coroutines.flow.StateFlow
 
@@ -64,6 +65,11 @@ class SelectorManager {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "CommandClient switch failed: ${e.message}")
+                BugLogHelper.reportVpnError(
+                    BugLogHelper.PHASE_SELECTOR,
+                    "CommandClient switch failed for $nodeTag",
+                    e
+                )
             }
             Unit
         }
@@ -76,6 +82,11 @@ class SelectorManager {
             }
         } catch (e: Exception) {
             Log.w(TAG, "BoxWrapper switch failed: ${e.message}")
+            BugLogHelper.reportVpnError(
+                BugLogHelper.PHASE_SELECTOR,
+                "BoxWrapper switch failed for $nodeTag",
+                e
+            )
         }
 
         return SwitchResult.NeedRestart(nodeTag, "All hot switch methods failed")
