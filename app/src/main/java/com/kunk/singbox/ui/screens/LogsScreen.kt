@@ -1,6 +1,12 @@
 package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.asPaddingValues
@@ -11,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BugReport
@@ -114,20 +119,24 @@ fun LogsScreen(navController: NavController, viewModel: LogViewModel = viewModel
                 }
             }
         } else {
-            SelectionContainer {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                    ),
-                    reverseLayout = true
-                ) {
-                    items(logs) { entry ->
-                        LogEntryItem(entry)
+            val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val copiedText = stringResource(R.string.common_copied)
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                ),
+                reverseLayout = true
+            ) {
+                items(logs) { entry ->
+                    LogEntryItem(entry) { textToCopy ->
+                        clipboardManager.setPrimaryClip(ClipData.newPlainText("log", textToCopy))
+                        Toast.makeText(context, copiedText, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -135,8 +144,9 @@ fun LogsScreen(navController: NavController, viewModel: LogViewModel = viewModel
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun LogEntryItem(entry: LogEntry) {
+private fun LogEntryItem(entry: LogEntry, onLongPress: (String) -> Unit) {
     val msg = entry.message
     // Parse timestamp and level from "[HH:mm:ss] LEVEL content"
     val time: String
@@ -172,30 +182,37 @@ private fun LogEntryItem(entry: LogEntry) {
         else -> MaterialTheme.colorScheme.onSurface
     }
 
+    val fullText = buildString {
+        if (time.isNotBlank()) {
+            append(time)
+            append(" ")
+        }
+        if (level.isNotBlank()) {
+            append("[$level")
+            if (countSuffix.isNotBlank()) append(countSuffix)
+            append("]")
+        }
+        if (content.isNotBlank()) {
+            if (level.isNotBlank()) append("\n")
+            append(content)
+        } else if (level.isBlank()) {
+            // No parseable format, show raw message
+            append(msg)
+            if (countSuffix.isNotBlank()) append(" [$countSuffix]")
+        }
+    }
+
     Text(
-        text = buildString {
-            if (time.isNotBlank()) {
-                append(time)
-                append(" ")
-            }
-            if (level.isNotBlank()) {
-                append("[$level")
-                if (countSuffix.isNotBlank()) append(countSuffix)
-                append("]")
-            }
-            if (content.isNotBlank()) {
-                if (level.isNotBlank()) append("\n")
-                append(content)
-            } else if (level.isBlank()) {
-                // No parseable format, show raw message
-                append(msg)
-                if (countSuffix.isNotBlank()) append(" [$countSuffix]")
-            }
-        },
+        text = fullText,
         color = color,
         fontFamily = FontFamily.Monospace,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        modifier = Modifier.padding(vertical = 2.dp)
+        modifier = Modifier
+            .combinedClickable(
+                onLongClick = { onLongPress(fullText) },
+                onClick = {}
+            )
+            .padding(vertical = 2.dp)
     )
 }

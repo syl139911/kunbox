@@ -43,6 +43,7 @@
     <string name="common_select_all">Select All</string>
     <string name="common_clear">Clear</string>
     <string name="common_copy">Copy</string>
+    <string name="common_copied">Copied</string>
     <string name="common_latency">Latency</string>
     <string name="common_timeout">Timeout</string>
     <string name="common_ipv6_only">IPv6 only</string>
