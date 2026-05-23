@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.lang.ref.WeakReference
-import com.kunk.singbox.utils.BugLogHelper
 
 sealed class RecoveryResult {
     data object AlreadyConnected : RecoveryResult()
@@ -480,7 +479,6 @@ object SingBoxRemote {
             }
         }.onFailure {
             Log.e(TAG, "Failed to sync state from service", it)
-        BugLogHelper.logConnectionError("Failed to sync state from service: ${it.message}", it)
         }
     }
 
@@ -555,7 +553,6 @@ object SingBoxRemote {
             }
         }.onFailure {
             Log.e(TAG, "Failed to bind service", it)
-        BugLogHelper.logConnectionError("Failed to bind service: ${it.message}", it)
             bound = false
             service = null
             binder = null
