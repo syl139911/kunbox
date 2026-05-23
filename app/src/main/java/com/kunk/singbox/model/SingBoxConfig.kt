@@ -80,7 +80,6 @@ data class DnsRule(
     // reject/predefined action fields
     @SerializedName("method") val method: String? = null,
     @SerializedName("no_drop") val noDrop: Boolean? = null,
-    @SerializedName("rcode") val rcode: String? = null,
 
     @SerializedName("domain") val domain: List<String>? = null,
     @SerializedName("domain_suffix") val domainSuffix: List<String>? = null,
@@ -298,8 +297,6 @@ data class TlsConfig(
 @Keep
 data class EchConfig(
     @SerializedName("enabled") val enabled: Boolean? = null,
-    @SerializedName("query_server_name") val queryServerName: String? = null,
-    @SerializedName("x_kunbox_ech_dns_server") val dnsServer: String? = null,
     @SerializedName("pq_signature_schemes_enabled") val pqSignatureSchemesEnabled: Boolean? = null,
     @SerializedName("dynamic_record_sizing_disabled") val dynamicRecordSizingDisabled: Boolean? = null,
     @SerializedName("config") val config: List<String>? = null,
