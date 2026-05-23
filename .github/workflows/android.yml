@@ -29,25 +29,22 @@ jobs:
       - name: Prepare Keystore
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/debug.keystore
-            echo "KEYSTORE_PATH=${{ github.workspace }}/debug.keystore" >> $GITHUB_ENV
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
             echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
             echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
             echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
           else
             echo "No signing secrets found, generating temporary keystore..."
-            keytool -genkeypair -v -keystore ${{ github.workspace }}/debug.keystore           -alias temp -keyalgol RSA -keysize 2048 -validity 10000           -storepass temp123 -keypass temp123           -dname "CN=KunBox, OU=Devl, O=KunBox, L=SH, ST=SH, C=CN"
-            echo "KEYSTORE_PATH=${{ github.workspace }}/debug.keystore" >> $GITHUB_ENV
+            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore \
+              -alias temp -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass temp123 -keypass temp123 \
+              -dname "CN=KunBox, OU=Devl, O=KunBox, L=SH, ST=SH, C=CN"
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
             echo "KEYSTORE_PASSWORD=temp123" >> $GITHUB_ENV
             echo "KEY_ALIAS=temp" >> $GITHUB_ENV
             echo "KEY_PASSWORD=temp123" >> $GITHUB_ENV
           fi
-          echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
-          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
-          echo "VERSION_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-        fi
 
       - name: Normalize and grant execute permission for gradlew
         run: |
@@ -57,16 +54,12 @@ jobs:
       - name: Build with Gradle
         run: |
           mkdir -p dist
-
-          # Build arm64-v8a APK
           ./gradlew assembleRelease -PabiOnly=arm64-v8a
           find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
-
-          # Build armeabi-v7a APK
           rm -f app/build/outputs/apk/release/*.apk
           ./gradlew assembleRelease -PabiOnly=armeabi-v7a
           find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
-        enf:
+        env:
           KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -76,5 +69,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sing-box-android-apk
+          name: kunbox-apk
           path: dist/*.apk
