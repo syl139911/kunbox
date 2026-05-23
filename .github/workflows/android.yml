@@ -27,23 +27,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Prepare Keystore
+        id: keystore
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
-            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
-            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
-            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+            echo "ks_path=${{ github.workspace }}/release.keystore" >> $GITHUB_OUTPUT
+            echo "ks_pass=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_OUTPUT
+            echo "ks_alias=${{ secrets.KEY_ALIAS }}" >> $GITHUB_OUTPUT
+            echo "ks_key_pass=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_OUTPUT
           else
             echo "No signing secrets found, generating temporary keystore..."
-            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore \
-              -alias temp -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass temp123 -keypass temp123 \
-              -dname "CN=KunBox, OU=Devl, O=KunBox, L=SH, ST=SH, C=CN"
-            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
-            echo "KEYSTORE_PASSWORD=temp123" >> $GITHUB_ENV
-            echo "KEY_ALIAS=temp" >> $GITHUB_ENV
-            echo "KEY_PASSWORD=temp123" >> $GITHUB_ENV
+            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore               -alias temp -keyalg RSA -keysize 2048 -validity 10000               -storepass temp123 -keypass temp123               -dname "CN=KunBox, OU=Devl, O=KunBox, L=SH, ST=SH, C=CN"
+            echo "ks_path=${{ github.workspace }}/release.keystore" >> $GITHUB_OUTPUT
+            echo "ks_pass=temp123" >> $GITHUB_OUTPUT
+            echo "ks_alias=temp" >> $GITHUB_OUTPUT
+            echo "ks_key_pass=temp123" >> $GITHUB_OUTPUT
           fi
 
       - name: Normalize and grant execute permission for gradlew
@@ -60,10 +58,10 @@ jobs:
           ./gradlew assembleRelease -PabiOnly=armeabi-v7a
           find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
         env:
-          KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PATH: ${{ steps.keystore.outputs.ks_path }}
+          KEYSTORE_PASSWORD: ${{ steps.keystore.outputs.ks_pass }}
+          KEY_ALIAS: ${{ steps.keystore.outputs.ks_alias }}
+          KEY_PASSWORD: ${{ steps.keystore.outputs.ks_key_pass }}
           VERSION_NAME: ${{ github.ref_name }}
 
       - name: Upload APK Artifact
