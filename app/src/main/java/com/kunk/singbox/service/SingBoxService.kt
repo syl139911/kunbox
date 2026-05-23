@@ -45,7 +45,6 @@ import com.kunk.singbox.service.manager.NodeSwitchManager
 import com.kunk.singbox.service.manager.BackgroundPowerManager
 import com.kunk.singbox.service.manager.ServiceStateHolder
 import com.kunk.singbox.model.BackgroundPowerSavingDelay
-import com.kunk.singbox.utils.BugLogHelper
 import com.kunk.singbox.utils.L
 import com.kunk.singbox.utils.KernelHttpClient
 import com.kunk.singbox.utils.NetworkClient
@@ -721,7 +720,6 @@ class SingBoxService : VpnService() {
         override fun startCommandClients() {
             commandManager.startClients().onFailure { e ->
                 Log.e(TAG, "Failed to start Command Clients", e)
-            BugLogHelper.logConnectionError("Failed to start Command Clients: ${e.message}", e)
             }
             // 更新 serviceSelectorManager 的 commandClient (修复热切换不生效的问题)
             serviceSelectorManager.updateCommandClient(commandManager.getCommandClient())
@@ -918,7 +916,6 @@ class SingBoxService : VpnService() {
             Log.i(TAG, "SelectorManager initialized: ${outboundTags.size} outbounds, selected=$selectedTag")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to init SelectorManager", e)
-        BugLogHelper.logConnectionError("Failed to init SelectorManager: ${e.message}", e)
         }
     }
 
@@ -1093,13 +1090,11 @@ class SingBoxService : VpnService() {
                 }
                 is com.kunk.singbox.service.manager.SelectorManager.SwitchResult.Failed -> {
                     L.error("HotSwitch", "Failed: ${result.error}")
-                BugLogHelper.logConnectionError("HotSwitch failed: ${result.error}")
                     return false
                 }
             }
         } catch (e: Exception) {
             L.error("HotSwitch", "Unexpected exception", e)
-            BugLogHelper.logConnectionError("HotSwitch unexpected exception: ${e.message}", e)
             return false
         }
     }
@@ -1367,7 +1362,6 @@ class SingBoxService : VpnService() {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "[AutoFailover] probe sequence failed: $trigger", e)
-        BugLogHelper.logConnectionError("AutoFailover probe failed: $trigger - ${e.message}", e)
         } finally {
             autoFailoverJob = null
         }
