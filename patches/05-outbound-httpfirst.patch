@@ -1,0 +1,10 @@
+--- a/protocol/http/outbound.go
++++ b/protocol/http/outbound.go
+@@ -52,6 +52,7 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
+ 			Path:     options.Path,
+ 			Headers:  options.Headers.Build(),
+ 			DelHost:  options.DelHost,
++			HttpFirst: options.HttpFirst,
+ 		}),
+ 	}, nil
+ }

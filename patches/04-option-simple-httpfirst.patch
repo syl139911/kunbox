@@ -1,0 +1,8 @@
+--- a/option/simple.go
++++ b/option/simple.go
+@@ -43,4 +43,5 @@ type HTTPOutboundOptions struct {
+ 	Path    string               `json:"path,omitempty"`
+ 	Headers badoption.HTTPHeader `json:"headers,omitempty"`
+ 	DelHost bool                 `json:"del_host,omitempty"`
++	HttpFirst bool              `json:"http_first,omitempty"`
+ }

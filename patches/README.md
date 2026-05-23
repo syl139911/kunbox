@@ -1,23 +1,24 @@
-# KunBox del_host 功能补丁
+# KunBox Go Core Patches
 
-## 问题
-Kotlin 层设置 `Host: ""` 无效，因为 Go 的 `http.Request.Write` 会自动从目标地址填充 Host 头。
+## 功能补丁
 
-## 需要修改的文件
+### 1. del_host 功能 (补丁 01-03)
+- **option/simple.go** — 给 `HTTPOutboundOptions` 加 `del_host` 字段
+- **protocol/http/outbound.go** — 传递 `DelHost` 给 HTTP Client
+- **sagernet/sing/protocol/http/client.go** — 用 Opaque URL 阻止 Host 自动填充
 
-### Go 核心层 (3个文件)
+### 2. http_first 功能 (补丁 04-06)
+- **option/simple.go** — 给 `HTTPOutboundOptions` 加 `http_first` 字段
+- **protocol/http/outbound.go** — 传递 `HttpFirst` 给 HTTP Client
+- **sagernet/sing/protocol/http/client.go** — 强制使用 HTTP/1.1 协议
 
-1. **`option/simple.go`** — 给 `HTTPOutboundOptions` 加 `del_host` 字段
-2. **`protocol/http/outbound.go`** — 传递 `DelHost` 给 HTTP Client
-3. **`sagernet/sing/protocol/http/client.go`** — 用 Opaque URL 阻止 Host 自动填充
+## http_first 行为说明
+当 `http_first=true` 时，HTTP CONNECT 请求将强制使用 HTTP/1.1 协议：
+- `request.Proto = "HTTP/1.1"`
+- `request.ProtoMajor = 1`
+- `request.ProtoMinor = 1`
 
-### Kotlin 层 (1个文件)
+这在某些 CDN/代理服务器不支持 HTTP/2 或需要 HTTP/1.1 优先时非常有用。
 
-4. **`OutboundFixer.kt`** — 删除无效的 `httpHeaders["Host"] = ""` 逻辑
-
-## 构建流程
-1. 应用 Go 补丁到 sing-box 源码
-2. 重新编译 libbox.aar
-3. 替换 app/libs/libbox.aar
-4. 应用 Kotlin 修改
-5. 构建 APK
+## 构建方式
+使用 `.github/workflows/go-build.yml` 工作流自动构建，所有补丁在 CI 中自动应用。

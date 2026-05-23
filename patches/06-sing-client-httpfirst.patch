@@ -1,0 +1,32 @@
+--- a/protocol/http/client.go
++++ b/protocol/http/client.go
+@@ -22,6 +22,7 @@ type Client struct {
+ 	host       string
+ 	path       string
+ 	headers    http.Header
+ 	delHost    bool
++	httpFirst  bool
+ }
+
+ type Options struct {
+@@ -31,6 +32,7 @@ type Options struct {
+ 	Path     string
+ 	Headers  http.Header
+ 	DelHost  bool
++	HttpFirst bool
+ }
+
+ func NewClient(options Options) *Client {
+@@ -41,6 +43,7 @@ func NewClient(options Options) *Client {
+ 		path:       options.Path,
+ 		headers:    options.Headers,
+ 		delHost:    options.DelHost,
++		httpFirst:  options.HttpFirst,
+ 	}
+
+ // After request := &http.Request{...} add:
++	if c.httpFirst {
++		request.Proto = "HTTP/1.1"
++		request.ProtoMajor = 1
++		request.ProtoMinor = 1
++	}
