@@ -1,7 +1,6 @@
 package com.kunk.singbox.service.manager
 
 import com.kunk.singbox.repository.LogRepository
-import com.kunk.singbox.utils.BugLogHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
