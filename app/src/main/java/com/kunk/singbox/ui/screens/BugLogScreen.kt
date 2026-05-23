@@ -2,6 +2,7 @@ package com.kunk.singbox.ui.screens
 
 import com.kunk.singbox.R
 import android.content.ClipData
+import android.content.Intent
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.layout.WindowInsets
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -85,6 +87,19 @@ fun BugLogScreen(navController: NavController, viewModel: BugLogViewModel = view
                         AppNotificationManager.showMessage(context, copiedMsg)
                     }) {
                         Icon(Icons.Rounded.ContentCopy, contentDescription = stringResource(R.string.bug_log_copy), tint = MaterialTheme.colorScheme.onBackground)
+                    }
+                    // Share/Export button
+                    val shareLabel = stringResource(R.string.bug_log_share)
+                    IconButton(onClick = {
+                        val logsText = viewModel.getLogsForExport()
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, logsText)
+                            putExtra(Intent.EXTRA_SUBJECT, "KunBox Bug Report")
+                        }
+                        context.startActivity(Intent.createChooser(intent, shareLabel))
+                    }) {
+                        Icon(Icons.Rounded.Share, contentDescription = shareLabel, tint = MaterialTheme.colorScheme.onBackground)
                     }
                     val clearedMsg = stringResource(R.string.bug_log_cleared)
                     IconButton(onClick = {
