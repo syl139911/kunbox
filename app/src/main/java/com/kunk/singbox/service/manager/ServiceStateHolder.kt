@@ -1,7 +1,6 @@
 package com.kunk.singbox.service.manager
 
 import com.kunk.singbox.repository.LogRepository
-import com.kunk.singbox.utils.BugLogHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,11 +71,6 @@ object ServiceStateHolder {
             try {
                 LogRepository.getInstance()
                     .addLog("ERROR SingBoxService: $message")
-            } catch (_: Exception) {
-            }
-            // Also log to BugLogHelper so it appears in the bug log page
-            try {
-                BugLogHelper.log("Service Error", message)
             } catch (_: Exception) {
             }
         }

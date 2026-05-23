@@ -916,20 +916,6 @@ class SingBoxService : VpnService() {
 
             SelectorManager.recordSelectorSignature(outboundTags, selectedTag)
             Log.i(TAG, "SelectorManager initialized: ${outboundTags.size} outbounds, selected=$selectedTag")
-
-            // Set BugLogHelper node context from the selected outbound
-            if (selectedTag != null) {
-                val selectedOutbound = config.outbounds?.find { it.tag == selectedTag }
-                if (selectedOutbound != null) {
-                    BugLogHelper.setNodeContext(
-                        name = selectedTag,
-                        protocol = selectedOutbound.type,
-                        outboundTag = selectedTag,
-                        supportsUdp = selectedOutbound.packetEncoding != "packet",
-                        stack = config.inbounds?.find { it.type == "tun" }?.stack
-                    )
-                }
-            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to init SelectorManager", e)
         BugLogHelper.logConnectionError("Failed to init SelectorManager: ${e.message}", e)
@@ -1097,8 +1083,6 @@ class SingBoxService : VpnService() {
             when (val result = serviceSelectorManager.switchNode(nodeTag)) {
                 is com.kunk.singbox.service.manager.SelectorManager.SwitchResult.Success -> {
                     L.result("HotSwitch", true, "Switched to $nodeTag via ${result.method}")
-                    // Update BugLogHelper node context
-                    BugLogHelper.setNodeContext(name = nodeTag, outboundTag = nodeTag)
                     requestNotificationUpdate(force = true)
                     return true
                 }
@@ -1124,17 +1108,9 @@ class SingBoxService : VpnService() {
 
     private var currentSettings: AppSettings? = null
     private val serviceSupervisorJob = SupervisorJob()
-    private val serviceExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e(TAG, "Unhandled coroutine exception in SingBoxService", throwable)
-        BugLogHelper.reportVpnError(
-            BugLogHelper.PHASE_SERVICE_LOOP,
-            "SingBoxService coroutine crash",
-            throwable
-        )
-    }
-    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceSupervisorJob + serviceExceptionHandler)
+    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceSupervisorJob)
     private val cleanupSupervisorJob = SupervisorJob()
-    private val cleanupScope = CoroutineScope(Dispatchers.IO + cleanupSupervisorJob + serviceExceptionHandler)
+    private val cleanupScope = CoroutineScope(Dispatchers.IO + cleanupSupervisorJob)
     private val autoFailoverSupervisorJob = SupervisorJob()
     private val autoFailoverDispatcher = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "vpn-auto-failover").apply {
@@ -1142,7 +1118,7 @@ class SingBoxService : VpnService() {
             priority = Thread.NORM_PRIORITY - 1
         }
     }.asCoroutineDispatcher()
-    private val autoFailoverScope = CoroutineScope(autoFailoverDispatcher + autoFailoverSupervisorJob + serviceExceptionHandler)
+    private val autoFailoverScope = CoroutineScope(autoFailoverDispatcher + autoFailoverSupervisorJob)
     @Volatile private var isStopping: Boolean = false
     @Volatile private var stopSelfRequested: Boolean = false
     @Volatile private var cleanupJob: Job? = null

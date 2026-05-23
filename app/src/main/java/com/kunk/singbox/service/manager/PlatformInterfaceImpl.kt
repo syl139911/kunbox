@@ -21,7 +21,6 @@ import io.nekohasekai.libbox.PlatformInterface
 import io.nekohasekai.libbox.StringIterator
 import io.nekohasekai.libbox.TunOptions
 import io.nekohasekai.libbox.WIFIState
-import com.kunk.singbox.utils.BugLogHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -171,7 +170,6 @@ class PlatformInterfaceImpl(
                 com.kunk.singbox.repository.LogRepository.getInstance()
                     .addLog("ERROR: protect($fd) failed")
             }
-            BugLogHelper.logConnectionError("protect($fd) failed in autoDetectInterfaceControl")
             return
         }
 
@@ -604,11 +602,6 @@ class PlatformInterfaceImpl(
             cm.registerNetworkCallback(request, defaultCallback)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to register network callback", e)
-            BugLogHelper.reportVpnError(
-                BugLogHelper.PHASE_NETWORK,
-                "Network callback registration failed",
-                e
-            )
         }
 
         vpnNetworkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -667,11 +660,6 @@ class PlatformInterfaceImpl(
                                     callbacks.requestCoreNetworkReset(reason = "vpnHealthRecovery", force = false)
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Failed to reset network stack during health recovery", e)
-                                    BugLogHelper.reportVpnError(
-                                        BugLogHelper.PHASE_NETWORK,
-                                        "VPN health recovery failed",
-                                        e
-                                    )
                                 }
                             }
                         }
@@ -694,11 +682,6 @@ class PlatformInterfaceImpl(
             cm.registerNetworkCallback(vpnRequest, vpnCallback)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to register VPN network callback", e)
-            BugLogHelper.reportVpnError(
-                BugLogHelper.PHASE_NETWORK,
-                "VPN network callback registration failed",
-                e
-            )
         }
     }
 

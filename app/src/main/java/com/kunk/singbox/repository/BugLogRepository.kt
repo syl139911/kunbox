@@ -28,6 +28,7 @@ class BugLogRepository private constructor() {
     private val maxLogSize = 200
 
     init {
+        // Load persisted logs on init
         loadFromDisk()
     }
 
@@ -39,28 +40,13 @@ class BugLogRepository private constructor() {
             stackTrace = throwable?.let { getStackTrace(it) }
         )
         logs.add(entry)
+        // Trim if over max
         while (logs.size > maxLogSize) {
             logs.removeAt(0)
         }
         _bugLogs.value = logs.toList()
+        // Persist to disk
         saveToDisk()
-    }
-
-    /**
-     * Add a bug log with full context: stack trace + runtime config snapshot.
-     */
-    fun addBugLogWithContext(
-        title: String,
-        detail: String,
-        throwable: Throwable? = null,
-        runtimeConfig: String? = null
-    ) {
-        val fullDetail = if (runtimeConfig != null) {
-            "$detail\n\n--- Runtime Config ---\n$runtimeConfig"
-        } else {
-            detail
-        }
-        addBugLog(title, fullDetail, throwable)
     }
 
     fun getBugLogs(): List<BugLogEntry> = logs.toList()
@@ -105,6 +91,7 @@ class BugLogRepository private constructor() {
             val json = gson.toJson(logs.toList())
             mmkv.encode("bug_logs_json", json)
         } catch (_: Exception) {
+            // Never let persistence crash the app
         }
     }
 
@@ -119,6 +106,7 @@ class BugLogRepository private constructor() {
                 _bugLogs.value = logs.toList()
             }
         } catch (_: Exception) {
+            // Corrupted data, start fresh
             mmkv.remove("bug_logs_json")
         }
     }
