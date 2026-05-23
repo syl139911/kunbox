@@ -52,7 +52,6 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
-import com.kunk.singbox.utils.BugLogHelper
 
 class ProxyOnlyService : Service() {
 
