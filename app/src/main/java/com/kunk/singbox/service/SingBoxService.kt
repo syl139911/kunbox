@@ -718,6 +718,7 @@ class SingBoxService : VpnService() {
         override fun startCommandClients() {
             commandManager.startClients().onFailure { e ->
                 Log.e(TAG, "Failed to start Command Clients", e)
+            BugLogHelper.logConnectionError("Failed to start Command Clients: ${e.message}", e)
             }
             // 更新 serviceSelectorManager 的 commandClient (修复热切换不生效的问题)
             serviceSelectorManager.updateCommandClient(commandManager.getCommandClient())
@@ -914,6 +915,7 @@ class SingBoxService : VpnService() {
             Log.i(TAG, "SelectorManager initialized: ${outboundTags.size} outbounds, selected=$selectedTag")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to init SelectorManager", e)
+        BugLogHelper.logConnectionError("Failed to init SelectorManager: ${e.message}", e)
         }
     }
 
@@ -1088,11 +1090,13 @@ class SingBoxService : VpnService() {
                 }
                 is com.kunk.singbox.service.manager.SelectorManager.SwitchResult.Failed -> {
                     L.error("HotSwitch", "Failed: ${result.error}")
+                BugLogHelper.logConnectionError("HotSwitch failed: ${result.error}")
                     return false
                 }
             }
         } catch (e: Exception) {
             L.error("HotSwitch", "Unexpected exception", e)
+            BugLogHelper.logConnectionError("HotSwitch unexpected exception: ${e.message}", e)
             return false
         }
     }
@@ -1360,6 +1364,7 @@ class SingBoxService : VpnService() {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "[AutoFailover] probe sequence failed: $trigger", e)
+        BugLogHelper.logConnectionError("AutoFailover probe failed: $trigger - ${e.message}", e)
         } finally {
             autoFailoverJob = null
         }
@@ -2544,6 +2549,7 @@ class SingBoxService : VpnService() {
                             } else {
                                 Log.e(TAG, "Failed to generate config file")
                                 setLastError("Failed to generate config file")
+                                BugLogHelper.logConfigError("Failed to generate config file")
                                 withContext(Dispatchers.Main) { stopSelf() }
                             }
                         } catch (e: Exception) {
@@ -2666,6 +2672,7 @@ class SingBoxService : VpnService() {
                 val configContent = intent.getStringExtra(EXTRA_CONFIG_CONTENT)
                 if (configContent.isNullOrEmpty()) {
                     Log.e(TAG, "ACTION_HOT_RELOAD: config content is empty")
+            BugLogHelper.logConfigError("Hot reload failed: config content is empty")
                 } else {
                     performHotReload(configContent)
                 }
@@ -2675,6 +2682,7 @@ class SingBoxService : VpnService() {
                 val configPath = intent.getStringExtra(EXTRA_CONFIG_PATH)
                 if (configPath.isNullOrEmpty()) {
                     Log.e(TAG, "ACTION_FULL_RESTART: config path is empty")
+            BugLogHelper.logConfigError("Full restart failed: config path is empty")
                 } else {
                     performFullRestart(configPath)
                 }
@@ -2746,6 +2754,7 @@ class SingBoxService : VpnService() {
                 Log.i(TAG, "[PrepareRestart] Complete - apps should now detect network interruption")
             } catch (e: Exception) {
                 Log.e(TAG, "performPrepareRestart error", e)
+            BugLogHelper.logVpnError("Prepare restart error: ${e.message}", e)
             }
         }
     }
@@ -2791,6 +2800,7 @@ class SingBoxService : VpnService() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "performHotReload error", e)
+            BugLogHelper.logVpnError("Hot reload error: ${e.message}", e)
                 handleHotReloadFailure("Hot reload error: ${e.message}")
             }
         }
@@ -2889,6 +2899,7 @@ class SingBoxService : VpnService() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "performHotReloadSync error", e)
+        BugLogHelper.logVpnError("Hot reload sync error: ${e.message}", e)
             false
         }
     }
@@ -2935,6 +2946,7 @@ class SingBoxService : VpnService() {
             notificationManager.markForegroundStarted()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to call startForeground", e)
+        BugLogHelper.logVpnError("Failed to start foreground: ${e.message}", e)
         }
 
         // 获取清理缓存标志
