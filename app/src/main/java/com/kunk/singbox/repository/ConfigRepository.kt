@@ -25,7 +25,6 @@ import com.kunk.singbox.repository.config.OutboundFixer
 import com.kunk.singbox.repository.config.InboundBuilder
 import com.kunk.singbox.repository.config.NodeLinkExporter
 import com.kunk.singbox.utils.parser.SubscriptionManager
-import com.kunk.singbox.utils.BugLogHelper
 import com.kunk.singbox.utils.TcpPing
 import com.kunk.singbox.database.AppDatabase
 import com.kunk.singbox.database.entity.ProfileEntity
