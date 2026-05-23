@@ -23,6 +23,7 @@ import io.nekohasekai.libbox.TunOptions
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import java.io.File
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  *
@@ -266,6 +267,7 @@ class CoreManager(
         } catch (e: Exception) {
             PerfTracer.end(PerfTracer.Phases.LIBBOX_START)
             Log.e(TAG, "Libbox start failed: ${e.message}", e)
+            BugLogHelper.logVpnError("Libbox start failed: ${e.message}", e)
             logRepo.addLog("ERR [Startup] startLibbox failed: ${e.message}")
             StartResult.Failed(e.message ?: "Unknown error", e)
         } finally {
