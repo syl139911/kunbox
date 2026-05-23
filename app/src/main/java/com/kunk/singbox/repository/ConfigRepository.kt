@@ -58,6 +58,7 @@ import com.kunk.singbox.utils.NetworkClient
 import com.kunk.singbox.utils.dns.DnsResolver
 import com.kunk.singbox.utils.dns.DnsResolveStore
 import com.tencent.mmkv.MMKV
+import com.kunk.singbox.utils.BugLogHelper
 
 class ConfigRepository(private val context: Context) {
 
