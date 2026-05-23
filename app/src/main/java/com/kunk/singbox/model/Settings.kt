@@ -26,7 +26,7 @@ data class AppSettings(
     @SerializedName("showNotificationSpeed") val showNotificationSpeed: Boolean = true,
 
     @SerializedName("tunEnabled") val tunEnabled: Boolean = true,
-    @SerializedName("tunStack") val tunStack: TunStack = TunStack.MIXED,
+    @SerializedName("tunStack") val tunStack: TunStack = TunStack.SYSTEM,
     @SerializedName("ipVersionMode") val ipVersionMode: IpVersionMode = IpVersionMode.DUAL_STACK,
     // Throughput defaults:
     // - 1280 is IPv6 minimum MTU, safe but often reduces throughput.
