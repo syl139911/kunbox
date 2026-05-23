@@ -52,6 +52,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
+import com.kunk.singbox.utils.BugLogHelper
 
 class ProxyOnlyService : Service() {
 
@@ -391,6 +392,7 @@ class ProxyOnlyService : Service() {
                             }
                         } catch (e: Exception) {
                             Log.e(TAG, "Error generating config in Service", e)
+                            BugLogHelper.logConfigError("Error generating config: ${e.message}", e)
                             setLastError("Error generating config: ${e.message}")
                             withContext(Dispatchers.Main) { stopSelf() }
                         }
@@ -578,6 +580,7 @@ class ProxyOnlyService : Service() {
             } catch (e: Exception) {
                 val reason = "Failed to start proxy-only: ${e.javaClass.simpleName}: ${e.message}"
                 Log.e(TAG, reason, e)
+                BugLogHelper.logVpnError("ProxyOnlyService start failed: ${e.message}", e)
                 setLastError(reason)
                 withContext(Dispatchers.Main) {
                     isRunning = false

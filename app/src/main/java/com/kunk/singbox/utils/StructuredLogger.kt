@@ -114,6 +114,10 @@ object L {
             }
         }
 
+        if (level >= Log.WARN && category == Category.ERROR) {
+            BugLogHelper.log("[${category.prefix}] $tag", message, throwable)
+        }
+
         if (uiLogEnabled && level >= minCategoryLevel) {
             val emoji = if (showEmoji) "${category.emoji} " else ""
             val levelStr = when (level) {

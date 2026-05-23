@@ -18,6 +18,7 @@ import com.kunk.singbox.model.TunStack
 import com.kunk.singbox.model.VpnAppMode
 import com.kunk.singbox.model.VpnRouteMode
 import com.kunk.singbox.repository.LogRepository
+import com.kunk.singbox.utils.BugLogHelper
 import io.nekohasekai.libbox.TunOptions
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicBoolean
@@ -386,6 +387,7 @@ class VpnTunManager(
             try { vpnInterface?.close() } catch (_: Exception) {}
         }
 
+        BugLogHelper.logVpnError("TUN establish failed after all retries (fd=-1)")
         return null
     }
 
