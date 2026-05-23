@@ -23,6 +23,7 @@ import io.nekohasekai.libbox.TunOptions
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import java.io.File
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  *
