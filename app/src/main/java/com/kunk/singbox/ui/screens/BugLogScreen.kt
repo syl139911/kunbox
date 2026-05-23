@@ -54,7 +54,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun BugLogScreen(navController: NavController, viewModel: BugLogViewModel = viewModel()) {
     val bugLogs by viewModel.bugLogs.collectAsState()
