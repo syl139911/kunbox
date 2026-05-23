@@ -40,7 +40,10 @@ object InboundBuilder {
                     strictRoute = false,
                     stack = effectiveTunStack.name.lowercase(),
                     endpointIndependentNat = settings.endpointIndependentNat,
-                    gso = null
+                    gso = null,
+                    sniff = true,
+                    sniffOverrideDestination = true,
+                    sniffTimeout = "100ms"
                 )
             )
         } else if (settings.proxyPort <= 0) {
