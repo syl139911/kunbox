@@ -530,6 +530,7 @@
     <string name="bug_log_cleared">日志已清空</string>
     <string name="bug_log_copy">复制日志</string>
     <string name="bug_log_clear">清空日志</string>
+    <string name="bug_log_share">导出日志</string>
 
     <!-- Diagnostics -->
     <string name="diagnostics_title">网络诊断</string>
