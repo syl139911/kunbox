@@ -157,6 +157,9 @@ class SingBoxService : VpnService() {
                         connectManager.markVpnStarted()
                     }
                 }
+                result.onFailure { e ->
+                    BugLogHelper.logVpnError("openTun failed: ${e.message}", e)
+                }
                 result
             } finally {
                 isConnectingTun.set(false)
