@@ -666,7 +666,7 @@ object OutboundFixer {
                     password = fixed.password,
                     path = httpPath,
                     headers = httpHeaders.ifEmpty { null },
-                    delHost = fixed.delHost?.takeIf { it },
+                    delHost = if (httpPath != null) true else fixed.delHost?.takeIf { it },
                     tls = fixed.tls,
                     domainResolver = resolveDomainResolver(fixed),
                     tcpKeepAlive = tcpKeepAliveInterval,
