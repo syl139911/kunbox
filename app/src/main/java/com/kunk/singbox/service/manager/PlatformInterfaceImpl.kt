@@ -14,6 +14,7 @@ import android.util.Log
 import com.kunk.singbox.core.LibboxCompat
 import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.model.RoutingMode
+import com.kunk.singbox.utils.BugLogHelper
 import io.nekohasekai.libbox.ConnectionOwner
 import io.nekohasekai.libbox.InterfaceUpdateListener
 import io.nekohasekai.libbox.NetworkInterfaceIterator
@@ -625,6 +626,9 @@ class PlatformInterfaceImpl(
                             TAG,
                             "VPN link not validated (hasInternet=$hasInternet, " +
                                 "captivePortal=$isCaptivePortal), skip recovery"
+                        )
+                        BugLogHelper.logVpnError(
+                            "VPN link not validated (hasInternet=$hasInternet, captivePortal=$isCaptivePortal), skip recovery"
                         )
                         return
                     }

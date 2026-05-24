@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import com.kunk.singbox.core.BoxWrapperManager
+import com.kunk.singbox.utils.BugLogHelper
 import com.kunk.singbox.utils.perf.StateCache
 import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicLong
@@ -275,6 +276,7 @@ class ConnectManager(
 
         if (!isValidated) {
             Log.d(TAG, "Active default network $network not yet validated, handing over underlying network first")
+            BugLogHelper.logVpnError("Active default network not yet validated: $network")
         }
 
         Log.i(TAG, "Network available: $network (active, validated=$isValidated)")
@@ -323,6 +325,7 @@ class ConnectManager(
             }
 
             Log.i(TAG, "No replacement network found, clearing underlying networks")
+            BugLogHelper.logVpnError("No replacement network found, clearing underlying networks")
             lastKnownNetwork = null
             StateCache.invalidateNetworkCache()
             setUnderlyingNetworksFn?.invoke(null)
@@ -353,6 +356,7 @@ class ConnectManager(
     ) {
         if (!isValidPhysicalNetwork(caps)) {
             Log.i(TAG, "Network capabilities no longer valid: $network")
+            BugLogHelper.logVpnError("Network capabilities no longer valid: $network")
             if (lastKnownNetwork == network) {
                 handleNetworkLost(network)
             }

@@ -90,6 +90,9 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		}
 
 		raw := fmt.Sprintf("CONNECT %s HTTP/1.1\r\n", connectTarget)
+		if c.headers.Get("User-Agent") == "" {
+			raw += "User-Agent: Go-http-client/1.1\r\n"
+		}
 		raw += "Proxy-Connection: Keep-Alive\r\n"
 		if c.username != "" {
 			auth := c.username + ":" + c.password

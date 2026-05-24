@@ -392,6 +392,7 @@ class CommandManager(
                 val results = latestGroupResults.get().ifEmpty { urlTestResults.toMap() }
                 if (results.isEmpty()) {
                     Log.w(TAG, "URL test timeout or no results for group: $groupTag")
+                    BugLogHelper.logConnectionError("URL test timeout or no results for group: $groupTag")
                 }
                 results
             } catch (e: Exception) {
