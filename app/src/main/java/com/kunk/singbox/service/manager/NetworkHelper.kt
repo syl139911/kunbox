@@ -13,6 +13,7 @@ import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.repository.LogRepository
 import com.kunk.singbox.repository.RuleSetRepository
 import com.kunk.singbox.repository.SettingsRepository
+import com.kunk.singbox.utils.BugLogHelper
 import com.kunk.singbox.utils.DefaultNetworkListener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -138,6 +139,15 @@ class NetworkHelper(
         timeoutMs: Long
     ): Network? {
         val cm = connectivityManager ?: return null
+        val activeNet = cm.activeNetwork
+        if (activeNet != null) {
+            val caps = cm.getNetworkCapabilities(activeNet)
+            BugLogHelper.logVpnError(
+                "Network snapshot: active=$activeNet, hasInternet=${caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true}, " +
+                    "validated=${caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true}, " +
+                    "notVpn=${caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) == true}"
+            )
+        }
         DefaultNetworkListener.underlyingNetwork?.let { cached ->
             if (isValidPhysicalNetwork(cm, cached)) {
                 Log.i(TAG, "Using DefaultNetworkListener cache: $cached")
@@ -160,6 +170,8 @@ class NetworkHelper(
         // 4. 閺夌儐鍠涢妤呭蓟閵夛箑顥?
         val start = SystemClock.elapsedRealtime()
         var best: Network? = null
+        var bestValidated = false
+        var bestHasInternet = false
         while (SystemClock.elapsedRealtime() - start < timeoutMs) {
             val candidate = findBestPhysicalNetwork()
             if (candidate != null) {
@@ -168,11 +180,30 @@ class NetworkHelper(
                 val notVpn = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) == true
                 if (hasInternet && notVpn) {
                     best = candidate
-                    val validated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-                    if (validated) return candidate
+                    bestHasInternet = true
+                    bestValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                    if (bestValidated) {
+                        val connectivityOk = performConnectivityCheck()
+                        if (!connectivityOk) {
+                            BugLogHelper.logVpnError(
+                                "Validated network connectivity check failed: network=$candidate, " +
+                                    "hasInternet=$bestHasInternet"
+                            )
+                        }
+                        return candidate
+                    }
                 }
             }
             delay(100)
+        }
+        if (best == null) {
+            BugLogHelper.logVpnError("No usable physical network found within ${timeoutMs}ms")
+        } else if (!bestValidated) {
+            val connectivityOk = performConnectivityCheck()
+            BugLogHelper.logVpnError(
+                "Physical network not validated within ${timeoutMs}ms: network=$best, " +
+                    "hasInternet=$bestHasInternet, connectivityCheck=$connectivityOk"
+            )
         }
         return best
     }

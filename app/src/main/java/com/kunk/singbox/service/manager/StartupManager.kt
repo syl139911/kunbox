@@ -163,7 +163,7 @@ class StartupManager(
     }
 
     /**
-     * 妤犵偞鍎奸、鎴﹀礆濠靛棭娼楅柛鏍ㄧ墱缁劑寮?
+     * 妤犵偞鍎奸、鎴﹀礆濠靇早娼楅柛鏍㌿缁劑寮?
      */
     private data class ParallelInitResult(
         val network: Network?,
@@ -465,6 +465,10 @@ class StartupManager(
             "[parallelInit] waitForUsablePhysicalNetwork: " +
                 "${SystemClock.elapsedRealtime() - afterCallback}ms, network=$network"
         )
+        log("[parallelInit] network-debug: selectedNetwork=$network")
+        if (network == null) {
+            com.kunk.singbox.utils.BugLogHelper.logVpnError("Startup selected no usable network")
+        }
         return network
     }
 
