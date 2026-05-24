@@ -193,7 +193,8 @@ object OutboundFixer {
                     )
 
             val currentAlpn = tlsForXhttp?.alpn
-            val shouldFixXhttpAlpn = tlsForXhttp != null && currentAlpn.isNullOrEmpty()
+            val shouldFixXhttpAlpn = tlsForXhttp != null &&
+                (currentAlpn.isNullOrEmpty() || currentAlpn != listOf("h2"))
 
             if (normalizedPath != rawPath || shouldFixXhttpSni || shouldFixXhttpAlpn) {
                 var updated = result.copy(
@@ -294,12 +295,10 @@ object OutboundFixer {
         if (result.type == "vmess" && result.packetEncoding.isNullOrBlank()) {
             result = result.copy(packetEncoding = "xudp")
         }
-        val isVlessNeedingXudp = result.type == "vless" &&
-            result.packetEncoding.isNullOrBlank() &&
-            result.encryption.isNullOrBlank() &&
-            result.transport?.type != "xhttp"
-        if (isVlessNeedingXudp) {
-            result = result.copy(packetEncoding = "xudp")
+        if (result.type == "vless" && result.packetEncoding.isNullOrBlank()) {
+            result = result.copy(packetEncoding = "")
+        } else if (result.packetEncoding == "xudp") {
+            result = result.copy(packetEncoding = "")
         }
 
         if (result.type == "naive") {
