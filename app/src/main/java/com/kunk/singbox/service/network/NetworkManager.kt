@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import com.kunk.singbox.utils.BugLogHelper
 import com.kunk.singbox.utils.DefaultNetworkListener
 import java.net.NetworkInterface
 import java.util.concurrent.atomic.AtomicLong
@@ -233,6 +234,7 @@ class NetworkManager(
 
             override fun onLost(network: Network) {
                 Log.d(TAG, "Network lost: $network")
+                BugLogHelper.logConnectionError("Network lost: $network")
                 if (lastKnownNetwork != network) {
                     return
                 }

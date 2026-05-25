@@ -558,8 +558,14 @@ class CommandManager(
                     if (!msg.isNullOrBlank()) {
                         repo.addLog(msg)
                         // Core error/warn 级别日志同步到 Bug 日志
-                        if (msg.contains("ERR") || msg.contains("WARN")) {
+                        if (msg.contains("ERR") || msg.contains("WARN") || msg.contains("[WRN]")) {
                             BugLogHelper.logVpnError("Core: $msg")
+                        }
+                        // CONNECT 相关日志单独捕获
+                        if (msg.contains("connect", ignoreCase = true) ||
+                            msg.contains("dial", ignoreCase = true) ||
+                            msg.contains("proxy", ignoreCase = true)) {
+                            BugLogHelper.log("CONNECT", msg)
                         }
                     }
                 }

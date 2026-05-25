@@ -76,6 +76,23 @@ class LogRepository private constructor() {
     fun addLog(message: String) {
         val timestamp = synchronized(dateFormat) { dateFormat.format(Date()) }
 
+        // ---- BugLog Bridge: 在过滤器之前捕获，避免 DNS 等 DEBUG 日志被拦截 ----
+        try {
+            when {
+                message.contains("ERROR") || message.contains("[ERR]") ->
+                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+                (message.contains("WARN") || message.contains("[WRN]")) &&
+                    listOf("dial","connect","timeout","refused","dns","tls","proxy","outbound")
+                        .any { it in message.lowercase() } ->
+                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+                // 没网时 DNS 解析失败（DEBUG 级别也要抓）
+                message.contains("dns", ignoreCase = true) &&
+                    listOf("no such host","network is unreachable","no route to host","timeout","refused")
+                        .any { it in message.lowercase() } ->
+                    BugLogHelper.log("DNS", message.substringAfter("] ").trim().ifEmpty { message })
+            }
+        } catch (_: Exception) {}
+
         if (message.contains("TRACE")) {
             return
         }
@@ -137,17 +154,6 @@ class LogRepository private constructor() {
             logVersion.incrementAndGet()
         }
 
-// ---- BugLog Bridge: Go核心错误日志自动捕获 ----
-        try {
-            when {
-                message.contains("ERROR") || message.contains("[ERR]") ->
-                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
-                (message.contains("WARN") || message.contains("[WRN]")) &&
-                    listOf("dial","connect","timeout","refused","dns","tls","proxy","outbound")
-                        .any { it in message.lowercase() } ->
-                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
-            }
-        } catch (_: Exception) {}
         writeToFileBestEffort()
 
         requestFlush()
