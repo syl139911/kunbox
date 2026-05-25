@@ -4723,6 +4723,15 @@ class ConfigRepository(private val context: Context) {
                 processed
             } else {
                 Log.w(TAG, "buildRunOutbounds: outbound '${outbound.tag}' (type=${outbound.type}, server=${outbound.server}:${outbound.serverPort}) filtered by validateOutbound")
+                BugLogRepository.getInstance().addBugLog(
+                    "validateOutbound Failed",
+                    "Outbound '${outbound.tag}' (type=${outbound.type}) rejected by libbox validateOutbound.\n" +
+                        "Server=${outbound.server}, Port=${outbound.serverPort}\n" +
+                        "Username=${outbound.username}, TLS=${outbound.tls?.enabled}\n" +
+                        "Path=${outbound.path}, DelHost=${outbound.delHost}\n" +
+                        "Headers=${outbound.headers}\n" +
+                        "This means the Go core rejected the outbound config."
+                )
                 null
             }
         }?.toMutableList() ?: mutableListOf()
@@ -4859,6 +4868,12 @@ class ConfigRepository(private val context: Context) {
             }
             if (!singBoxCore.validateOutbound(fixedSourceOutbound)) {
                 Log.w(TAG, "Skipping invalid cross-profile outbound: ${node.name} (type=${sourceOutbound.type})")
+                BugLogRepository.getInstance().addBugLog(
+                    "validateOutbound Failed (cross-profile)",
+                    "Cross-profile outbound '${node.name}' (type=${sourceOutbound.type}) rejected by libbox.\n" +
+                        "Server=${fixedSourceOutbound.server}, Port=${fixedSourceOutbound.serverPort}\n" +
+                        "This means the Go core rejected the outbound config."
+                )
                 return@forEach
             }
             fixedOutbounds.add(fixedSourceOutbound)
