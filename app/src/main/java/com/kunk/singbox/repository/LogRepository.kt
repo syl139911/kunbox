@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 import android.os.Build
+import com.kunk.singbox.utils.BugLogHelper
 
 data class LogEntry(
     val message: String,
@@ -136,6 +137,17 @@ class LogRepository private constructor() {
             logVersion.incrementAndGet()
         }
 
+// ---- BugLog Bridge: Go核心错误日志自动捕获 ----
+        try {
+            when {
+                message.contains("ERROR") || message.contains("[ERR]") ->
+                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+                (message.contains("WARN") || message.contains("[WRN]")) &&
+                    listOf("dial","connect","timeout","refused","dns","tls","proxy","outbound")
+                        .any { it in message.lowercase() } ->
+                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+            }
+        } catch (_: Exception) {}
         writeToFileBestEffort()
 
         requestFlush()
