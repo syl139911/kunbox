@@ -387,7 +387,12 @@ class VpnTunManager(
             try { vpnInterface?.close() } catch (_: Exception) {}
         }
 
-        BugLogHelper.logVpnError("TUN establish failed after all retries (fd=-1)")
+        BugLogHelper.reportVpnError(
+            BugLogHelper.PHASE_CREATE_TUN,
+            "TUN interface establish failed after all retries",
+            IllegalStateException("Failed to establish TUN interface: all retry attempts exhausted"),
+            extraDetail = "All 10 retry attempts failed (fd=-1)"
+        )
         return null
     }
 
