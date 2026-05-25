@@ -76,7 +76,12 @@ class LogRepository private constructor() {
     fun addLog(message: String) {
         val timestamp = synchronized(dateFormat) { dateFormat.format(Date()) }
 
-        // Go 核心日志只走运行日志，不写 BugLog（BugLog 只抓实际 bug）
+        // Go 核心错误日志同步到 Bug 日志（只抓 ERR，不抓 WARN 避免噪音）
+        try {
+            if (message.contains("ERROR") || message.contains("[ERR]")) {
+                BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+            }
+        } catch (_: Exception) {}
 
         if (message.contains("TRACE")) {
             return
