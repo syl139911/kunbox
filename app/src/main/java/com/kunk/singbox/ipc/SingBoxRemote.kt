@@ -210,7 +210,11 @@ object SingBoxRemote {
         _isRunning.value = st == ServiceState.RUNNING
         _isStarting.value = st == ServiceState.STARTING
         activeLabel?.let { _activeLabel.value = it }
-        lastError?.let { _lastError.value = it }
+        lastError?.let {
+            _lastError.value = it
+            if (it.isNotBlank() && st != ServiceState.RUNNING)
+                try { BugLogHelper.log("IPC Error", "state=$st, $it") } catch (_: Exception) {}
+        }
         manuallyStopped?.let { _manuallyStopped.value = it }
         lastSyncTimeMs = System.currentTimeMillis()
     }
