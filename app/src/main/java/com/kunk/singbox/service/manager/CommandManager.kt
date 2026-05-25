@@ -558,9 +558,7 @@ class CommandManager(
                     if (!msg.isNullOrBlank()) {
                         repo.addLog(msg)
                         // Core error/warn 级别日志同步到 Bug 日志
-                        if (msg.contains("ERR") || msg.contains("WARN") || msg.contains("[WRN]")) {
-                            BugLogHelper.logVpnError("Core: $msg")
-                        }
+                        // ERR/WARN 已由 LogRepository BugLog Bridge 统一捕获，不重复写入
                         // CONNECT 相关日志单独捕获（只匹配 outbound dial 和 proxy 层）
                         val msgLower = msg.lowercase()
                         if (msgLower.contains("outbound/") && msgLower.contains("dial") ||
