@@ -915,6 +915,18 @@ class SingBoxService : VpnService() {
 
             SelectorManager.recordSelectorSignature(outboundTags, selectedTag)
             Log.i(TAG, "SelectorManager initialized: ${outboundTags.size} outbounds, selected=$selectedTag")
+
+            // Set BugLogHelper node context from the selected outbound
+            if (selectedTag != null) {
+                val selectedOutbound = config.outbounds?.find { it.tag == selectedTag }
+                if (selectedOutbound != null) {
+                    BugLogHelper.setNodeContext(
+                        name = selectedTag,
+                        protocol = selectedOutbound.type,
+                        outboundTag = selectedTag
+                    )
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to init SelectorManager", e)
         }
@@ -1081,6 +1093,7 @@ class SingBoxService : VpnService() {
             when (val result = serviceSelectorManager.switchNode(nodeTag)) {
                 is com.kunk.singbox.service.manager.SelectorManager.SwitchResult.Success -> {
                     L.result("HotSwitch", true, "Switched to $nodeTag via ${result.method}")
+                    BugLogHelper.setNodeContext(name = nodeTag)
                     requestNotificationUpdate(force = true)
                     return true
                 }
