@@ -72,8 +72,10 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		return nil, E.Extend(N.ErrUnknownNetwork, network)
 	}
 	var conn net.Conn
+	fmt.Printf("[HTTPClient] connect start server=%s dest=%s path=%q delHost=%v host=%q\n", c.serverAddr.String(), destination.String(), c.path, c.delHost, c.host)
 	conn, err := c.dialer.DialContext(ctx, N.NetworkTCP, c.serverAddr)
 	if err != nil {
+		fmt.Printf("[HTTPClient] dial failed server=%s err=%v\n", c.serverAddr.String(), err)
 		return nil, err
 	}
 
@@ -88,6 +90,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		if c.path != "" {
 			connectTarget = destinationStr + c.path
 		}
+		fmt.Printf("[HTTPClient] manual CONNECT target=%s headers=%d auth=%v\n", connectTarget, len(c.headers), c.username != "")
 
 		raw := fmt.Sprintf("CONNECT %s HTTP/1.1\r\n", connectTarget)
 		if c.headers.Get("User-Agent") == "" {
@@ -107,6 +110,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 
 		_, err = conn.Write([]byte(raw))
 		if err != nil {
+			fmt.Printf("[HTTPClient] manual CONNECT write failed target=%s err=%v\n", connectTarget, err)
 			conn.Close()
 			return nil, err
 		}
@@ -135,6 +139,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 				return nil, err
 			}
 		}
+		fmt.Printf("[HTTPClient] std CONNECT target=%s path=%q host=%q auth=%v headers=%d\n", request.URL.String(), c.path, c.host, c.username != "", len(c.headers))
 		for key, valueList := range c.headers {
 			request.Header.Set(key, valueList[0])
 			for _, value := range valueList[1:] {
@@ -147,6 +152,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		}
 		err = request.Write(conn)
 		if err != nil {
+			fmt.Printf("[HTTPClient] std CONNECT write failed target=%s err=%v\n", request.URL.String(), err)
 			conn.Close()
 			return nil, err
 		}
@@ -156,10 +162,12 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	reader := std_bufio.NewReader(conn)
 	response, err := http.ReadResponse(reader, readRequest)
 	if err != nil {
+		fmt.Printf("[HTTPClient] CONNECT response read failed err=%v\n", err)
 		conn.Close()
 		return nil, err
 	}
 	if response.StatusCode == http.StatusOK {
+		fmt.Printf("[HTTPClient] CONNECT success status=%s code=%d\n", response.Status, response.StatusCode)
 		if reader.Buffered() > 0 {
 			buffer := buf.NewSize(reader.Buffered())
 			_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
@@ -172,6 +180,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		return conn, nil
 	} else {
 		conn.Close()
+		fmt.Printf("[HTTPClient] CONNECT rejected status=%s code=%d\n", response.Status, response.StatusCode)
 		switch response.StatusCode {
 		case http.StatusProxyAuthRequired:
 			return nil, E.New("authentication required")
