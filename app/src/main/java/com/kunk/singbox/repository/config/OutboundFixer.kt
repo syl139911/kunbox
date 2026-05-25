@@ -215,6 +215,12 @@ object OutboundFixer {
 
                 result = updated
             }
+
+            if (result.type == "vless" && result.packetEncoding.isNullOrBlank()) {
+                result = result.copy(packetEncoding = "")
+            } else if (result.packetEncoding == "xudp") {
+                result = result.copy(packetEncoding = "")
+            }
         }
 
         if (result.type == "tuic" || result.type == "hysteria2") {
@@ -224,7 +230,8 @@ object OutboundFixer {
                     disableSni = null,
                     tls = currentTls.copy(
                         enabled = true,
-                        disableSni = true
+                        disableSni = true,
+                        serverName = null
                     )
                 )
             } else {
@@ -294,11 +301,6 @@ object OutboundFixer {
         }
         if (result.type == "vmess" && result.packetEncoding.isNullOrBlank()) {
             result = result.copy(packetEncoding = "xudp")
-        }
-        if (result.type == "vless" && result.packetEncoding.isNullOrBlank()) {
-            result = result.copy(packetEncoding = "")
-        } else if (result.packetEncoding == "xudp") {
-            result = result.copy(packetEncoding = "")
         }
 
         if (result.type == "naive") {
