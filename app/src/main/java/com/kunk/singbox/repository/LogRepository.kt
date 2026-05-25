@@ -76,10 +76,15 @@ class LogRepository private constructor() {
     fun addLog(message: String) {
         val timestamp = synchronized(dateFormat) { dateFormat.format(Date()) }
 
-        // Go 核心错误日志同步到 Bug 日志（只抓 ERR，不抓 WARN 避免噪音）
+        // Go 核心错误/警告日志同步到 Bug 日志
         try {
-            if (message.contains("ERROR") || message.contains("[ERR]")) {
-                BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+            when {
+                message.contains("ERROR") || message.contains("[ERR]") ->
+                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+                (message.contains("WARN") || message.contains("[WRN]")) &&
+                    listOf("dial","connect","timeout","refused","dns","tls","proxy","outbound")
+                        .any { it in message.lowercase() } ->
+                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
             }
         } catch (_: Exception) {}
 
