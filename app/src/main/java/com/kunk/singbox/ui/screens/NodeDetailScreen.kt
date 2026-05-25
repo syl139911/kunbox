@@ -902,20 +902,6 @@ fun NodeDetailScreen(
                                 icon = Icons.Rounded.Numbers,
                                 onValueChange = { editingOutbound = outbound.copy(serverPort = it.toIntOrNull() ?: 443) }
                             )
-                            SettingSwitchItem(
-                                title = stringResource(R.string.node_detail_del_host),
-                                checked = transport.delHost == true,
-                                icon = Icons.Rounded.Delete,
-                                onCheckedChange = {
-                                    editingOutbound = outbound.copy(transport = transport.copy(delHost = it))
-                                }
-                            )
-                            SettingSwitchItem(
-                                title = stringResource(R.string.node_detail_obfuscation),
-                                checked = false,
-                                icon = Icons.Rounded.Lock,
-                                onCheckedChange = { /* Reserved for future obfuscation support */ }
-                            )
                         }
 
                         if (currentType == "xhttp") {

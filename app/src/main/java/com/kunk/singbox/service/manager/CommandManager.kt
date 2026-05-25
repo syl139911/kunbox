@@ -561,10 +561,11 @@ class CommandManager(
                         if (msg.contains("ERR") || msg.contains("WARN") || msg.contains("[WRN]")) {
                             BugLogHelper.logVpnError("Core: $msg")
                         }
-                        // CONNECT 相关日志单独捕获
-                        if (msg.contains("connect", ignoreCase = true) ||
-                            msg.contains("dial", ignoreCase = true) ||
-                            msg.contains("proxy", ignoreCase = true)) {
+                        // CONNECT 相关日志单独捕获（只匹配 outbound dial 和 proxy 层）
+                        val msgLower = msg.lowercase()
+                        if (msgLower.contains("outbound/") && msgLower.contains("dial") ||
+                            msgLower.contains("proxy/") && (msgLower.contains("connect") || msgLower.contains("dial")) ||
+                            msgLower.contains("tcp:") && msgLower.contains("connect")) {
                             BugLogHelper.log("CONNECT", msg)
                         }
                     }
