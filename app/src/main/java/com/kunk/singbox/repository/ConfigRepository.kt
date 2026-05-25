@@ -3780,24 +3780,9 @@ class ConfigRepository(private val context: Context) {
                             "This usually means the outbound failed validation or was filtered by OutboundFixer."
                     )
 
-                    // Fallback: try to use the first available proxy node instead of crashing
-                    val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
-                    val fallbackTag = proxySelector?.default
-                        ?: proxySelector?.outbounds?.firstOrNull { it != "direct" && it != "block" }
-                        ?: proxySelector?.outbounds?.firstOrNull()
-
-                    if (fallbackTag != null) {
-                        Log.w(TAG, "Falling back to proxy default: $fallbackTag (selected node '$candidateTag' was filtered)")
-                        BugLogRepository.getInstance().addBugLog(
-                            "Node Fallback",
-                            "Selected node '$candidateTag' (type=$nodeType) was filtered, falling back to '$fallbackTag'"
-                        )
-                        fallbackTag
-                    } else {
-                        throw IllegalStateException(
-                            "Selected node is not available in runtime outbounds: $candidateTag (type=$nodeType), and no fallback available"
-                        )
-                    }
+                    throw IllegalStateException(
+                        "Selected node is not available in runtime outbounds: $candidateTag (type=$nodeType)"
+                    )
                 }
             }
             val configFile = File(context.filesDir, "running_config.json")
