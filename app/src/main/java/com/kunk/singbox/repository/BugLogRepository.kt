@@ -46,7 +46,7 @@ class BugLogRepository private constructor() {
             // Same as last bug log, increment count and update timestamp
             val merged = lastEntry.copy(
                 timestamp = entry.timestamp,
-                count = lastEntry.count + 1
+                count = (lastEntry.count ?: 1) + 1
             )
             logs[logs.size - 1] = merged
         } else {
@@ -84,8 +84,8 @@ class BugLogRepository private constructor() {
         val logContent = logs.joinToString("\n---\n") { entry ->
             buildString {
                 appendLine("Time: ${dateFormat.format(Date(entry.timestamp))}")
-                if (entry.count > 1) {
-                    appendLine("Repeat: ×${entry.count}")
+                if ((entry.count ?: 1) > 1) {
+                    appendLine("Repeat: ×${entry.count ?: 1}")
                 }
                 appendLine("Title: ${entry.title}")
                 appendLine()
@@ -150,5 +150,5 @@ data class BugLogEntry(
     val title: String,
     val detail: String,
     val stackTrace: String? = null,
-    val count: Int = 1
+    val count: Int? = null
 )
