@@ -94,9 +94,30 @@ class LogRepository private constructor() {
 
         if (message.contains("DEBUG")) {
             val isHighFreq = message.contains("selector: selected outbound") ||
-                message.contains("dns: cached")
+                message.contains("dns: exchange") ||
+                message.contains("dns: lookup") ||
+                message.contains("dns: match") ||
+                message.contains("dns: cached") ||
+                message.contains("dns: server")
 
             if (isHighFreq) return
+        }
+
+        if (message.contains("INFO") &&
+            (message.contains("inbound/tun") ||
+                message.contains("inbound/mixed") ||
+                message.contains("router: found package") ||
+                message.contains("router: found user") ||
+                message.contains("outbound/vless") ||
+                message.contains("outbound/vmess") ||
+                message.contains("outbound/trojan") ||
+                message.contains("outbound/shadowsocks") ||
+                message.contains("outbound/hysteria") ||
+                message.contains("outbound/tuic") ||
+                message.contains("dns: rejected") ||
+                message.contains("dns: exchanged") ||
+                message.contains("dns: cached"))) {
+            return
         }
 
         val formattedLog = "[$timestamp] $message"
