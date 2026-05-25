@@ -132,25 +132,18 @@ class LogRepository private constructor() {
             formattedLog
         }
 
-        // Merge consecutive duplicate logs (compare raw content, ignore timestamp)
-        // After file sync, entry.message = "[HH:mm:ss] LEVEL content" (with timestamp),
-        // but incoming `message` = "LEVEL content" (without timestamp).
-        // Always compare rawMessage to rawMessage to avoid format mismatch.
+        // Skip consecutive duplicate logs
         synchronized(buffer) {
             val lastEntry = buffer.peekLast()
             val lastRaw = lastEntry?.rawMessage
                 ?: lastEntry?.let { extractRawFromFormatted(it.message) }
             if (lastEntry != null && lastRaw == message) {
-                // Same as last log, increment count
-                buffer.removeLast()
-                buffer.addLast(LogEntry(finalLog, lastEntry.count + 1, message))
-            } else {
-                // Different log, add new entry
-                if (buffer.size >= maxLogSize) {
-                    buffer.removeFirst()
-                }
-                buffer.addLast(LogEntry(finalLog, 1, message))
+                return
             }
+            if (buffer.size >= maxLogSize) {
+                buffer.removeFirst()
+            }
+            buffer.addLast(LogEntry(finalLog, 1, message))
             logVersion.incrementAndGet()
         }
 

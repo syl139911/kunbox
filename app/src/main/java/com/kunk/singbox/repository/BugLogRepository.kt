@@ -40,21 +40,14 @@ class BugLogRepository private constructor() {
             stackTrace = throwable?.let { getStackTrace(it) }
         )
 
-        // Merge with last entry if title and detail match (consecutive duplicate)
+        // Skip consecutive duplicate entries
         val lastEntry = logs.lastOrNull()
         if (lastEntry != null && lastEntry.title == title && lastEntry.detail == detail) {
-            // Same as last bug log, increment count and update timestamp
-            val merged = lastEntry.copy(
-                timestamp = entry.timestamp,
-                count = (lastEntry.count ?: 1) + 1
-            )
-            logs[logs.size - 1] = merged
-        } else {
-            logs.add(entry)
-            // Trim if over max
-            while (logs.size > maxLogSize) {
-                logs.removeAt(0)
-            }
+            return
+        }
+        logs.add(entry)
+        while (logs.size > maxLogSize) {
+            logs.removeAt(0)
         }
 
         _bugLogs.value = logs.toList()
@@ -84,9 +77,6 @@ class BugLogRepository private constructor() {
         val logContent = logs.joinToString("\n---\n") { entry ->
             buildString {
                 appendLine("Time: ${dateFormat.format(Date(entry.timestamp))}")
-                if ((entry.count ?: 1) > 1) {
-                    appendLine("Repeat: ×${entry.count ?: 1}")
-                }
                 appendLine("Title: ${entry.title}")
                 appendLine()
                 appendLine("Detail:")
@@ -149,6 +139,5 @@ data class BugLogEntry(
     val timestamp: Long,
     val title: String,
     val detail: String,
-    val stackTrace: String? = null,
-    val count: Int? = null
+    val stackTrace: String? = null
 )

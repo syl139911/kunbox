@@ -145,9 +145,7 @@ fun BugLogScreen(navController: NavController, viewModel: BugLogViewModel = view
             ) {
                 items(bugLogs) { entry ->
                     val timeStr = synchronized(dateFormat) { dateFormat.format(Date(entry.timestamp)) }
-                    val countSuffix = if ((entry.count ?: 1) > 1) " ×${entry.count ?: 1}" else ""
-
-                    val titleText = "[$timeStr]$countSuffix ${entry.title}"
+                    val titleText = "[$timeStr] ${entry.title}"
                     val fullDetail = buildString {
                         append(titleText)
                         append("\n")
