@@ -109,6 +109,7 @@ class CommandManager(
             override fun writeDebugMessage(message: String?) {
                 if (!message.isNullOrBlank()) {
                     Log.d(TAG, message)
+                    LogRepository.getInstance().addLog(message)
                 }
             }
         }
