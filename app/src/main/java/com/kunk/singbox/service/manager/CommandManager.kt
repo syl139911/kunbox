@@ -170,11 +170,11 @@ class CommandManager(
         Log.i(TAG, "CommandClient connected (Group, interval=3s)")
 
         val optionsLogs = CommandClientOptions()
-        optionsLogs.addCommand(Libbox.CommandLogs)
+        optionsLogs.addCommand(Libbox.CommandLog)
         optionsLogs.statusInterval = 1000L * 1000L * 1000L // 1s
         commandClientLogs = Libbox.newCommandClient(handler, optionsLogs)
         commandClientLogs?.connect()
-        Log.i(TAG, "CommandClient connected (Logs, interval=1s)")
+        Log.i(TAG, "CommandClient connected (Log, interval=1s)")
 
         serviceScope.launch {
             delay(3500)
