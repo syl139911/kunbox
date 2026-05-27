@@ -124,7 +124,7 @@ while i < len(lines):
             new_lines.append(indent + 'raw += \"\\r\\n\"\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + '// Debug: 输出实际发送的 CONNECT（抓包对比用）\n')
-            new_lines.append(indent + 'log.Println(\"[KunBox] raw CONNECT:\", raw)\n')
+            new_lines.append(indent + 'log.Warn(\"[KunBox] raw CONNECT:\", raw)\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + '// 直接写 TCP，不经过 Go HTTP 格式化\n')
             new_lines.append(indent + '_, err = conn.Write([]byte(raw))\n')
