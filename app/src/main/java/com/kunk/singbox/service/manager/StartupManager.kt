@@ -163,7 +163,7 @@ class StartupManager(
     }
 
     /**
-     * 妤犵偞鍎奸、鎴﹀礆濠靇早娼楅柛鏍㌿缁劑寮?
+     * 启动 VPN 服务的核心流程
      */
     private data class ParallelInitResult(
         val network: Network?,
