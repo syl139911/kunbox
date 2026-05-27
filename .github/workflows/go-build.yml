@@ -95,6 +95,14 @@ jobs:
           echo "=== go.mod replace added ==="
           tail -3 go.mod
 
+- name: Apply KunBox Go patches (04) - Path & Raw TCP CONNECT
+        working-directory: upstream-sing-box
+        run: |
+          bash ../core/patches/04a-option-path.sh .
+          bash ../core/patches/04b-outbound-path.sh .
+          bash ../core/patches/04-connect-raw.sh ../local-sing/protocol/http/client.go
+          echo "=== Patches 04 applied (Path + Raw TCP CONNECT) ==="
+
       - name: Add gomobile dependencies to module
         working-directory: upstream-sing-box
         run: |
