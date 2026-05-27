@@ -123,8 +123,8 @@ while i < len(lines):
             new_lines.append(indent + '\n')
             new_lines.append(indent + 'raw += \"\\r\\n\"\n')
             new_lines.append(indent + '\n')
-            new_lines.append(indent + '// Debug: uncomment below to log raw CONNECT in logcat\n')
-            new_lines.append(indent + '// log.Println(\"[KunBox] raw CONNECT:\", raw)\n')
+            new_lines.append(indent + '// Debug: 输出实际发送的 CONNECT（抓包对比用）\n')
+            new_lines.append(indent + 'log.Warn(\"[KunBox] raw CONNECT:\", raw)\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + '// 直接写 TCP，不经过 Go HTTP 格式化\n')
             new_lines.append(indent + '_, err = conn.Write([]byte(raw))\n')
@@ -175,7 +175,7 @@ target = sys.argv[1]
 with open(target, 'r') as f:
     content = f.read()
 
-needed = {'fmt': '\"fmt\"', 'strings': '\"strings\"'}
+needed = {'fmt': '\"fmt\"', 'log': '\"log\"', 'strings': '\"strings\"'}
 missing = [pkg for pkg, imp in needed.items() if imp not in content]
 
 if missing:
@@ -210,7 +210,7 @@ echo ""
 echo "--- Skip headers (Go auto-adds) ---"
 grep -n 'skipHeaders\|user-agent\|proxy-connection' "$CLIENT_GO" || echo "WARNING: skip headers not found!"
 echo ""
-echo "--- Debug log (commented out) ---"
+echo "--- Debug log ---"
 grep -n 'KunBox.*raw' "$CLIENT_GO" || echo "WARNING: debug log not found!"
 echo ""
 echo "=== Patch 04 applied ==="
