@@ -56,102 +56,15 @@ jobs:
       - name: Inject KunBox custom libbox methods
         working-directory: upstream-sing-box
         run: |
-          cat > experimental/libbox/kunbox_custom.go << 'GOEOF'
-          package libbox
-
-          import (
-          	"sync"
-          	"sync/atomic"
-          )
-
-          // --- KunBox custom extensions ---
-
-          var kunBoxVersion = "1.0.0-kunbox"
-
-          // SetKunBoxVersion sets the version string returned by GetKunBoxVersion.
-          func SetKunBoxVersion(v string) { kunBoxVersion = v }
-
-          // GetKunBoxVersion returns the KunBox extension version.
-          func GetKunBoxVersion() string { return kunBoxVersion }
-
-          var connectionCount atomic.Int64
-
-          // IncrConnectionCount increments the active connection counter.
-          func IncrConnectionCount() { connectionCount.Add(1) }
-
-          // DecrConnectionCount decrements the active connection counter.
-          func DecrConnectionCount() { connectionCount.Add(-1) }
-
-          // GetConnectionCount returns the current active connection count.
-          func GetConnectionCount() int32 { return int32(connectionCount.Load()) }
-
-          var resetAllConnsFunc func(system bool)
-
-          // RegisterResetAllConnections registers the callback for reset.
-          func RegisterResetAllConnections(fn func(system bool)) { resetAllConnsFunc = fn }
-
-          // ResetAllConnections resets all connections.
-          func ResetAllConnections(system bool) {
-          	if resetAllConnsFunc != nil {
-          		resetAllConnsFunc(system)
-          	}
-          }
-
-          var closeAllTrackedFunc func() int32
-
-          // RegisterCloseAllTrackedConnections registers the callback.
-          func RegisterCloseAllTrackedConnections(fn func() int32) { closeAllTrackedFunc = fn }
-
-          // CloseAllTrackedConnections closes all tracked connections and returns count.
-          func CloseAllTrackedConnections() int32 {
-          	if closeAllTrackedFunc != nil {
-          		return closeAllTrackedFunc()
-          	}
-          	return 0
-          }
-
-          var recoverNetworkAutoFunc func() bool
-
-          // RegisterRecoverNetworkAuto registers the callback.
-          func RegisterRecoverNetworkAuto(fn func() bool) { recoverNetworkAutoFunc = fn }
-
-          // RecoverNetworkAuto attempts automatic network recovery.
-          func RecoverNetworkAuto() bool {
-          	if recoverNetworkAutoFunc != nil {
-          		return recoverNetworkAutoFunc()
-          	}
-          	return false
-          }
-
-          var checkNetworkRecoveryFunc func() bool
-
-          // RegisterCheckNetworkRecoveryNeeded registers the callback.
-          func RegisterCheckNetworkRecoveryNeeded(fn func() bool) { checkNetworkRecoveryFunc = fn }
-
-          // CheckNetworkRecoveryNeeded checks if network recovery is needed.
-          func CheckNetworkRecoveryNeeded() bool {
-          	if checkNetworkRecoveryFunc != nil {
-          		return checkNetworkRecoveryFunc()
-          	}
-          	return false
-          }
-
-          // Ensure sync import is used
-          var _ sync.Once
-          GOEOF
+          cp ../core/kunbox_custom.go experimental/libbox/kunbox_custom.go
           echo "=== KunBox custom libbox methods injected ==="
           cat experimental/libbox/kunbox_custom.go
+
       - name: Apply KunBox Go patches (01, 02)
         working-directory: upstream-sing-box
         run: |
-          echo "=== Patch 1: option/simple.go - add DelHost to HTTPOutboundOptions ==="
-          sed -i '/Headers badoption.HTTPHeader/a\	DelHost bool                 `json:"del_host,omitempty"`' option/simple.go
-          grep -n 'DelHost' option/simple.go
-
-          echo "=== Patch 2: protocol/http/outbound.go - pass DelHost to HTTP client ==="
-          sed -i '/Headers:.*options\.Headers\.Build(),/a\				DelHost:  options.DelHost,' protocol/http/outbound.go
-          grep -n 'DelHost' protocol/http/outbound.go
-
+          bash ../core/patches/01-delhost-option.sh .
+          bash ../core/patches/02-delhost-outbound.sh .
           echo "=== Patches 01 & 02 applied ==="
 
       - name: Patch sing dependency via replace directive
@@ -174,82 +87,7 @@ jobs:
 
           # Patch client.go
           CLIENT_GO="../local-sing/protocol/http/client.go"
-          echo "Patching: $CLIENT_GO"
-
-          if [ ! -f "$CLIENT_GO" ]; then
-            echo "ERROR: $CLIENT_GO not found!"
-            find ../local-sing -name "client.go" -path "*/http/*"
-            exit 1
-          fi
-
-          echo "=== Before patch ==="
-          grep -n 'host\|Host\|delHost\|Fqdn' "$CLIENT_GO" || true
-
-          # --- Fix: match actual sing v0.8.9 struct fields ---
-
-          # 3a: Add delHost field to Client struct (after 'host       string')
-          sed -i '/^\thost.*string$/a\	delHost    bool' "$CLIENT_GO"
-
-          # 3b: Add DelHost field to Options struct (after 'Headers  http.Header')
-          sed -i '/^\tHeaders.*http\.Header$/a\	DelHost  bool' "$CLIENT_GO"
-
-          # 3c: Add delHost assignment in NewClient (after 'headers:    options.Headers,')
-          sed -i '/^\theaders:.*options\.Headers,$/a\			delHost:    options.DelHost,' "$CLIENT_GO"
-
-          # 3d: Inject path+target logic and delHost Opaque URL branch
-          python3 -c "
-          with open('$CLIENT_GO', 'r') as f:
-              lines = f.readlines()
-          new_lines = []
-          request_block_end = -1
-          host_check_idx = -1
-          for i, line in enumerate(lines):
-              if 'if c.host != \"\" && c.host != destination.Fqdn {' in line:
-                  host_check_idx = i
-          for i, line in enumerate(lines):
-              new_lines.append(line)
-              # After request := &http.Request{...} block, inject target building
-              if request_block_end < 0 and i > 0 and 'request := &http.Request{' in ''.join(lines[max(0,i-5):i]):
-                  pass
-              if 'request := &http.Request{' in line:
-                  # Find the closing } of this block
-                  brace = 0
-                  for j in range(i, len(lines)):
-                      brace += lines[j].count('{') - lines[j].count('}')
-                      if brace == 0:
-                          request_block_end = j
-                          break
-              if i == request_block_end:
-                  indent = line[:len(line) - len(line.lstrip())]
-                  new_lines.append(indent + 'target := destination.String()\n')
-                  new_lines.append(indent + 'if c.path != \"\" {\n')
-                  new_lines.append(indent + '\ttarget = target + c.path\n')
-                  new_lines.append(indent + '}\n')
-              # Replace host check with delHost branch
-              if i == host_check_idx:
-                  indent = line[:len(line) - len(line.lstrip())]
-                  new_lines.append(indent + 'if c.delHost {\n')
-                  new_lines.append(indent + '\trequest.URL = &url.URL{Opaque: target}\n')
-                  new_lines.append(indent + '\trequest.Host = \"\"\n')
-                  new_lines.append(indent + '} else ')
-          with open('$CLIENT_GO', 'w') as f:
-              f.writelines(new_lines)
-          "
-          echo "=== After patch ==="
-          grep -n 'delHost\|DelHost\|Opaque\|target' "$CLIENT_GO" || true
-
-          # Verify Options struct has DelHost
-          if ! grep -q 'DelHost.*bool' "$CLIENT_GO"; then
-            echo "ERROR: DelHost field not found in client.go after patching!"
-            exit 1
-          fi
-          echo "OK: DelHost field confirmed in client.go"
-
-          echo "=== Patched Options struct ==="
-          sed -n '/type Options struct/,/^}/p' "$CLIENT_GO"
-
-          echo "=== Patched DialContext host check ==="
-          grep -n -A5 'delHost' "$CLIENT_GO"
+          bash ../core/patches/03-client-delhost.sh "$CLIENT_GO"
 
           # Add replace directive to go.mod
           echo "" >> go.mod
@@ -296,7 +134,6 @@ jobs:
             echo "ERROR: libbox.aar too small (< 5MB), build likely failed"
             exit 1
           fi
-          # Verify it's a valid ZIP/AAR and contains libbox.so
           if ! unzip -l "$AAR" | grep -q "libbox\.so"; then
             echo "ERROR: libbox.aar does not contain libbox.so"
             exit 1
@@ -340,10 +177,13 @@ jobs:
             echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
           else
             echo "No signing secrets found, generating temporary keystore..."
-            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore               -alias release -keyalg RSA -keysize 2048 -validity 10000               -storepass temp123 -keypass temp123               -dname "CN=KunBox, OU=Dev, O=KunBox, L=SH, ST=SH, C=CN"
+            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore \
+              -alias temp -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass temp123 -keypass temp123 \
+              -dname "CN=KunBox, OU=Dev, O=KunBox, L=SH, ST=SH, C=CN"
             echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
             echo "KEYSTORE_PASSWORD=temp123" >> $GITHUB_ENV
-            echo "KEY_ALIAS=release" >> $GITHUB_ENV
+            echo "KEY_ALIAS=temp" >> $GITHUB_ENV
             echo "KEY_PASSWORD=temp123" >> $GITHUB_ENV
           fi
 
@@ -360,9 +200,8 @@ jobs:
           mkdir -p dist
           ./gradlew assembleRelease -PabiOnly=arm64-v8a
           find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
-          ls -lh dist/
 
-      - name: Upload APK artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: kunbox-go-release-apk
