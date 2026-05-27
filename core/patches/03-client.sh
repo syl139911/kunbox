@@ -42,8 +42,8 @@ fi
 echo "  + Struct fields & assignments done"
 
 # --- Step 2: 用 Python 替换 request 块为 raw TCP ---
-# 修复: 使用 c.headers 替代 options.Headers，自建 request 用于 ReadResponse
-python3 -c "
+# 使用 heredoc 避免 bash 转义问题
+python3 - "$CLIENT_GO" << 'PYEOF'
 import sys
 target = sys.argv[1]
 with open(target, 'r') as f:
@@ -71,28 +71,31 @@ while i < len(lines):
             j += 1
         if request_write_line >= 0:
             indent = '\t\t\t'
-            # Build raw TCP CONNECT + minimal request for ReadResponse
+            # Build raw TCP CONNECT
+            # NOTE: \r\n must be literal escape sequences in Go source,
+            # so we write them as \\r\\n which Python writes as \r\n to file
             new_lines.append(indent + '// === KunBox raw TCP CONNECT ===\n')
             new_lines.append(indent + '// Bypass Go http.Request.Write() normalization for TPBox\n')
             new_lines.append(indent + 'target := destination.String()\n')
-            new_lines.append(indent + 'if c.path != \"\" {\n')
+            new_lines.append(indent + 'if c.path != "" {\n')
             new_lines.append(indent + '\ttarget += c.path\n')
             new_lines.append(indent + '}\n')
             new_lines.append(indent + '\n')
-            new_lines.append(indent + 'raw := fmt.Sprintf(\"CONNECT %s HTTP/1.1\\r\\n\", target)\n')
+            new_lines.append(indent + 'var raw strings.Builder\n')
+            new_lines.append(indent + 'fmt.Fprintf(&raw, "CONNECT %s HTTP/1.1\\r\\n", target)\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + 'if !c.delHost {\n')
             new_lines.append(indent + '\thostHeader := destination.String()\n')
-            new_lines.append(indent + '\tif c.host != \"\" && c.host != destination.Fqdn {\n')
+            new_lines.append(indent + '\tif c.host != "" && c.host != destination.Fqdn {\n')
             new_lines.append(indent + '\t\thostHeader = c.host\n')
             new_lines.append(indent + '\t}\n')
-            new_lines.append(indent + '\traw += fmt.Sprintf(\"Host: %s\\r\\n\", hostHeader)\n')
+            new_lines.append(indent + '\tfmt.Fprintf(&raw, "Host: %s\\r\\n", hostHeader)\n')
             new_lines.append(indent + '}\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + 'skipHeaders := map[string]bool{\n')
-            new_lines.append(indent + '\t\"user-agent\":       true,\n')
-            new_lines.append(indent + '\t\"proxy-connection\": true,\n')
-            new_lines.append(indent + '\t\"host\":             true,\n')
+            new_lines.append(indent + '\t"user-agent":       true,\n')
+            new_lines.append(indent + '\t"proxy-connection": true,\n')
+            new_lines.append(indent + '\t"host":             true,\n')
             new_lines.append(indent + '}\n')
             new_lines.append(indent + 'if c.headers != nil {\n')
             new_lines.append(indent + '\tfor key, values := range c.headers {\n')
@@ -100,19 +103,19 @@ while i < len(lines):
             new_lines.append(indent + '\t\t\tcontinue\n')
             new_lines.append(indent + '\t\t}\n')
             new_lines.append(indent + '\t\tfor _, value := range values {\n')
-            new_lines.append(indent + '\t\t\traw += fmt.Sprintf(\"%s: %s\\r\\n\", key, value)\n')
+            new_lines.append(indent + '\t\t\tfmt.Fprintf(&raw, "%s: %s\\r\\n", key, value)\n')
             new_lines.append(indent + '\t\t}\n')
             new_lines.append(indent + '\t}\n')
             new_lines.append(indent + '}\n')
             new_lines.append(indent + '\n')
-            new_lines.append(indent + 'if c.username != \"\" {\n')
-            new_lines.append(indent + '\tauth := c.username + \":\" + c.password\n')
-            new_lines.append(indent + '\traw += fmt.Sprintf(\"Proxy-Authorization: Basic %s\\r\\n\", base64.StdEncoding.EncodeToString([]byte(auth)))\n')
+            new_lines.append(indent + 'if c.username != "" {\n')
+            new_lines.append(indent + '\tauth := c.username + ":" + c.password\n')
+            new_lines.append(indent + '\tfmt.Fprintf(&raw, "Proxy-Authorization: Basic %s\\r\\n", base64.StdEncoding.EncodeToString([]byte(auth)))\n')
             new_lines.append(indent + '}\n')
             new_lines.append(indent + '\n')
-            new_lines.append(indent + 'raw += \"\\r\\n\"\n')
+            new_lines.append(indent + 'raw.WriteString("\\r\\n")\n')
             new_lines.append(indent + '\n')
-            new_lines.append(indent + '_, err = conn.Write([]byte(raw))\n')
+            new_lines.append(indent + '_, err = conn.Write([]byte(raw.String()))\n')
             new_lines.append(indent + 'if err != nil {\n')
             new_lines.append(indent + '\tconn.Close()\n')
             new_lines.append(indent + '\treturn nil, err\n')
@@ -130,15 +133,15 @@ with open(target, 'w') as f:
     f.writelines(new_lines)
 print('OK: Replaced request block with raw TCP CONNECT' if replaced else 'ERROR: request block not found')
 sys.exit(0 if replaced else 1)
-" "$CLIENT_GO"
+PYEOF
 
 # --- Step 3: 添加缺失的 imports ---
-python3 -c "
+python3 - "$CLIENT_GO" << 'PYEOF'
 import sys
 target = sys.argv[1]
 with open(target, 'r') as f:
     content = f.read()
-needed = {'fmt': '\"fmt\"', 'strings': '\"strings\"'}
+needed = {'fmt': '"fmt"', 'strings': '"strings"'}
 missing = [p for p, imp in needed.items() if imp not in content]
 if missing:
     lines = content.split('\n')
@@ -153,15 +156,13 @@ if missing:
     print(f'OK: Added imports: {missing}')
 else:
     print('OK: All imports present')
-" "$CLIENT_GO"
+PYEOF
 
 # --- 验证 ---
 echo ""
 echo "=== Verification ==="
-grep -n 'CONNECT.*HTTP/1.1\|delHost\|c\.path\|skipHeaders\|KunBox.*raw\|c\.headers' "$CLIENT_GO" | head -20
+grep -n 'CONNECT.*HTTP/1.1\|delHost\|c\.path\|skipHeaders\|KunBox.*raw\|c\.headers\|\\\\r\\\\n' "$CLIENT_GO" | head -20
 echo ""
 echo "=== Duplicate check ==="
-DUPES=$(grep -c 'delHost\|path.*string' "$CLIENT_GO" || true)
-echo "delHost/path occurrences: $DUPES (expect ~4)"
-echo ""
+echo "delHost occurrences: $(grep -c 'delHost' "$CLIENT_GO" || true)"
 echo "=== Patch 03 done ==="
