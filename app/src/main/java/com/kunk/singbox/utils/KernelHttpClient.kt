@@ -19,7 +19,7 @@ object KernelHttpClient {
 
     private const val DEFAULT_TIMEOUT_MS = 30000
 
-    // 濮掓稒顭堥缁樼閿濆洦鍊炵紒鏃戝灠瑜?
+    // 内核 HTTP 客户端
     private const val DEFAULT_PROXY_PORT = 2080
 
     @Volatile
