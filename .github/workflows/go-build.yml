@@ -95,9 +95,6 @@ jobs:
           echo "=== go.mod replace added ==="
           tail -3 go.mod
 
-
-
-
       - name: Add gomobile dependencies to module
         working-directory: upstream-sing-box
         run: |
@@ -115,7 +112,7 @@ jobs:
           gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
             -tags "with_clash_api,with_gvisor" \
             -target android -libname=box \
-            -trimpath -ldflags='-s -w -checklinkname=0' \
+            -trimpath -ldflags="-s -w -checklinkname=0" \
             -o ../app/libs/libbox.aar \
             ./experimental/libbox
 
@@ -171,13 +168,18 @@ jobs:
           path: app/libs/libbox.aar
 
       - name: Prepare Keystore
+        env:
+          KS_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
+          if [ -n "$KS_BASE64" ]; then
+            echo "$KS_BASE64" | base64 -d > ${{ github.workspace }}/release.keystore
             echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
-            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
-            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=$KS_PASS" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$KS_ALIAS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$KS_KEY_PASS" >> $GITHUB_ENV
           else
             echo "No signing secrets found, generating temporary keystore..."
             keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore \
