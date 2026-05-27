@@ -85,7 +85,7 @@ jobs:
           cp -r "$SING_CACHE" ../local-sing
           chmod -R u+w ../local-sing
 
-          # Patch client.go
+          # Apply 03-client.sh (raw TCP CONNECT)
           CLIENT_GO="../local-sing/protocol/http/client.go"
           bash ../core/patches/03-client.sh "$CLIENT_GO"
 
@@ -96,13 +96,7 @@ jobs:
           tail -3 go.mod
 
 
-      - name: Apply KunBox Go patches (04) - Path & Raw TCP CONNECT
-        working-directory: upstream-sing-box
-        run: |
-          bash ../core/patches/01-options.sh .
-          bash ../core/patches/02-outbound.sh .
-          bash ../core/patches/03-client.sh ../local-sing/protocol/http/client.go
-          echo "=== Patches 04 applied (Path + Raw TCP CONNECT) ==="
+
 
       - name: Add gomobile dependencies to module
         working-directory: upstream-sing-box
