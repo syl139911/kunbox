@@ -122,7 +122,10 @@ while i < len(lines):
             new_lines.append(indent + '}\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + '// Minimal request for http.ReadResponse\n')
-            new_lines.append(indent + 'request := (&http.Request{Method: http.MethodConnect}).WithURL(&url.URL{Host: destination.String()})\n')
+            new_lines.append(indent + 'request := &http.Request{\n')
+            new_lines.append(indent + '\tMethod: http.MethodConnect,\n')
+            new_lines.append(indent + '\tURL:    &url.URL{Host: destination.String()},\n')
+            new_lines.append(indent + '}\n')
             i = request_write_line + 1
             replaced = True
             continue
