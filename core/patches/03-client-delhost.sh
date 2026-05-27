@@ -35,55 +35,10 @@ sed -i '/^\tHeaders.*http\.Header$/a\	DelHost  bool' "$CLIENT_GO"
 # 3c: Add delHost assignment in NewClient (after 'headers:    options.Headers,')
 sed -i '/^\theaders:.*options\.Headers,$/a\			delHost:    options.DelHost,' "$CLIENT_GO"
 
-# 3d: Inject path+target logic and delHost Opaque URL branch
-python3 -c "
-import sys
-
-target = sys.argv[1]
-with open(target, 'r') as f:
-    lines = f.readlines()
-
-new_lines = []
-request_block_end = -1
-host_check_idx = -1
-
-for i, line in enumerate(lines):
-    if 'if c.host != \"\" && c.host != destination.Fqdn {' in line:
-        host_check_idx = i
-
-for i, line in enumerate(lines):
-    new_lines.append(line)
-
-    # After request := &http.Request{...} block, inject target building
-    if request_block_end < 0 and i > 0 and 'request := &http.Request{' in ''.join(lines[max(0,i-5):i]):
-        pass
-
-    if 'request := &http.Request{' in line:
-        brace = 0
-        for j in range(i, len(lines)):
-            brace += lines[j].count('{') - lines[j].count('}')
-            if brace == 0:
-                request_block_end = j
-                break
-
-    if i == request_block_end:
-        indent = line[:len(line) - len(line.lstrip())]
-        new_lines.append(indent + 'target := destination.String()\n')
-        new_lines.append(indent + 'if c.path != \"\" {\n')
-        new_lines.append(indent + '\ttarget = target + c.path\n')
-        new_lines.append(indent + '}\n')
-
-    # Replace host check with delHost branch
-    if i == host_check_idx:
-        indent = line[:len(line) - len(line.lstrip())]
-        new_lines.append(indent + 'if c.delHost {\n')
-        new_lines.append(indent + '\trequest.URL = &url.URL{Opaque: target}\n')
-        new_lines.append(indent + '\trequest.Host = \"\"\n')
-        new_lines.append(indent + '} else ')
-
-with open(target, 'w') as f:
-    f.writelines(new_lines)
-" "$CLIENT_GO"
+# 3d: Skip host check modification — Patch 04 handles delHost in raw TCP section
+# (Patch 04 removes the request block entirely, so modifying host check here would
+# reference a deleted variable and cause a compile error.)
+echo "NOTE: Skipping host check modification (Patch 04 handles delHost via raw TCP)"
 
 echo "=== After patch ==="
 grep -n 'delHost\|DelHost\|Opaque\|target' "$CLIENT_GO" || true
