@@ -81,4 +81,14 @@ OPENWORLD_MIGRATION_PLAN.md
 .gstack/
 \.sisyphus
 .kotlin/
-app/graphify-out/cache
+
+# 编译日志（不应提交）
+build_output.txt
+
+# Graphify AI 分析产物（缓存文件，不应提交）
+.graphify_*
+.graphify_chunks/
+graphify-out/
+
+# AI Agent 配置（与项目无关）
+.agent/
