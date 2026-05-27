@@ -24,7 +24,7 @@ import okhttp3.Response
 object AppUpdateChecker {
     private const val TAG = "AppUpdateChecker"
 
-    private const val GITHUB_API_URL = "https://api.github.com/repos/roseforljh/KunBox/releases/latest"
+    private const val GITHUB_API_URL = "https://api.github.com/repos/syl139911/kunbox/releases/latest"
     private const val CHANNEL_ID = "app_update"
     private const val NOTIFICATION_ID = 1001
 
