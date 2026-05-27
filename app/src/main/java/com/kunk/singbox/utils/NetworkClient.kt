@@ -17,7 +17,7 @@ object NetworkClient {
     private const val CONNECT_TIMEOUT = 15L
     private const val READ_TIMEOUT = 20L
     private const val WRITE_TIMEOUT = 20L
-    private const val CALL_TIMEOUT = 60L // ·轰胶绻濈紞瀣嫬閸愵亝鏆忛悺鎺戞噺濡?
+    private const val CALL_TIMEOUT = 60L // 整体超时（秒）
 
     private val connectionPool = ConnectionPool(10, 5, TimeUnit.MINUTES)
 
@@ -127,7 +127,7 @@ object NetworkClient {
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
             .writeTimeout(writeTimeoutSeconds, TimeUnit.SECONDS)
             .connectionPool(ConnectionPool(5, 2, TimeUnit.MINUTES))
-            .protocols(listOf(Protocol.HTTP_1_1)) // ·寸媴绲块幃濠偽熼垾宕囩·达綀娉曢弫?HTTP/1.1
+            .protocols(listOf(Protocol.HTTP_1_1)) // 强制 HTTP/1.1（避免 HTTP/2 问题）
             .retryOnConnectionFailure(false)
             .followRedirects(true)
             .followSslRedirects(true)
@@ -180,7 +180,7 @@ object NetworkClient {
     }
 
     /**
-     * 閺夆晝鍋炵敮鏉懶ч悩闈浶﹂柟顑跨劍閺嗙喖骞戦鎹愵潶
+     * 连接池统计信息
      */
     data class PoolStatus(
         val idleConnections: Int,
