@@ -44,12 +44,15 @@ echo "=== Injecting kunbox_custom.go ==="
 cp "$SCRIPT_DIR/kunbox_custom.go" "$UPSTREAM_DIR/experimental/libbox/kunbox_custom.go"
 echo "OK: kunbox_custom.go injected"
 
-# --- Step 3: Apply patches ---
-echo "=== Applying patches ==="
+# --- Step 3: Apply DelHost patches to sing-box upstream ---
+# Patch 01: option/simple.go - add DelHost to HTTPOutboundOptions
+# Patch 02: protocol/http/outbound.go - pass DelHost to HTTP client
+echo "=== Applying DelHost patches (01, 02) ==="
 bash "$SCRIPT_DIR/patches/01-delhost-option.sh" "$UPSTREAM_DIR"
 bash "$SCRIPT_DIR/patches/02-delhost-outbound.sh" "$UPSTREAM_DIR"
+echo "OK: DelHost patches applied"
 
-# --- Step 4: Patch sing dependency ---
+# --- Step 4: Patch sing dependency (client.go) ---
 echo "=== Patching sing dependency ==="
 cd "$UPSTREAM_DIR"
 
@@ -63,19 +66,34 @@ cp -r "$SING_CACHE" "$LOCAL_SING_DIR"
 chmod -R u+w "$LOCAL_SING_DIR"
 
 CLIENT_GO="$LOCAL_SING_DIR/protocol/http/client.go"
+
+# Patch 03: sing protocol/http/client.go - add DelHost field + logic
+echo "--- Applying patch 03 (client DelHost) ---"
 bash "$SCRIPT_DIR/patches/03-client-delhost.sh" "$CLIENT_GO"
+
+# Patch 04: sing protocol/http/client.go - raw TCP CONNECT (TPBox style)
+echo "--- Applying patch 04 (raw TCP CONNECT) ---"
+bash "$SCRIPT_DIR/patches/04-connect-raw.sh" "$CLIENT_GO"
 
 # Add replace directive
 echo "" >> go.mod
 echo "replace github.com/sagernet/sing => $LOCAL_SING_DIR" >> go.mod
-echo "OK: sing dependency patched"
+echo "OK: sing dependency patched (03-delhost + 04-raw-connect)"
 
-# --- Step 5: Add gomobile dependencies ---
+# --- Step 5: Apply Path patches to sing-box upstream ---
+# Patch 04a: option/simple.go - add Path field
+# Patch 04b: protocol/http/outbound.go - pass Path to client
+echo "=== Applying Path patches (04a, 04b) ==="
+bash "$SCRIPT_DIR/patches/04a-option-path.sh" "$UPSTREAM_DIR"
+bash "$SCRIPT_DIR/patches/04b-outbound-path.sh" "$UPSTREAM_DIR"
+echo "OK: Path patches applied"
+
+# --- Step 6: Add gomobile dependencies ---
 echo "=== Adding gomobile dependencies ==="
 go get -tool github.com/sagernet/gomobile/cmd/gobind
 go get github.com/sagernet/gomobile
 
-# --- Step 6: Build libbox.aar ---
+# --- Step 7: Build libbox.aar ---
 echo "=== Building libbox.aar ==="
 gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
     -tags "with_clash_api,with_gvisor" \
@@ -86,7 +104,7 @@ gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
 
 cd "$PROJECT_ROOT"
 
-# --- Step 7: Verify ---
+# --- Step 8: Verify ---
 AAR="$PROJECT_ROOT/app/libs/libbox.aar"
 if [ ! -f "$AAR" ]; then
     echo "ERROR: libbox.aar not found!"
@@ -105,3 +123,11 @@ fi
 echo "========================================="
 echo "✅ Build complete: app/libs/libbox.aar (${MB} MB)"
 echo "========================================="
+echo ""
+echo "Applied patches:"
+echo "  01-delhost-option.sh    → option/simple.go: DelHost field"
+echo "  02-delhost-outbound.sh  → outbound.go: pass DelHost"
+echo "  03-client-delhost.sh    → client.go: DelHost logic"
+echo "  04-connect-raw.sh       → client.go: raw TCP CONNECT"
+echo "  04a-option-path.sh      → option/simple.go: Path field"
+echo "  04b-outbound-path.sh    → outbound.go: pass Path"
