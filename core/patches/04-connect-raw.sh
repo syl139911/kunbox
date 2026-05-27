@@ -103,8 +103,18 @@ while i < len(lines):
             new_lines.append(indent + '\traw += fmt.Sprintf(\"Host: %s\\r\\n\", hostHeader)\n')
             new_lines.append(indent + '}\n')
             new_lines.append(indent + '\n')
+            new_lines.append(indent + '// 只保留用户自定义 headers，跳过 Go 自动添加的\n')
+            new_lines.append(indent + '// (Go 标准库会加 User-Agent: Go-http-client/1.1 等，暴露身份)\n')
+            new_lines.append(indent + 'skipHeaders := map[string]bool{\n')
+            new_lines.append(indent + '\t\"user-agent\":       true,\n')
+            new_lines.append(indent + '\t\"proxy-connection\": true,\n')
+            new_lines.append(indent + '\t\"host\":             true, // Host 已在上面处理\n')
+            new_lines.append(indent + '}\n')
             new_lines.append(indent + 'if options.Headers != nil {\n')
             new_lines.append(indent + '\tfor key, values := range options.Headers {\n')
+            new_lines.append(indent + '\t\tif skipHeaders[strings.ToLower(key)] {\n')
+            new_lines.append(indent + '\t\t\tcontinue\n')
+            new_lines.append(indent + '\t\t}\n')
             new_lines.append(indent + '\t\tfor _, value := range values {\n')
             new_lines.append(indent + '\t\t\traw += fmt.Sprintf(\"%s: %s\\r\\n\", key, value)\n')
             new_lines.append(indent + '\t\t}\n')
@@ -112,6 +122,9 @@ while i < len(lines):
             new_lines.append(indent + '}\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + 'raw += \"\\r\\n\"\n')
+            new_lines.append(indent + '\n')
+            new_lines.append(indent + '// Debug: 输出实际发送的 CONNECT（抓包对比用）\n')
+            new_lines.append(indent + 'log.Println(\"[KunBox] raw CONNECT:\", raw)\n')
             new_lines.append(indent + '\n')
             new_lines.append(indent + '// 直接写 TCP，不经过 Go HTTP 格式化\n')
             new_lines.append(indent + '_, err = conn.Write([]byte(raw))\n')
@@ -155,11 +168,32 @@ if ! grep -q 'path:.*options.Path' "$CLIENT_GO"; then
     sed -i '/delHost:.*options.DelHost/a\\t\tpath:          options.Path,' "$CLIENT_GO"
 fi
 
-# --- Step 5: 确认 fmt 已导入 ---
-if ! grep -q '"fmt"' "$CLIENT_GO"; then
-    echo "NOTE: fmt not imported, adding..."
-    sed -i '/import (/a\\t"fmt"' "$CLIENT_GO"
-fi
+# --- Step 5: 确认 fmt/log/strings 已导入 ---
+python3 -c "
+import sys
+target = sys.argv[1]
+with open(target, 'r') as f:
+    content = f.read()
+
+needed = {'fmt': '\"fmt\"', 'log': '\"log\"', 'strings': '\"strings\"'}
+missing = [pkg for pkg, imp in needed.items() if imp not in content]
+
+if missing:
+    print(f'NOTE: Missing imports: {missing}, adding...')
+    # Find 'import (' line and add after it
+    lines = content.split('\n')
+    new_lines = []
+    for line in lines:
+        new_lines.append(line)
+        if line.strip() == 'import (':
+            for pkg in missing:
+                new_lines.append('\t' + needed[pkg])
+    with open(target, 'w') as f:
+        f.write('\n'.join(new_lines))
+    print(f'OK: Added {missing}')
+else:
+    print('OK: All imports present')
+" "$CLIENT_GO"
 
 # --- 验证 ---
 echo ""
@@ -170,7 +204,13 @@ echo ""
 echo "--- Path + DelHost fields ---"
 grep -n 'path\|delHost\|Path\|DelHost' "$CLIENT_GO" || echo "WARNING: fields not found!"
 echo ""
-echo "--- fmt imported ---"
-grep -n '"fmt"' "$CLIENT_GO" || echo "WARNING: fmt not imported!"
+echo "--- fmt/log/strings imported ---"
+grep -n '"fmt"\|"log"\|"strings"' "$CLIENT_GO" || echo "WARNING: imports not found!"
+echo ""
+echo "--- Skip headers (Go auto-adds) ---"
+grep -n 'skipHeaders\|user-agent\|proxy-connection' "$CLIENT_GO" || echo "WARNING: skip headers not found!"
+echo ""
+echo "--- Debug log ---"
+grep -n 'KunBox.*raw' "$CLIENT_GO" || echo "WARNING: debug log not found!"
 echo ""
 echo "=== Patch 04 applied ==="
