@@ -92,7 +92,7 @@ data class AppSettings(
     @SerializedName("appGroups") val appGroups: List<AppGroup> = emptyList(),
 
     @SerializedName("ruleSetAutoUpdateEnabled") val ruleSetAutoUpdateEnabled: Boolean = false,
-    @SerializedName("ruleSetAutoUpdateInterval") val ruleSetAutoUpdateInterval: Int = 60, // ·告帒妫濋幐?
+    @SerializedName("ruleSetAutoUpdateInterval") val ruleSetAutoUpdateInterval: Int = 60, // 单位: 秒
 
     @SerializedName("subscriptionUpdateTimeout") val subscriptionUpdateTimeout: Int = 30, // ·佸甯槐·囶渶濡鍚?0·?
 

@@ -693,7 +693,6 @@ object OutboundFixer {
         }, fixed)
     }
 
-    @Suppress("UnusedParameter")
     internal fun buildRuntimeHysteriaOutbound(
         fixed: Outbound,
         tcpKeepAliveInterval: String?,
@@ -716,7 +715,10 @@ object OutboundFixer {
             serverPorts = fixed.serverPorts,
             tls = fixed.tls,
             multiplex = fixed.multiplex,
-            domainResolver = resolveDomainResolver(fixed)
+            domainResolver = resolveDomainResolver(fixed),
+            tcpKeepAlive = tcpKeepAliveInterval,
+            tcpKeepAliveInterval = tcpKeepAliveInterval,
+            connectTimeout = connectTimeout
         )
     }
 

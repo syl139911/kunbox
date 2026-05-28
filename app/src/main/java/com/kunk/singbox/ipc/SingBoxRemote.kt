@@ -517,18 +517,18 @@ object SingBoxRemote {
         val ctx = contextRef?.get() ?: return
 
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            val backoffAttempts = reconnectAttempts - MAX_RECONNECT_ATTEMPTS
+            // Cap backoffAttempts to prevent unbounded counter growth; delay is already capped at RECONNECT_BACKOFF_MAX
+            val backoffAttempts = minOf(reconnectAttempts - MAX_RECONNECT_ATTEMPTS, 10)
             val backoffDelay = minOf(
                 RECONNECT_DELAY_MS * (1L shl minOf(backoffAttempts, 6)),
                 RECONNECT_BACKOFF_MAX
             )
-            Log.w(TAG, "Max reconnect attempts reached, scheduling retry #$reconnectAttempts in ${backoffDelay}ms")
-            reconnectAttempts++
+            Log.w(TAG, "Max reconnect attempts reached, scheduling retry in ${backoffDelay}ms")
             clearPendingReconnect()
 
             val reconnectTask = Runnable {
                 if (connectionActive && !bound && contextRef?.get() != null) {
-                    Log.i(TAG, "Reconnect backoff attempt #$reconnectAttempts")
+                    Log.i(TAG, "Reconnect backoff attempt")
                     doBindService(ctx)
                 }
             }

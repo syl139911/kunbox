@@ -30,7 +30,7 @@ object PerfTracer {
     }
 
     /**
-     * 鐎殿喒鍋撳┑顔碱儓閹风兘鐓?
+     * 性能追踪工具
      * @param name 閺夆晛鈧喖鍤嬮柛姘Ф琚?
      */
     fun begin(name: String, parent: String? = null) {

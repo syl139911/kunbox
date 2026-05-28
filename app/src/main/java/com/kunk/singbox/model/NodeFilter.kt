@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName
 enum class FilterMode {
     @SerializedName("NONE") NONE,
     @SerializedName("INCLUDE") INCLUDE,
-    @SerializedName("EXCLUDE") EXCLUDE // 閹烘帡娅庨崠鍛儓閸忔娊鏁€涙娈戦懞鍌滃仯
+    // 排除指定节点
 }
 
 data class NodeFilter(

@@ -55,7 +55,7 @@ object NetworkClient {
             .callTimeout(CALL_TIMEOUT, TimeUnit.SECONDS)
             .connectionPool(connectionPool)
             .dispatcher(dispatcher)
-            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1)) // ·村吋锚閸?HTTP/2
+            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1)) // 启用 HTTP/2
             .addInterceptor(statsInterceptor)
             // Rely on OkHttp built-in retry logic to avoid retry amplification.
             .retryOnConnectionFailure(true)

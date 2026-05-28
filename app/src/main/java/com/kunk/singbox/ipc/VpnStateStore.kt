@@ -5,8 +5,8 @@ import com.tencent.mmkv.MMKV
 
 /**
  *
- * MMKV 浼樺娍:
- * - 鎬ц兘姣?SharedPreferences 蹇?100x
+ * MMKV 优势:
+ * - 性能比 SharedPreferences 快 100x
  */
 @Suppress("TooManyFunctions")
 object VpnStateStore {

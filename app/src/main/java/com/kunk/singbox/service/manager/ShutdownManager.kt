@@ -21,7 +21,7 @@ import io.nekohasekai.libbox.InterfaceUpdateListener
 import kotlinx.coroutines.*
 
 /**
- * - 鐎殿喖鍊归鐐哄礂閹惰姤锛?
+ 通知磁贴状态
  */
 class ShutdownManager(
     private val context: Context,

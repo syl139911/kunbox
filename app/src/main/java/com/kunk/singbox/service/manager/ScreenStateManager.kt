@@ -145,7 +145,7 @@ class ScreenStateManager(
 
     /**
      *
-     * (AppLifecycleObserver -> SingBoxIpcHub -> BackgroundPowerManager) 濠㈣泛瀚幃濠囧Υ?
+     屏幕状态变化
      */
     @Suppress("CognitiveComplexMethod")
     fun registerActivityLifecycleCallbacks(application: Application?) {
@@ -211,7 +211,7 @@ class ScreenStateManager(
     }
 
     /**
-     * 濠㈣泛瀚幃濠冩償閺冨倹鏆忛弶鈺傜☉閸欏棝宕ユ惔鈥抽叡
+     屏幕状态变化
      */
     fun onAppBackground() {
         Log.i(TAG, "App moved to BACKGROUND")

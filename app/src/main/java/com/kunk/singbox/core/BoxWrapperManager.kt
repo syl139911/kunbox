@@ -438,7 +438,7 @@ object BoxWrapperManager {
         }
     }
 
-    // ==================== 鐎规悶鍎遍崣鍧楀礄閼恒儲娈?====================
+    // ==================== 连接管理相关 ====================
 
     /**
      */
@@ -455,12 +455,24 @@ object BoxWrapperManager {
     }
 
     /**
+     * Reset network state to recover from connectivity issues.
+     * Tries Libbox.resetNetwork() first (full network reset), falls back to resetAllConnections(false).
      */
     fun resetNetwork(): Boolean {
         if (!isAvailable()) return false
         return try {
-            Libbox.resetAllConnections(false)
-            Log.i(TAG, "resetNetwork() success (via resetAllConnections)")
+            // Try the dedicated resetNetwork API first (resets network interface state)
+            val method = runCatching {
+                Libbox::class.java.getMethod("resetNetwork")
+            }.getOrNull()
+            if (method != null) {
+                method.invoke(null)
+                Log.i(TAG, "resetNetwork() success (via Libbox.resetNetwork)")
+            } else {
+                // Fallback: reset non-system connections only
+                Libbox.resetAllConnections(false)
+                Log.i(TAG, "resetNetwork() success (via resetAllConnections fallback)")
+            }
             true
         } catch (e: Exception) {
             Log.w(TAG, "resetNetwork() failed: ${e.message}")

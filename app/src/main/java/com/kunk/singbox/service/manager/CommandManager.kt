@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 import com.kunk.singbox.utils.BugLogHelper
 
 /**
- * - 閺夆晝鍋炵敮瀛樻交閸婄喖鍤?
+ * - 命令管理器
  *
  */
 @Suppress("TooManyFunctions")

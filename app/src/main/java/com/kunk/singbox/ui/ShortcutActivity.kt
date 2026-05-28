@@ -14,7 +14,7 @@ class ShortcutActivity : ComponentActivity() {
 
         setContentView(R.layout.activity_none)
 
-        // 濮濄儵顎?3: 閹笛嗩攽 VPN 閸掑洦宕?
+        // 步骤3: 启动 VPN 服务
         if (intent?.action == ACTION_TOGGLE) {
             VpnServiceManager.toggleVpn(this)
         }
