@@ -201,8 +201,7 @@ class VpnTunManager(
         val routeMode = settings?.vpnRouteMode ?: VpnRouteMode.GLOBAL
         val cidrText = settings?.vpnRouteIncludeCidrs.orEmpty()
         val cidrs = cidrText
-            .split("
-", "", ",", ";", " ", "	")
+            .split("\n", "\r", ",", ";", " ", "\t")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
 
@@ -412,8 +411,7 @@ class VpnTunManager(
 
     private fun parsePackageList(raw: String): List<String> {
         return raw
-            .split("
-", "", ",", ";", " ", "	")
+            .split("\n", "\r", ",", ";", " ", "\t")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .distinct()
