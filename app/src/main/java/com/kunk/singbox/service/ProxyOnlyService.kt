@@ -310,6 +310,7 @@ class ProxyOnlyService : Service() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to get interfaces", e)
+                BugLogHelper.logVpnError("Failed to get network interfaces in ProxyOnlyService", e)
                 null
             }
         }
@@ -457,11 +458,13 @@ class ProxyOnlyService : Service() {
                             Libbox.resetAllConnections(false)
                         } catch (e: Exception) {
                             Log.w(TAG, "resetAllConnections failed: ${e.message}")
+                            BugLogHelper.logVpnError("resetAllConnections failed in ProxyOnlyService", e)
                         }
 
                         Log.i(TAG, "[PrepareRestart] Complete")
                     } catch (e: Exception) {
                         Log.e(TAG, "PrepareRestart error", e)
+                        BugLogHelper.logVpnError("PrepareRestart error in ProxyOnlyService", e)
                     }
                 }
             }
@@ -488,6 +491,7 @@ class ProxyOnlyService : Service() {
             hasForegroundStarted.set(true)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to call startForeground", e)
+            BugLogHelper.logVpnError("Failed to call startForeground in ProxyOnlyService", e)
         }
 
         startJob?.cancel()
@@ -633,6 +637,7 @@ class ProxyOnlyService : Service() {
                 jobToJoin?.join()
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to join start job", e)
+                BugLogHelper.logVpnError("Failed to join start job during ProxyOnlyService stop", e)
             }
 
             if (serverToClose != null) {
@@ -664,6 +669,7 @@ class ProxyOnlyService : Service() {
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to close CommandServer: ${e.message}", e)
+                    BugLogHelper.logVpnError("Failed to close CommandServer in ProxyOnlyService stop", e)
                 }
             }
 
@@ -781,6 +787,7 @@ class ProxyOnlyService : Service() {
                 manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to delete legacy notification channel", e)
+                BugLogHelper.logVpnError("Failed to delete legacy notification channel in ProxyOnlyService", e)
             }
 
             val channel = NotificationChannel(

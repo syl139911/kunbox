@@ -21,6 +21,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  * 閰嶇疆鎸佷箙鍖栫鐞嗗櫒
@@ -123,6 +124,7 @@ class ProfilePersistence(private val context: Context) {
             gson.fromJson<SavedProfilesData>(json, TYPE_SAVED_PROFILES_DATA)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load from JSON", e)
+            BugLogHelper.logConfigError("Failed to load profiles from JSON file", e)
             null
         }
     }
@@ -152,6 +154,7 @@ class ProfilePersistence(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to migrate to Room", e)
+            BugLogHelper.logConfigError("Failed to migrate profiles to Room database", e)
         }
     }
 
@@ -199,6 +202,7 @@ class ProfilePersistence(private val context: Context) {
             )
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save active state", e)
+            BugLogHelper.logConfigError("Failed to save active state synchronously", e)
         }
     }
 
@@ -234,6 +238,7 @@ class ProfilePersistence(private val context: Context) {
             Log.d(TAG, "Saved ${profiles.size} profiles in ${elapsed}ms")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save profiles", e)
+            BugLogHelper.logConfigError("Failed to save profiles to Room database", e)
         }
     }
 
@@ -245,6 +250,7 @@ class ProfilePersistence(private val context: Context) {
                 nodeLatencyDao.upsert(nodeId, latencyMs)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to persist latency for $nodeId", e)
+                BugLogHelper.logConfigError("Failed to persist latency for node $nodeId", e)
             }
         }
     }
@@ -257,6 +263,7 @@ class ProfilePersistence(private val context: Context) {
             profileDao.deleteById(profileId)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to delete profile $profileId", e)
+            BugLogHelper.logConfigError("Failed to delete profile $profileId", e)
         }
     }
 
@@ -269,6 +276,7 @@ class ProfilePersistence(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to cleanup legacy profile files", e)
+                BugLogHelper.logConfigError("Failed to cleanup legacy profile JSON files", e)
             }
         }
     }

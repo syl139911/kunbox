@@ -5,6 +5,7 @@ import com.kunk.singbox.model.SingBoxConfig
 import com.kunk.singbox.utils.parser.SubscriptionManager
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  */
@@ -100,6 +101,7 @@ class SubscriptionFetcher(
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Error with UA '$userAgent': ${e.message}")
+                BugLogHelper.logHttpError("Subscription fetch error with UA '$userAgent': ${e.message}", e)
                 lastError = e
                 if (index == USER_AGENTS.lastIndex) {
                     throw e

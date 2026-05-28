@@ -9,6 +9,7 @@ import com.kunk.singbox.model.ObfsConfig
 import com.kunk.singbox.model.WireGuardPeer
 import android.util.Log
 import com.google.gson.Gson
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  */
@@ -366,6 +367,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse SS link", e)
+            BugLogHelper.logNodeError("Failed to parse SS link: ${link.take(100)}", e)
         }
         return null
     }
@@ -545,6 +547,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse VMess link", e)
+            BugLogHelper.logNodeError("Failed to parse VMess link: ${link.take(100)}", e)
         }
         return null
     }
@@ -650,6 +653,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse VLESS link", e)
+            BugLogHelper.logNodeError("Failed to parse VLESS link: ${link.take(100)}", e)
         }
         return null
     }
@@ -694,6 +698,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse Trojan link", e)
+            BugLogHelper.logNodeError("Failed to parse Trojan link: ${link.take(100)}", e)
         }
         return null
     }
@@ -778,6 +783,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse Hy2 link", e)
+            BugLogHelper.logNodeError("Failed to parse Hysteria2 link: ${link.take(100)}", e)
         }
         return null
     }
@@ -840,6 +846,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse Hysteria link", e)
+            BugLogHelper.logNodeError("Failed to parse Hysteria link: ${link.take(100)}", e)
         }
         return null
     }
@@ -895,6 +902,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse AnyTLS link", e)
+            BugLogHelper.logNodeError("Failed to parse AnyTLS link: ${link.take(100)}", e)
         }
         return null
     }
@@ -962,6 +970,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse Naive link", e)
+            BugLogHelper.logNodeError("Failed to parse Naive link: ${link.take(100)}", e)
         }
         return null
     }
@@ -1025,6 +1034,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse TUIC link", e)
+            BugLogHelper.logNodeError("Failed to parse TUIC link: ${link.take(100)}", e)
         }
         return null
     }
@@ -1059,6 +1069,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse WG link", e)
+            BugLogHelper.logNodeError("Failed to parse WireGuard link: ${link.take(100)}", e)
         }
         return null
     }
@@ -1080,6 +1091,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse SSH link", e)
+            BugLogHelper.logNodeError("Failed to parse SSH link: ${link.take(100)}", e)
         }
         return null
     }
@@ -1144,6 +1156,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse HTTP/HTTPS link", e)
+            BugLogHelper.logNodeError("Failed to parse HTTP/HTTPS link: ${link.take(100)}", e)
         }
         return null
     }
@@ -1181,6 +1194,7 @@ class NodeLinkParser(private val gson: Gson) {
             )
         } catch (e: Exception) {
             Log.e("NodeLinkParser", "Failed to parse SOCKS5 link", e)
+            BugLogHelper.logNodeError("Failed to parse SOCKS5 link: ${link.take(100)}", e)
         }
         return null
     }

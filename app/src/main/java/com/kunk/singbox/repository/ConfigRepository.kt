@@ -517,6 +517,7 @@ class ConfigRepository(private val context: Context) {
                 detectRuleSetRuleTypeFromSample(sample)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to detect rule set type: ${file.name}", e)
+                BugLogHelper.logConfigError("Failed to detect rule set type: ${file.name}", e)
                 RuleSetRuleType.UNKNOWN
             }
         }
@@ -1480,6 +1481,7 @@ class ConfigRepository(private val context: Context) {
                     cleanupExpiredCache()
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to cleanup expired config cache", e)
+                    BugLogHelper.logConfigError("Failed to cleanup expired config cache", e)
                 }
             },
             CONFIG_CACHE_CLEANUP_INTERVAL_MINUTES,
@@ -1716,6 +1718,7 @@ class ConfigRepository(private val context: Context) {
                 nodeLatencyDao.upsert(nodeId, latencyValue)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to persist latency for $nodeId", e)
+                BugLogHelper.logConfigError("Failed to persist latency for $nodeId", e)
             }
         }
     }
@@ -2020,6 +2023,7 @@ class ConfigRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to cleanup legacy profile files", e)
+                BugLogHelper.logConfigError("Failed to cleanup legacy profile files", e)
             }
         }
     }
@@ -2143,6 +2147,7 @@ class ConfigRepository(private val context: Context) {
                 parseHeaderLike(header)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to parse Subscription-Userinfo header: $header", e)
+                BugLogHelper.logConfigError("Failed to parse Subscription-Userinfo header", e)
             }
         }
         if (bodyDecoded != null && (!found || total == 0L)) {
@@ -2191,6 +2196,7 @@ class ConfigRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to parse info from body: ${bodyDecoded.take(100)}", e)
+                BugLogHelper.logConfigError("Failed to parse subscription user info from body", e)
             }
         }
 
@@ -2477,6 +2483,7 @@ class ConfigRepository(private val context: Context) {
                     "Subscription fetch error: host=$host, ua='$userAgent', " +
                         "cached=${rememberedUserAgent.equals(userAgent, ignoreCase = true)}, error=${e.message}"
                 )
+                BugLogHelper.logHttpError("Subscription fetch attempt failed: ${e.message}", e)
                 if (index == userAgents.lastIndex) {
                     throw e
                 }
@@ -2506,6 +2513,7 @@ class ConfigRepository(private val context: Context) {
                 fetchAndParseSubscription(url, onProgress)
             } catch (e: Exception) {
                 Log.e(TAG, "Subscription fetch failed", e)
+                BugLogHelper.logHttpError("Subscription fetch failed", e)
                 return@withContext Result.failure(e)
             }
 
@@ -2641,6 +2649,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             profileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to create custom profile", e)
+            BugLogHelper.logConfigError("Failed to create custom profile", e)
             Result.failure(e)
         }
     }
@@ -2698,6 +2707,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             profileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to import profile from content", e)
+            BugLogHelper.logConfigError("Failed to import profile from content", e)
             Result.failure(e)
         }
     }
@@ -2797,9 +2807,11 @@ class ConfigRepository(private val context: Context) {
                 return SingBoxConfig(outbounds = outbounds)
             } else {
                 Log.w(TAG, "Parsed as JSON but outbounds/proxies is empty/null. content snippet: ${sanitizeSubscriptionSnippet(normalizedContent)}")
+                BugLogHelper.logConfigError("Parsed JSON but outbounds empty")
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract outbounds from JSON: ${e.message}")
+            BugLogHelper.logConfigError("Failed to extract outbounds from JSON", e)
         }
         try {
             val yamlConfig = parseClashYamlConfig(normalizedContent)
@@ -2822,6 +2834,7 @@ class ConfigRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to extract outbounds from decoded Base64 JSON: ${e.message}")
+                BugLogHelper.logConfigError("Failed to parse decoded Base64 as JSON", e)
             }
 
             try {
@@ -2832,6 +2845,7 @@ class ConfigRepository(private val context: Context) {
             } catch (_: Exception) {
             }
         } catch (e: Exception) {
+            BugLogHelper.logConfigError("Failed to decode base64 content", e)
         }
         try {
             val lines = normalizedContent.trim().lines().filter { it.isNotBlank() }
@@ -2861,6 +2875,7 @@ class ConfigRepository(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to parse subscription response as node links", e)
+            BugLogHelper.logConfigError("Failed to parse content as node links", e)
         }
 
         return null
@@ -3223,6 +3238,7 @@ class ConfigRepository(private val context: Context) {
 
                     val msg = "Switch error: ${e.message ?: "unknown error"}"
                     Log.e(TAG, "Error during hot switch", e)
+                    BugLogHelper.logConfigError("Error during node switch", e)
                     NodeSwitchResult.Failed(msg)
                 }
             }
@@ -3261,6 +3277,7 @@ class ConfigRepository(private val context: Context) {
                 profileDao.deleteById(profileId)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to delete profile from Room", e)
+                BugLogHelper.logConfigError("Failed to delete profile from Room", e)
             }
         }
 
@@ -3425,6 +3442,7 @@ class ConfigRepository(private val context: Context) {
                             throw e
                         }
                         Log.e(TAG, "Latency test error for $nodeId", e)
+                        BugLogHelper.logNodeError("Latency test error for $nodeId", e)
                         val nodeName = _nodes.value.find { it.id == nodeId }?.name
                             ?: _allNodes.value.find { it.id == nodeId }?.name
                         LogRepository.getInstance().addLog(context.getString(R.string.nodes_test_failed, nodeName ?: nodeId) + ": ${e.message}")
@@ -3435,6 +3453,7 @@ class ConfigRepository(private val context: Context) {
             deferred.complete(result)
             return result
         } catch (e: Exception) {
+            BugLogHelper.logNodeError("Latency test failed for $nodeId", e)
             deferred.complete(-1L)
             return -1L
         } finally {
@@ -3545,6 +3564,7 @@ class ConfigRepository(private val context: Context) {
         val result = try {
             importFromSubscriptionUpdate(profile, updateRunId)
         } catch (e: Exception) {
+            BugLogHelper.logHttpError("Profile update failed: ${profile.name}", e)
             SubscriptionUpdateResult.Failed(profile.name, e.message ?: "Subscription update failed")
         }
         updateProfileForCurrentRun(profileId, updateRunId) {
@@ -3859,6 +3879,7 @@ class ConfigRepository(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to validate rule set file: $tag", e)
+            BugLogHelper.logConfigError("Failed to validate rule set file: $tag", e)
             false
         }
     }
@@ -5244,6 +5265,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             createdProfileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to create node", e)
+            BugLogHelper.logConfigError("Failed to create node", e)
         }
     }
 
@@ -5373,6 +5395,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             createdProfileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to add single node", e)
+            BugLogHelper.logConfigError("Failed to add single node", e)
             Result.failure(Exception(context.getString(R.string.nodes_add_failed) + ": ${e.message}"))
         }
     }

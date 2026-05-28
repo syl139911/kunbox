@@ -17,6 +17,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import java.io.File
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  */
@@ -76,6 +77,7 @@ class DataExportRepository(private val context: Context) {
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to load config for profile: ${profile.id}", e)
+                    BugLogHelper.logConfigError("Failed to load config for profile export: ${profile.id}", e)
                     null
                 }
             }
@@ -99,6 +101,7 @@ class DataExportRepository(private val context: Context) {
             Result.success(jsonString)
         } catch (e: Exception) {
             Log.e(TAG, "Export failed", e)
+            BugLogHelper.logConfigError("Export all data failed", e)
             Result.failure(e)
         }
     }
@@ -122,6 +125,7 @@ class DataExportRepository(private val context: Context) {
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Export to file failed", e)
+            BugLogHelper.logConfigError("Export to file failed", e)
             Result.failure(e)
         }
     }
@@ -153,9 +157,11 @@ class DataExportRepository(private val context: Context) {
             Result.success(exportData)
         } catch (e: JsonSyntaxException) {
             Log.e(TAG, "Invalid JSON format", e)
+            BugLogHelper.logConfigError("Import data validation: invalid JSON format", e)
             Result.failure(Exception("Data format error, please check file validity"))
         } catch (e: Exception) {
             Log.e(TAG, "Validation failed", e)
+            BugLogHelper.logConfigError("Import data validation failed", e)
             Result.failure(e)
         }
     }
@@ -213,6 +219,7 @@ class DataExportRepository(private val context: Context) {
                     settingsImported = true
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to import settings", e)
+                    BugLogHelper.logConfigError("Failed to import settings during data import", e)
                     errors.add("Failed to import settings: ${e.message}")
                 }
             }
@@ -225,6 +232,7 @@ class DataExportRepository(private val context: Context) {
                         nodesImported += nodeCount
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to import profile: ${profileData.profile.name}", e)
+                        BugLogHelper.logConfigError("Failed to import profile: ${profileData.profile.name}", e)
                         errors.add("Profile '${profileData.profile.name}' import failed: ${e.message}")
                     }
                 }
@@ -241,6 +249,7 @@ class DataExportRepository(private val context: Context) {
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to restore active profile", e)
+                    BugLogHelper.logConfigError("Failed to restore active profile after import", e)
                 }
             }
 
@@ -267,6 +276,7 @@ class DataExportRepository(private val context: Context) {
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to download rule sets after import", e)
+                        BugLogHelper.logConfigError("Failed to download rule sets after import", e)
                     }
                 }
             }
@@ -288,6 +298,7 @@ class DataExportRepository(private val context: Context) {
             Result.success(result)
         } catch (e: Exception) {
             Log.e(TAG, "Import failed", e)
+            BugLogHelper.logConfigError("Data import failed", e)
             Result.failure(e)
         }
     }
@@ -302,6 +313,7 @@ class DataExportRepository(private val context: Context) {
             importData(jsonData, options)
         } catch (e: Exception) {
             Log.e(TAG, "Import from file failed", e)
+            BugLogHelper.logConfigError("Import from file failed", e)
             Result.failure(e)
         }
     }
@@ -316,6 +328,7 @@ class DataExportRepository(private val context: Context) {
             validateImportData(jsonData)
         } catch (e: Exception) {
             Log.e(TAG, "Validate from file failed", e)
+            BugLogHelper.logConfigError("Validate from file failed", e)
             Result.failure(e)
         }
     }
@@ -410,6 +423,7 @@ class DataExportRepository(private val context: Context) {
         } catch (e: Exception) {
             if (configFile.exists() && !configFile.delete()) {
                 Log.w(TAG, "Failed to delete orphaned imported config: ${configFile.absolutePath}")
+                BugLogHelper.logConfigError("Failed to delete orphaned imported config: ${configFile.absolutePath}")
             }
             throw e
         }

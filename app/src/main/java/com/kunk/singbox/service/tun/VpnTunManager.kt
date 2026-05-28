@@ -56,6 +56,7 @@ class VpnTunManager(
             Log.d(TAG, "TUN builder preallocated")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to preallocate TUN builder", e)
+            BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to preallocate TUN builder in VpnTunManager", e = e)
             preallocatedBuilder = null
         }
     }
@@ -255,6 +256,7 @@ class VpnTunManager(
                 builder.addDnsServer(dns)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to add DNS server: $dns", e)
+                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to add DNS server '$dns' in VpnTunManager", e = e)
             }
         }
     }
@@ -283,6 +285,7 @@ class VpnTunManager(
                                 addedCount++
                             } catch (e: PackageManager.NameNotFoundException) {
                                 Log.w(TAG, "Allowed app not found: $pkg")
+                                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Allowed app not found in per-app VPN config: $pkg", e = e)
                             }
                         }
                         if (addedCount == 0) {
@@ -294,6 +297,7 @@ class VpnTunManager(
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to apply per-app VPN settings", e)
+            BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to apply per-app VPN settings in VpnTunManager", e = e)
         }
     }
 
@@ -310,6 +314,7 @@ class VpnTunManager(
                 Log.i(TAG, "Blocking mode enabled: setBlocking(true)")
             } catch (e: Exception) {
                 Log.w(TAG, "setBlocking not supported on this device", e)
+                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "setBlocking not supported on this device in VpnTunManager", e = e)
             }
         }
     }
@@ -322,6 +327,7 @@ class VpnTunManager(
                     Log.i(TAG, "HTTP Proxy appended to VPN: 127.0.0.1:${settings.proxyPort}")
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to set HTTP proxy for VPN", e)
+                    BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to set HTTP proxy for VPN in VpnTunManager", e = e)
                 }
             }
         }
