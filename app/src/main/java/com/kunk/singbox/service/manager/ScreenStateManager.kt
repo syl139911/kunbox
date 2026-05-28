@@ -12,6 +12,7 @@ import android.util.Log
 import com.kunk.singbox.core.BoxWrapperManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  */
