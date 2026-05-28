@@ -500,7 +500,8 @@
     <!-- HTTP Transport -->
     <string name="node_detail_http_path">Path</string>
     <string name="node_detail_http_path_hint">/example-path</string>
-    <string name="node_detail_del_host">delHost</string>
+    <string name="node_detail_del_host">Remove Host Header</string>
+    <string name="node_detail_del_host_subtitle">Remove Host header from HTTP requests for special proxy scenarios</string>
     <string name="node_detail_http_first">HTTP Preface</string>
     <string name="node_detail_http_first_hint">Fake HTTP request sent before CONNECT. Variables: [M]ethod [V]ersion [H]ost [U]path</string>
     <string name="node_detail_https_first">HTTPS Preface</string>
