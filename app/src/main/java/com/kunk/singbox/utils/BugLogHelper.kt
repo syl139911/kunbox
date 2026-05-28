@@ -127,4 +127,88 @@ object BugLogHelper {
     fun logVpnError(detail: String, throwable: Throwable? = null) {
         log("VPN Error", detail, throwable)
     }
+
+    // ── Go Core Error Helpers (used by GoCoreLogInterceptor) ──────
+
+    /** 获取当前节点名（供 GoCoreLogInterceptor 读取上下文） */
+    fun getCurrentNodeName(): String? = currentNodeName
+
+    /** 获取当前协议（供 GoCoreLogInterceptor 读取上下文） */
+    fun getCurrentNodeProtocol(): String? = currentNodeProtocol
+
+    /** 获取当前 outbound tag（供 GoCoreLogInterceptor 读取上下文） */
+    fun getCurrentNodeOutboundTag(): String? = currentNodeOutboundTag
+
+    /** 记录出站错误 */
+    fun logOutboundError(outboundTag: String, message: String, throwable: Throwable? = null) {
+        try {
+            val detail = buildString {
+                append("Outbound: $outboundTag\n")
+                append("Error: $message")
+                currentNodeName?.let { append("\nNode: $it") }
+                currentNodeProtocol?.let { append("\nProtocol: $it") }
+                runtimeConfig?.let {
+                    append("\n\n--- Runtime Config (first 500 chars) ---\n")
+                    append(it.take(500))
+                }
+            }
+            BugLogRepository.getInstance().addBugLog(
+                title = "Outbound Error",
+                detail = detail,
+                throwable = throwable
+            )
+        } catch (_: Exception) {}
+    }
+
+    /** 记录传输层错误 */
+    fun logTransportError(transportType: String, message: String, throwable: Throwable? = null) {
+        try {
+            val detail = buildString {
+                append("Transport: $transportType\n")
+                append("Error: $message")
+                currentNodeName?.let { append("\nNode: $it") }
+                currentNodeProtocol?.let { append("\nProtocol: $it") }
+                currentNodeOutboundTag?.let { append("\nOutbound: $it") }
+            }
+            BugLogRepository.getInstance().addBugLog(
+                title = "Transport Error",
+                detail = detail,
+                throwable = throwable
+            )
+        } catch (_: Exception) {}
+    }
+
+    /** 记录 DNS 解析错误 */
+    fun logDnsError(domain: String, message: String, throwable: Throwable? = null) {
+        try {
+            val detail = buildString {
+                append("Domain: $domain\n")
+                append("Error: $message")
+                currentNodeName?.let { append("\nNode: $it") }
+            }
+            BugLogRepository.getInstance().addBugLog(
+                title = "DNS Error",
+                detail = detail,
+                throwable = throwable
+            )
+        } catch (_: Exception) {}
+    }
+
+    /** 记录 TLS/证书错误 */
+    fun logTlsError(server: String, message: String, throwable: Throwable? = null) {
+        try {
+            val detail = buildString {
+                append("Server: $server\n")
+                append("Error: $message")
+                currentNodeName?.let { append("\nNode: $it") }
+                currentNodeProtocol?.let { append("\nProtocol: $it") }
+                currentNodeOutboundTag?.let { append("\nOutbound: $it") }
+            }
+            BugLogRepository.getInstance().addBugLog(
+                title = "TLS Error",
+                detail = detail,
+                throwable = throwable
+            )
+        } catch (_: Exception) {}
+    }
 }

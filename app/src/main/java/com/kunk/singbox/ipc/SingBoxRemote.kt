@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.lang.ref.WeakReference
 import com.kunk.singbox.utils.BugLogHelper
+import com.kunk.singbox.core.GoCoreLogInterceptor
 
 sealed class RecoveryResult {
     data object AlreadyConnected : RecoveryResult()
@@ -217,6 +218,13 @@ object SingBoxRemote {
         }
         manuallyStopped?.let { _manuallyStopped.value = it }
         lastSyncTimeMs = System.currentTimeMillis()
+
+        // Go 核心日志拦截器：VPN 运行时捕获 Go 层错误日志
+        when (st) {
+            ServiceState.RUNNING -> GoCoreLogInterceptor.start()
+            ServiceState.STOPPED -> GoCoreLogInterceptor.stop()
+            else -> {}
+        }
     }
 
     /**

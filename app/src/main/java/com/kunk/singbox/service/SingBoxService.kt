@@ -26,6 +26,7 @@ import com.kunk.singbox.repository.SettingsRepository
 import com.kunk.singbox.ui.components.AppNotificationManager
 import com.kunk.singbox.repository.TrafficRepository
 import com.kunk.singbox.core.BoxWrapperManager
+import com.kunk.singbox.core.GoCoreLogInterceptor
 import com.kunk.singbox.core.ProbeManager
 import com.kunk.singbox.core.SelectorManager
 import com.kunk.singbox.service.network.NetworkManager
@@ -3167,6 +3168,7 @@ class SingBoxService : VpnService() {
         if (instance == this) {
             instance = null
         }
+        GoCoreLogInterceptor.stop()
         super.onDestroy()
 
         Log.i(TAG, "SingBoxService cleanup complete, pid=${android.os.Process.myPid()}.")
