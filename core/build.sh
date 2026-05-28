@@ -75,6 +75,14 @@ bash "$SCRIPT_DIR/patches/03-client-delhost.sh" "$CLIENT_GO"
 echo "--- Applying patch 04 (raw TCP CONNECT) ---"
 bash "$SCRIPT_DIR/patches/04-connect-raw.sh" "$CLIENT_GO"
 
+# Patch 05/06/07: HttpFirst (HTTP preface) — option + outbound + client
+echo "--- Applying patch 05 (http_first option) ---"
+bash "$SCRIPT_DIR/patches/05-httpfirst-option.sh" "$UPSTREAM_DIR"
+echo "--- Applying patch 06 (http_first outbound) ---"
+bash "$SCRIPT_DIR/patches/06-httpfirst-outbound.sh" "$UPSTREAM_DIR"
+echo "--- Applying patch 07 (http_first client + write order) ---"
+bash "$SCRIPT_DIR/patches/07-httpfirst-client.sh" "$CLIENT_GO"
+
 # Add replace directive
 echo "" >> go.mod
 echo "replace github.com/sagernet/sing => $LOCAL_SING_DIR" >> go.mod
@@ -131,3 +139,6 @@ echo "  03-client-delhost.sh    → client.go: DelHost logic"
 echo "  04-connect-raw.sh       → client.go: raw TCP CONNECT"
 echo "  04a-option-path.sh      → option/simple.go: Path field"
 echo "  04b-outbound-path.sh    → outbound.go: pass Path"
+echo "  05-httpfirst-option.sh  → option/simple.go: HttpFirst field"
+echo "  06-httpfirst-outbound.sh→ outbound.go: pass HttpFirst"
+echo "  07-httpfirst-client.sh  → client.go: http_first write + flush order"
