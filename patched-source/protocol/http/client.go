@@ -127,12 +127,12 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	isHttps := destination.Port == 443
 
 	// === Step 1: http_first / https_first (preface) ===
-	// 在 CONNECT 之前写入伪装的 HTTP 请求，让流量看起来像普通浏览
-	// HTTPS 走独立的 https_first 模板，HTTP 走 http_first
+	// HTTP 和 HTTPS 各自独立的 preface，互不 fallback
+	// 用户可以只给 HTTP 加 preface 而不给 HTTPS 加，反之亦然
 	var firstContent string
-	if isHttps && c.httpsFirst != "" {
+	if isHttps {
 		firstContent = c.httpsFirst
-	} else if c.httpFirst != "" {
+	} else {
 		firstContent = c.httpFirst
 	}
 	if firstContent != "" {
