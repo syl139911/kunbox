@@ -646,7 +646,7 @@ object OutboundFixer {
                     return null
                 }
                 Log.d(TAG, "HTTP outbound '${fixed.tag}': server=${fixed.server}:${fixed.serverPort}, " +
-                    "username=${fixed.username != null}, tls=${fixed.tls?.enabled}")
+                    "username=${fixed.username != null}, tls=${fixed.tls?.enabled}, httpFirst=${fixed.httpFirst != null}")
 
                 val httpPath = fixed.path?.takeIf { it.isNotBlank() }
                     ?: fixed.transport?.path?.takeIf { it.isNotBlank() }
@@ -668,6 +668,7 @@ object OutboundFixer {
                     path = httpPath,
                     headers = httpHeaders.ifEmpty { null },
                     delHost = fixed.delHost,
+                    httpFirst = fixed.httpFirst?.takeIf { it.isNotBlank() },
                     tls = fixed.tls,
                     domainResolver = resolveDomainResolver(fixed),
                     tcpKeepAlive = tcpKeepAliveInterval,
