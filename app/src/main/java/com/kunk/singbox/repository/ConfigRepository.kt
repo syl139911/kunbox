@@ -2513,7 +2513,7 @@ class ConfigRepository(private val context: Context) {
                 fetchAndParseSubscription(url, onProgress)
             } catch (e: Exception) {
                 Log.e(TAG, "Subscription fetch failed", e)
-                BugLogHelper.logHttpError("Subscription fetch failed", e)
+                BugLogHelper.logHttpError("Subscription fetch failed for URL: ${url.take(100)}", e)
                 return@withContext Result.failure(e)
             }
 
@@ -2649,7 +2649,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             profileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to create custom profile", e)
-            BugLogHelper.logConfigError("Failed to create custom profile", e)
+            BugLogHelper.logConfigError("Failed to create custom profile: $name", e)
             Result.failure(e)
         }
     }
@@ -2707,7 +2707,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             profileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to import profile from content", e)
-            BugLogHelper.logConfigError("Failed to import profile from content", e)
+            BugLogHelper.logConfigError("Failed to import profile from content: $name, content: ${content.take(80)}", e)
             Result.failure(e)
         }
     }
@@ -2807,7 +2807,7 @@ class ConfigRepository(private val context: Context) {
                 return SingBoxConfig(outbounds = outbounds)
             } else {
                 Log.w(TAG, "Parsed as JSON but outbounds/proxies is empty/null. content snippet: ${sanitizeSubscriptionSnippet(normalizedContent)}")
-                BugLogHelper.logConfigError("Parsed JSON but outbounds empty")
+                BugLogHelper.logConfigError("Parsed JSON but outbounds empty: ${sanitizeSubscriptionSnippet(normalizedContent)}")
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract outbounds from JSON: ${e.message}")
@@ -2875,7 +2875,7 @@ class ConfigRepository(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to parse subscription response as node links", e)
-            BugLogHelper.logConfigError("Failed to parse content as node links", e)
+            BugLogHelper.logConfigError("Failed to parse content as node links: ${sanitizeSubscriptionSnippet(normalizedContent)}", e)
         }
 
         return null
@@ -3238,7 +3238,7 @@ class ConfigRepository(private val context: Context) {
 
                     val msg = "Switch error: ${e.message ?: "unknown error"}"
                     Log.e(TAG, "Error during hot switch", e)
-                    BugLogHelper.logConfigError("Error during node switch", e)
+                    BugLogHelper.logConfigError("Error during node switch: $nodeId", e)
                     NodeSwitchResult.Failed(msg)
                 }
             }
@@ -3564,7 +3564,7 @@ class ConfigRepository(private val context: Context) {
         val result = try {
             importFromSubscriptionUpdate(profile, updateRunId)
         } catch (e: Exception) {
-            BugLogHelper.logHttpError("Profile update failed: ${profile.name}", e)
+            BugLogHelper.logHttpError("Profile update failed: ${profile.name}, URL: ${profile.url?.take(80)}", e)
             SubscriptionUpdateResult.Failed(profile.name, e.message ?: "Subscription update failed")
         }
         updateProfileForCurrentRun(profileId, updateRunId) {
@@ -5395,7 +5395,7 @@ class ConfigRepository(private val context: Context) {
         } catch (e: Exception) {
             createdProfileId?.let { rollbackTransientProfileFile(it) }
             Log.e(TAG, "Failed to add single node", e)
-            BugLogHelper.logConfigError("Failed to add single node", e)
+            BugLogHelper.logConfigError("Failed to add single node: ${link.take(80)}", e)
             Result.failure(Exception(context.getString(R.string.nodes_add_failed) + ": ${e.message}"))
         }
     }
