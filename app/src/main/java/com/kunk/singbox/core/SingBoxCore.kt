@@ -33,6 +33,7 @@ import java.net.URI
 import java.net.InetSocketAddress
 import java.net.Socket
 import com.kunk.singbox.utils.PreciseLatencyTester
+import com.kunk.singbox.utils.BugLogHelper
 import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
