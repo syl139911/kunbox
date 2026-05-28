@@ -48,7 +48,6 @@ data class AppSettings(
     @SerializedName("proxyPort") val proxyPort: Int = 2080,
     @SerializedName("allowLan") val allowLan: Boolean = false,
     @SerializedName("appendHttpProxy") val appendHttpProxy: Boolean = false,
-    @SerializedName("dnsPort") val dnsPort: Int = 0,
 
     @SerializedName("localDns") val localDns: String = DEFAULT_LOCAL_DNS,
 
