@@ -85,6 +85,9 @@ class LogRepository private constructor() {
                     listOf("dial","connect","timeout","refused","dns","tls","proxy","outbound")
                         .any { it in message.lowercase() } ->
                     BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
+                // HTTP outbound 连接日志（INFO 级别）同步到 Bug 日志
+                message.contains("INFO") && message.contains("outbound/http") ->
+                    BugLogHelper.log("HTTP-CONNECT", message.substringAfter("] ").trim().ifEmpty { message })
             }
         } catch (_: Exception) {}
 

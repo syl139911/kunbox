@@ -570,7 +570,8 @@ class CommandManager(
                         val msgLower = msg.lowercase()
                         if (msgLower.contains("outbound/") && msgLower.contains("dial") ||
                             msgLower.contains("proxy/") && (msgLower.contains("connect") || msgLower.contains("dial")) ||
-                            msgLower.contains("tcp:") && msgLower.contains("connect")) {
+                            msgLower.contains("tcp:") && msgLower.contains("connect") ||
+                            msgLower.contains("outbound/http")) {
                             BugLogHelper.log("CONNECT", msg)
                         }
                     }
