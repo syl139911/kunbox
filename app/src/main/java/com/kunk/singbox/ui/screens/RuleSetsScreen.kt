@@ -829,7 +829,8 @@ fun RuleSetItem(
                 if (defaultRuleSetTags.contains(ruleSet.tag)) {
                     Switch(
                         checked = ruleSet.enabled,
-                        onCheckedChange = onToggle,
+                        onCheckedChange = null,
+                        enabled = false,
                         modifier = Modifier
                             .scale(0.8f)
                             .padding(end = 8.dp)
