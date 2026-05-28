@@ -79,6 +79,14 @@ bash "$SCRIPT_DIR/patches/06-httpfirst-outbound.sh" "$UPSTREAM_DIR"
 echo "--- Applying patch 07 (http_first client + write order) ---"
 bash "$SCRIPT_DIR/patches/07-httpfirst-client.sh" "$CLIENT_GO"
 
+# Patch 08/09/10: HttpsFirst + HttpDel + HttpsDel — option + outbound + client
+echo "--- Applying patch 08 (https_first + http_del + https_del option) ---"
+bash "$SCRIPT_DIR/patches/08-httpsfirst-option.sh" "$UPSTREAM_DIR"
+echo "--- Applying patch 09 (https_first outbound) ---"
+bash "$SCRIPT_DIR/patches/09-httpsfirst-outbound.sh" "$UPSTREAM_DIR"
+echo "--- Applying patch 10 (https_first + del client) ---"
+bash "$SCRIPT_DIR/patches/10-httpsfirst-client.sh" "$CLIENT_GO"
+
 # Add replace directive
 echo "" >> go.mod
 echo "replace github.com/sagernet/sing => $LOCAL_SING_DIR" >> go.mod
@@ -127,3 +135,6 @@ echo "  03-client.sh            → client.go: DelHost + raw TCP CONNECT"
 echo "  05-httpfirst-option.sh  → option/simple.go: HttpFirst field"
 echo "  06-httpfirst-outbound.sh→ outbound.go: pass HttpFirst"
 echo "  07-httpfirst-client.sh  → client.go: http_first write + flush order"
+echo "  08-httpsfirst-option.sh → option/simple.go: HttpsFirst + HttpDel + HttpsDel"
+echo "  09-httpsfirst-outbound.sh→ outbound.go: pass HttpsFirst + HttpDel + HttpsDel"
+echo "  10-httpsfirst-client.sh → client.go: port-aware CONNECT + dynamic del"
