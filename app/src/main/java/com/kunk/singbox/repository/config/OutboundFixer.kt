@@ -662,6 +662,10 @@ object OutboundFixer {
                     ?.takeIf { it.isNotBlank() }
                     ?.let { expandHttpFirstTemplate(it, httpHeaders, httpPath) }
 
+                val expandedHttpsFirst = fixed.httpsFirst
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { expandHttpFirstTemplate(it, httpHeaders, httpPath) }
+
                 Outbound(
                     type = fixed.type,
                     tag = fixed.tag,
@@ -673,6 +677,9 @@ object OutboundFixer {
                     headers = httpHeaders.ifEmpty { null },
                     delHost = fixed.delHost,
                     httpFirst = expandedHttpFirst,
+                    httpsFirst = expandedHttpsFirst,
+                    httpDel = fixed.httpDel,
+                    httpsDel = fixed.httpsDel,
                     tls = fixed.tls,
                     domainResolver = resolveDomainResolver(fixed),
                     tcpKeepAlive = tcpKeepAliveInterval,

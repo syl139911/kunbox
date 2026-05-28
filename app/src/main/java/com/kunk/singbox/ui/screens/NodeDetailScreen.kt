@@ -753,6 +753,39 @@ fun NodeDetailScreen(
                                 editingOutbound = outbound.copy(httpFirst = if (it.isEmpty()) null else it)
                             }
                         )
+                        // --- HTTPS First (HTTPS CONNECT Preface) ---
+                        EditableMultilineTextItem(
+                            title = stringResource(R.string.node_detail_https_first),
+                            value = outbound.httpsFirst ?: "",
+                            subtitle = stringResource(R.string.node_detail_https_first_hint),
+                            placeholder = "[M] [U] [V]\\r\\nHost:[H]\\r\\n\\r\\n",
+                            icon = Icons.Rounded.Lock,
+                            onValueChange = {
+                                editingOutbound = outbound.copy(httpsFirst = if (it.isEmpty()) null else it)
+                            }
+                        )
+                        // --- HTTP Del Headers ---
+                        EditableTextItem(
+                            title = stringResource(R.string.node_detail_http_del),
+                            value = outbound.httpDel?.joinToString(", ") ?: "",
+                            subtitle = stringResource(R.string.node_detail_del_headers_hint),
+                            icon = Icons.Rounded.DeleteSweep,
+                            onValueChange = {
+                                val list = it.split(",", ";").map { s -> s.trim() }.filter { s -> s.isNotEmpty() }
+                                editingOutbound = outbound.copy(httpDel = list.ifEmpty { null })
+                            }
+                        )
+                        // --- HTTPS Del Headers ---
+                        EditableTextItem(
+                            title = stringResource(R.string.node_detail_https_del),
+                            value = outbound.httpsDel?.joinToString(", ") ?: "",
+                            subtitle = stringResource(R.string.node_detail_del_headers_hint),
+                            icon = Icons.Rounded.DeleteSweep,
+                            onValueChange = {
+                                val list = it.split(",", ";").map { s -> s.trim() }.filter { s -> s.isNotEmpty() }
+                                editingOutbound = outbound.copy(httpsDel = list.ifEmpty { null })
+                            }
+                        )
                     }
 
                     // 11. ShadowTLS

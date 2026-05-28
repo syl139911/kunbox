@@ -501,6 +501,13 @@
     <string name="node_detail_http_path">Path</string>
     <string name="node_detail_http_path_hint">/example-path</string>
     <string name="node_detail_del_host">delHost</string>
+    <string name="node_detail_http_first">HTTP Preface</string>
+    <string name="node_detail_http_first_hint">Fake HTTP request sent before CONNECT. Variables: [M]ethod [V]ersion [H]ost [U]path</string>
+    <string name="node_detail_https_first">HTTPS Preface</string>
+    <string name="node_detail_https_first_hint">Independent HTTPS CONNECT (port 443) preface. Falls back to HTTP Preface if empty</string>
+    <string name="node_detail_http_del">Delete Headers (HTTP)</string>
+    <string name="node_detail_https_del">Delete Headers (HTTPS)</string>
+    <string name="node_detail_del_headers_hint">Comma or semicolon separated header names</string>
     <string name="node_detail_obfuscation">Obfuscation</string>
 
     <!-- Bug Log -->

@@ -524,6 +524,11 @@
     <string name="node_detail_del_host">delHost</string>
     <string name="node_detail_http_first">HTTP Preface</string>
     <string name="node_detail_http_first_hint">CONNECT 前发送的伪装 HTTP 请求。支持变量: [M]方法 [V]版本 [H]Host [U]路径</string>
+    <string name="node_detail_https_first">HTTPS Preface</string>
+    <string name="node_detail_https_first_hint">HTTPS CONNECT (端口443) 独立的伪装请求。为空时回退到 HTTP Preface</string>
+    <string name="node_detail_http_del">删除请求头 (HTTP)</string>
+    <string name="node_detail_https_del">删除请求头 (HTTPS)</string>
+    <string name="node_detail_del_headers_hint">逗号或分号分隔的 header 名称列表</string>
     <string name="node_detail_obfuscation">混淆</string>
 
     <!-- Bug Log -->
