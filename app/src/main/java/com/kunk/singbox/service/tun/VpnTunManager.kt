@@ -56,7 +56,7 @@ class VpnTunManager(
             Log.d(TAG, "TUN builder preallocated")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to preallocate TUN builder", e)
-            BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to preallocate TUN builder in VpnTunManager", e = e)
+            BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, message = "Failed to preallocate TUN builder in VpnTunManager", throwable = e)
             preallocatedBuilder = null
         }
     }
@@ -201,7 +201,8 @@ class VpnTunManager(
         val routeMode = settings?.vpnRouteMode ?: VpnRouteMode.GLOBAL
         val cidrText = settings?.vpnRouteIncludeCidrs.orEmpty()
         val cidrs = cidrText
-            .split("\n", "\r", ",", ";", " ", "\t")
+            .split("
+", "", ",", ";", " ", "	")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
 
@@ -256,7 +257,7 @@ class VpnTunManager(
                 builder.addDnsServer(dns)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to add DNS server: $dns", e)
-                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to add DNS server '$dns' in VpnTunManager", e = e)
+                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, message = "Failed to add DNS server '$dns' in VpnTunManager", throwable = e)
             }
         }
     }
@@ -285,7 +286,7 @@ class VpnTunManager(
                                 addedCount++
                             } catch (e: PackageManager.NameNotFoundException) {
                                 Log.w(TAG, "Allowed app not found: $pkg")
-                                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Allowed app not found in per-app VPN config: $pkg", e = e)
+                                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, message = "Allowed app not found in per-app VPN config: $pkg", throwable = e)
                             }
                         }
                         if (addedCount == 0) {
@@ -297,7 +298,7 @@ class VpnTunManager(
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to apply per-app VPN settings", e)
-            BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to apply per-app VPN settings in VpnTunManager", e = e)
+            BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, message = "Failed to apply per-app VPN settings in VpnTunManager", throwable = e)
         }
     }
 
@@ -314,7 +315,7 @@ class VpnTunManager(
                 Log.i(TAG, "Blocking mode enabled: setBlocking(true)")
             } catch (e: Exception) {
                 Log.w(TAG, "setBlocking not supported on this device", e)
-                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "setBlocking not supported on this device in VpnTunManager", e = e)
+                BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, message = "setBlocking not supported on this device in VpnTunManager", throwable = e)
             }
         }
     }
@@ -327,7 +328,7 @@ class VpnTunManager(
                     Log.i(TAG, "HTTP Proxy appended to VPN: 127.0.0.1:${settings.proxyPort}")
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to set HTTP proxy for VPN", e)
-                    BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, detail = "Failed to set HTTP proxy for VPN in VpnTunManager", e = e)
+                    BugLogHelper.reportVpnError(phase = BugLogHelper.PHASE_CREATE_TUN, message = "Failed to set HTTP proxy for VPN in VpnTunManager", throwable = e)
                 }
             }
         }
@@ -411,7 +412,8 @@ class VpnTunManager(
 
     private fun parsePackageList(raw: String): List<String> {
         return raw
-            .split("\n", "\r", ",", ";", " ", "\t")
+            .split("
+", "", ",", ";", " ", "	")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .distinct()
