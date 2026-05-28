@@ -826,17 +826,14 @@ fun RuleSetItem(
                 }
             }
             if (!isSelectionMode) {
-                if (defaultRuleSetTags.contains(ruleSet.tag)) {
-                    Switch(
-                        checked = ruleSet.enabled,
-                        onCheckedChange = null,
-                        enabled = false,
-                        modifier = Modifier
-                            .scale(0.8f)
-                            .padding(end = 8.dp)
-                    )
-                } else {
-                    Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
+                Switch(
+                    checked = ruleSet.enabled,
+                    onCheckedChange = onToggle,
+                    modifier = Modifier
+                        .scale(0.8f)
+                        .padding(end = 4.dp)
+                )
+                Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Rounded.MoreVert,
