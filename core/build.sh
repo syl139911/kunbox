@@ -44,13 +44,13 @@ echo "=== Injecting kunbox_custom.go ==="
 cp "$SCRIPT_DIR/kunbox_custom.go" "$UPSTREAM_DIR/experimental/libbox/kunbox_custom.go"
 echo "OK: kunbox_custom.go injected"
 
-# --- Step 3: Apply DelHost patches to sing-box upstream ---
-# Patch 01: option/simple.go - add DelHost to HTTPOutboundOptions
-# Patch 02: protocol/http/outbound.go - pass DelHost to HTTP client
-echo "=== Applying DelHost patches (01, 02) ==="
-bash "$SCRIPT_DIR/patches/01-delhost-option.sh" "$UPSTREAM_DIR"
-bash "$SCRIPT_DIR/patches/02-delhost-outbound.sh" "$UPSTREAM_DIR"
-echo "OK: DelHost patches applied"
+# --- Step 3: Apply option + outbound patches (sing-box upstream) ---
+# Patch 01: option/simple.go — DelHost + Path fields
+# Patch 02: protocol/http/outbound.go — pass DelHost + Path to client
+echo "=== Applying upstream patches (01-options, 02-outbound) ==="
+bash "$SCRIPT_DIR/patches/01-options.sh" "$UPSTREAM_DIR"
+bash "$SCRIPT_DIR/patches/02-outbound.sh" "$UPSTREAM_DIR"
+echo "OK: upstream patches applied"
 
 # --- Step 4: Patch sing dependency (client.go) ---
 echo "=== Patching sing dependency ==="
@@ -67,13 +67,9 @@ chmod -R u+w "$LOCAL_SING_DIR"
 
 CLIENT_GO="$LOCAL_SING_DIR/protocol/http/client.go"
 
-# Patch 03: sing protocol/http/client.go - add DelHost field + logic
-echo "--- Applying patch 03 (client DelHost) ---"
-bash "$SCRIPT_DIR/patches/03-client-delhost.sh" "$CLIENT_GO"
-
-# Patch 04: sing protocol/http/client.go - raw TCP CONNECT (TPBox style)
-echo "--- Applying patch 04 (raw TCP CONNECT) ---"
-bash "$SCRIPT_DIR/patches/04-connect-raw.sh" "$CLIENT_GO"
+# Patch 03: sing protocol/http/client.go — DelHost + raw TCP CONNECT
+echo "--- Applying patch 03 (client: delhost + raw TCP CONNECT) ---"
+bash "$SCRIPT_DIR/patches/03-client.sh" "$CLIENT_GO"
 
 # Patch 05/06/07: HttpFirst (HTTP preface) — option + outbound + client
 echo "--- Applying patch 05 (http_first option) ---"
@@ -86,22 +82,14 @@ bash "$SCRIPT_DIR/patches/07-httpfirst-client.sh" "$CLIENT_GO"
 # Add replace directive
 echo "" >> go.mod
 echo "replace github.com/sagernet/sing => $LOCAL_SING_DIR" >> go.mod
-echo "OK: sing dependency patched (03-delhost + 04-raw-connect)"
+echo "OK: sing dependency patched"
 
-# --- Step 5: Apply Path patches to sing-box upstream ---
-# Patch 04a: option/simple.go - add Path field
-# Patch 04b: protocol/http/outbound.go - pass Path to client
-echo "=== Applying Path patches (04a, 04b) ==="
-bash "$SCRIPT_DIR/patches/04a-option-path.sh" "$UPSTREAM_DIR"
-bash "$SCRIPT_DIR/patches/04b-outbound-path.sh" "$UPSTREAM_DIR"
-echo "OK: Path patches applied"
-
-# --- Step 6: Add gomobile dependencies ---
+# --- Step 5: Add gomobile dependencies ---
 echo "=== Adding gomobile dependencies ==="
 go get -tool github.com/sagernet/gomobile/cmd/gobind
 go get github.com/sagernet/gomobile
 
-# --- Step 7: Build libbox.aar ---
+# --- Step 6: Build libbox.aar ---
 echo "=== Building libbox.aar ==="
 gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
     -tags "with_clash_api,with_gvisor" \
@@ -112,7 +100,7 @@ gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
 
 cd "$PROJECT_ROOT"
 
-# --- Step 8: Verify ---
+# --- Step 7: Verify ---
 AAR="$PROJECT_ROOT/app/libs/libbox.aar"
 if [ ! -f "$AAR" ]; then
     echo "ERROR: libbox.aar not found!"
@@ -133,12 +121,9 @@ echo "✅ Build complete: app/libs/libbox.aar (${MB} MB)"
 echo "========================================="
 echo ""
 echo "Applied patches:"
-echo "  01-delhost-option.sh    → option/simple.go: DelHost field"
-echo "  02-delhost-outbound.sh  → outbound.go: pass DelHost"
-echo "  03-client-delhost.sh    → client.go: DelHost logic"
-echo "  04-connect-raw.sh       → client.go: raw TCP CONNECT"
-echo "  04a-option-path.sh      → option/simple.go: Path field"
-echo "  04b-outbound-path.sh    → outbound.go: pass Path"
+echo "  01-options.sh           → option/simple.go: DelHost + Path fields"
+echo "  02-outbound.sh          → outbound.go: pass DelHost + Path"
+echo "  03-client.sh            → client.go: DelHost + raw TCP CONNECT"
 echo "  05-httpfirst-option.sh  → option/simple.go: HttpFirst field"
 echo "  06-httpfirst-outbound.sh→ outbound.go: pass HttpFirst"
 echo "  07-httpfirst-client.sh  → client.go: http_first write + flush order"
