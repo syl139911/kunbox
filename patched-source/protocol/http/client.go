@@ -2,21 +2,19 @@
 // 基于 sing v0.8.9 (sing-box v1.13.11 依赖)
 // 改动:
 //   Patch 03: +delHost 字段 + raw TCP CONNECT (替换 Go http.Request.Write)
-//   Patch 07: +httpFirst 字段 + http_first 写入 + flush 顺序控制
+//   Patch 07: +httpFirst 字段 + http_first 写入
 //
 // 原始文件: https://github.com/sagernet/sing/blob/v0.8.9/protocol/http/client.go
 //
 // === TPBox 执行顺序 ===
 //   1. conn.Write(httpFirst)   ← HTTP preface (可选)
-//   2. flush
-//   3. conn.Write(raw CONNECT) ← 拼接后的 CONNECT 行 + headers
+//   2. conn.Write(raw CONNECT) ← 拼接后的 CONNECT 行 + headers
 //   4. http.ReadResponse
 //   5. tunnel established
 
 package http
 
 import (
-	"bufio"
 	std_bufio "bufio"
 	"context"
 	"encoding/base64"
@@ -117,10 +115,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 			conn.Close()
 			return nil, err
 		}
-		// Flush http_first before CONNECT
-		if bw, ok := conn.(*bufio.Writer); ok {
-			bw.Flush()
-		}
+		// conn 是原始 TCP 连接，Write 直接进内核 socket buffer，无需 flush
 	}
 
 	// === Step 2: 构建 raw TCP CONNECT ===
@@ -142,13 +137,11 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// Host header 构造
 	// 标准: Host = 真实目标
 	// TPBox: Host = 伪装域名 (c.host)
-	// del_host 模式下不写 Host (因为 target 已经是 path)
-	if !c.delHost {
-		hostHeader := destination.String()
-		if c.host != "" && c.host != destination.Fqdn {
-			hostHeader = c.host
-		}
-		fmt.Fprintf(&raw, "Host: %s\r\n", hostHeader)
+	// del_host 模式: Host = c.host (伪装域名，必须写，否则代理服务器可能返回 400)
+	if c.host != "" {
+		fmt.Fprintf(&raw, "Host: %s\r\n", c.host)
+	} else if !c.delHost {
+		fmt.Fprintf(&raw, "Host: %s\r\n", destination.String())
 	}
 
 	// 写入自定义 headers，跳过自动生成的
