@@ -732,17 +732,16 @@ fun NodeDetailScreen(
                                 editingOutbound = outbound.copy(headers = newHeaders.ifEmpty { null })
                             }
                         )
-                        // --- HTTP Advanced Settings ---
-                        StandardCard {
-                            SettingSwitchItem(
-                                title = stringResource(R.string.node_detail_del_host),
-                                checked = outbound.delHost == true,
-                                icon = Icons.Rounded.Delete,
-                                onCheckedChange = {
-                                    editingOutbound = outbound.copy(delHost = it)
-                                }
-                            )
-                        }
+                        // --- delHost: remove Host header ---
+                        SettingSwitchItem(
+                            title = stringResource(R.string.node_detail_del_host),
+                            subtitle = stringResource(R.string.node_detail_del_host_subtitle),
+                            checked = outbound.delHost == true,
+                            icon = Icons.Rounded.Delete,
+                            onCheckedChange = {
+                                editingOutbound = outbound.copy(delHost = it)
+                            }
+                        )
                         // --- HTTP First (HTTP Preface) ---
                         EditableMultilineTextItem(
                             title = stringResource(R.string.node_detail_http_first),
