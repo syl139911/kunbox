@@ -65,7 +65,11 @@ jobs:
         run: |
           bash ../core/patches/01-options.sh .
           bash ../core/patches/02-outbound.sh .
-          echo "=== Patches 01 & 02 applied ==="
+          bash ../core/patches/05-httpfirst-option.sh .
+          bash ../core/patches/06-httpfirst-outbound.sh .
+          bash ../core/patches/08-httpsfirst-option.sh .
+          bash ../core/patches/09-httpsfirst-outbound.sh .
+          echo "=== All option & outbound patches applied ==="
 
       - name: Patch sing dependency via replace directive
         working-directory: upstream-sing-box
@@ -88,6 +92,12 @@ jobs:
           # Apply 03-client.sh (raw TCP CONNECT)
           CLIENT_GO="../local-sing/protocol/http/client.go"
           bash ../core/patches/03-client.sh "$CLIENT_GO"
+
+          # Apply 07-httpfirst-client.sh (http_first write)
+          bash ../core/patches/07-httpfirst-client.sh "$CLIENT_GO"
+
+          # Apply 10-httpsfirst-client.sh (https_first + del headers)
+          bash ../core/patches/10-httpsfirst-client.sh "$CLIENT_GO"
 
           # Add replace directive to go.mod
           echo "" >> go.mod
