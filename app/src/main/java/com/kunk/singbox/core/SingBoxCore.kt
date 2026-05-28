@@ -395,7 +395,10 @@ class SingBoxCore private constructor(private val context: Context) {
                 try {
                     connectivityManager.bindProcessToNetwork(previousNetwork)
                     Log.d(TAG, "Restored process network binding")
-                } catch (e: Exception) { Log.w(TAG, "Failed to restore network binding", e) }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to restore network binding", e)
+                    BugLogHelper.logConnectionError("Failed to restore network binding after VPN stop", e)
+                }
             }
         }
     }
