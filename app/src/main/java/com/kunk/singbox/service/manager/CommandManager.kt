@@ -338,6 +338,7 @@ class CommandManager(
                 return true
             } catch (e: Exception) {
                 Log.w(TAG, "closeConnections failed: ${e.message}")
+                BugLogHelper.logWithTag("ERR", TAG, "closeConnections failed: ${e.message}")
             }
         }
         return false
@@ -616,6 +617,7 @@ class CommandManager(
                             }
                     } catch (e: Exception) {
                         Log.w(TAG, "getTrafficByOutbound failed, fallback to activeNode", e)
+                        BugLogHelper.logWithTag("ERR", TAG, "getTrafficByOutbound failed, fallback to activeNode", e)
                         emptyMap()
                     }
 
@@ -661,6 +663,7 @@ class CommandManager(
                 lastSpeedUpdateTime = currentTime
             } catch (e: Exception) {
                 Log.e(TAG, "writeStatus callback error", e)
+                BugLogHelper.logWithTag("ERR", TAG, "writeStatus callback error", e)
             }
         }
 
@@ -670,6 +673,7 @@ class CommandManager(
                 processGroups(groups)
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing groups update", e)
+                BugLogHelper.logWithTag("ERR", TAG, "Error processing groups update", e)
             }
         }
 
@@ -686,6 +690,7 @@ class CommandManager(
                 processConnections(snapshot)
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing connection events", e)
+                BugLogHelper.logWithTag("ERR", TAG, "Error processing connection events", e)
             }
         }
     }
@@ -927,6 +932,7 @@ class CommandManager(
             Log.i(TAG, "CommandClient (Connections) resumed")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to resume Connections client", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to resume Connections client", e)
         }
     }
 

@@ -211,4 +211,22 @@ object BugLogHelper {
             )
         } catch (_: Exception) {}
     }
+
+    /** 统一 Log+BugLog：同时写 logcat 和 Bug 日志 */
+    fun logWithTag(level: String, tag: String, message: String, throwable: Throwable? = null) {
+        try {
+            val detail = buildString {
+                append("[$level] $tag\n")
+                append(message)
+                currentNodeName?.let { append("\nNode: $it") }
+                currentNodeProtocol?.let { append("\nProtocol: $it") }
+                currentNodeOutboundTag?.let { append("\nOutbound: $it") }
+            }
+            BugLogRepository.getInstance().addBugLog(
+                title = "[$level] $tag",
+                detail = detail,
+                throwable = throwable
+            )
+        } catch (_: Exception) {}
+    }
 }

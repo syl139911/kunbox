@@ -76,6 +76,7 @@ object BoxWrapperManager {
             result
         } catch (e: Exception) {
             Log.w(TAG, "selectOutbound($nodeTag) failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "selectOutbound($nodeTag) failed: ${e.message}")
             false
         }
     }
@@ -88,6 +89,7 @@ object BoxWrapperManager {
             LibboxCompat.getSelectedOutbound()
         } catch (e: Exception) {
             Log.w(TAG, "getSelectedOutbound failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "getSelectedOutbound failed: ${e.message}")
             null
         }
     }
@@ -103,6 +105,7 @@ object BoxWrapperManager {
                 ?: emptyList()
         } catch (e: Exception) {
             Log.w(TAG, "listOutbounds failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "listOutbounds failed: ${e.message}")
             emptyList()
         }
     }
@@ -126,6 +129,7 @@ object BoxWrapperManager {
             true
         } catch (e: Exception) {
             Log.w(TAG, "pause() failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "pause() failed: ${e.message}")
             false
         }
     }
@@ -143,6 +147,7 @@ object BoxWrapperManager {
             true
         } catch (e: Exception) {
             Log.w(TAG, "resume() failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "resume() failed: ${e.message}")
             false
         }
     }
@@ -397,6 +402,7 @@ object BoxWrapperManager {
             LibboxCompat.getTrafficTotalUplink()
         } catch (e: Exception) {
             Log.w(TAG, "getUploadTotal failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "getUploadTotal failed: ${e.message}")
             -1L
         }
     }
@@ -409,6 +415,7 @@ object BoxWrapperManager {
             LibboxCompat.getTrafficTotalDownlink()
         } catch (e: Exception) {
             Log.w(TAG, "getDownloadTotal failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "getDownloadTotal failed: ${e.message}")
             -1L
         }
     }
@@ -423,6 +430,7 @@ object BoxWrapperManager {
             result
         } catch (e: Exception) {
             Log.w(TAG, "resetTraffic() failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "resetTraffic() failed: ${e.message}")
             false
         }
     }
@@ -450,6 +458,7 @@ object BoxWrapperManager {
             true
         } catch (e: Exception) {
             Log.w(TAG, "resetAllConnections failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "resetAllConnections failed: ${e.message}")
             LibboxCompat.resetAllConnections(system)
         }
     }
@@ -476,6 +485,7 @@ object BoxWrapperManager {
             true
         } catch (e: Exception) {
             Log.w(TAG, "resetNetwork() failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "resetNetwork() failed: ${e.message}")
             false
         }
     }
@@ -492,6 +502,7 @@ object BoxWrapperManager {
             count
         } catch (e: Exception) {
             Log.w(TAG, "closeAllTrackedConnections failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "closeAllTrackedConnections failed: ${e.message}")
             0
         }
     }
@@ -511,9 +522,11 @@ object BoxWrapperManager {
         } catch (e: NoSuchMethodException) {
 
             Log.w(TAG, "closeIdleConnections not available in kernel: ${e.message}, fallback")
+            BugLogHelper.logWithTag("ERR", TAG, "closeIdleConnections not available in kernel: ${e.message}, fallback")
             closeAllTrackedConnections()
         } catch (e: Exception) {
             Log.w(TAG, "closeIdleConnections failed: ${e.message}, fallback to closeAllTrackedConnections")
+            BugLogHelper.logWithTag("ERR", TAG, "closeIdleConnections failed: ${e.message}, fallback to closeAllTrackedConnections")
             closeAllTrackedConnections()
         }
     }
@@ -546,6 +559,7 @@ object BoxWrapperManager {
             Libbox.recoverNetworkAuto()
         } catch (e: Exception) {
             Log.w(TAG, "recoverNetworkAuto kernel call failed, fallback to SOFT", e)
+            BugLogHelper.logWithTag("ERR", TAG, "recoverNetworkAuto kernel call failed, fallback to SOFT", e)
             recoverNetwork(source = "recoverNetworkAuto-fallback", mode = RecoveryMode.SOFT, force = true)
         }
     }
@@ -582,6 +596,7 @@ object BoxWrapperManager {
             ok
         } catch (e: Exception) {
             Log.w(TAG, "$forceTag failed", e)
+            BugLogHelper.logWithTag("ERR", TAG, "$forceTag failed", e)
             false
         }
     }
@@ -601,6 +616,7 @@ object BoxWrapperManager {
             ok
         } catch (e: Exception) {
             Log.e(TAG, "$forceTag failed", e)
+            BugLogHelper.logWithTag("ERR", TAG, "$forceTag failed", e)
             false
         }
     }
@@ -662,6 +678,7 @@ object BoxWrapperManager {
             service.urlTestGroup(groupTag, timeoutMs)
         } catch (e: Exception) {
             Log.e(TAG, "urlTestGroupAsync failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "urlTestGroupAsync failed: ${e.message}")
             emptyMap()
         }
     }
@@ -693,6 +710,7 @@ object BoxWrapperManager {
             LibboxCompat.getTrafficByOutbound()
         } catch (e: Exception) {
             Log.w(TAG, "getTrafficByOutbound failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "getTrafficByOutbound failed: ${e.message}")
             emptyMap()
         }
     }

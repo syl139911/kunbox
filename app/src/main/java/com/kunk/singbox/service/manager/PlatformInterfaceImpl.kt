@@ -228,6 +228,7 @@ class PlatformInterfaceImpl(
             }
         } catch (e: Exception) {
             Log.e(TAG, "openTun exception: ${e.message}", e)
+            BugLogHelper.logWithTag("ERR", TAG, "openTun exception: ${e.message}", e)
             throw e
         }
     }
@@ -427,6 +428,7 @@ class PlatformInterfaceImpl(
             if (!callbacks.isConnectionOwnerPermissionDeniedLogged()) {
                 callbacks.setConnectionOwnerPermissionDeniedLogged(true)
                 Log.w(TAG, "findConnectionOwner permission denied; app routing may not work on this ROM", e)
+                BugLogHelper.logWithTag("ERR", TAG, "findConnectionOwner permission denied; app routing may not work on this ROM", e)
                 com.kunk.singbox.repository.LogRepository.getInstance()
                     .addLog("WARN: findConnectionOwner permission denied; per-app routing disabled on this ROM")
             }
@@ -603,6 +605,7 @@ class PlatformInterfaceImpl(
             cm.registerNetworkCallback(request, defaultCallback)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to register network callback", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to register network callback", e)
         }
 
         vpnNetworkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -664,6 +667,7 @@ class PlatformInterfaceImpl(
                                     callbacks.requestCoreNetworkReset(reason = "vpnHealthRecovery", force = false)
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Failed to reset network stack during health recovery", e)
+                                    BugLogHelper.logWithTag("ERR", TAG, "Failed to reset network stack during health recovery", e)
                                 }
                             }
                         }
@@ -686,6 +690,7 @@ class PlatformInterfaceImpl(
             cm.registerNetworkCallback(vpnRequest, vpnCallback)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to register VPN network callback", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to register VPN network callback", e)
         }
     }
 
@@ -746,6 +751,7 @@ class PlatformInterfaceImpl(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get interfaces", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to get interfaces", e)
             null
         }
     }

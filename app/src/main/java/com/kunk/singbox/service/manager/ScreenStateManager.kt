@@ -126,6 +126,7 @@ class ScreenStateManager(
             Log.i(TAG, "Screen state receiver registered")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to register screen state receiver", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to register screen state receiver", e)
         }
     }
 
@@ -140,6 +141,7 @@ class ScreenStateManager(
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to unregister screen state receiver", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to unregister screen state receiver", e)
         }
     }
 
@@ -193,6 +195,7 @@ class ScreenStateManager(
             Log.i(TAG, "Activity lifecycle callbacks registered")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to register activity lifecycle callbacks", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to register activity lifecycle callbacks", e)
         }
     }
 
@@ -207,6 +210,7 @@ class ScreenStateManager(
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to unregister activity lifecycle callbacks", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to unregister activity lifecycle callbacks", e)
         }
     }
 
@@ -247,6 +251,7 @@ class ScreenStateManager(
             callbacks?.notifyRemoteStateUpdate(true)
         } catch (e: Exception) {
             Log.e(TAG, "[Doze] handleDeviceWake failed", e)
+            BugLogHelper.logWithTag("ERR", TAG, "[Doze] handleDeviceWake failed", e)
         }
     }
 

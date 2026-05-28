@@ -93,6 +93,7 @@ class SingBoxCore private constructor(private val context: Context) {
             } catch (e: Exception) {
                 libboxSetupDone.set(false)
                 Log.w(TAG, "Libbox setup warning: ${e.message}")
+                BugLogHelper.logWithTag("ERR", TAG, "Libbox setup warning: ${e.message}")
             }
         }
     }
@@ -117,9 +118,11 @@ class SingBoxCore private constructor(private val context: Context) {
             true
         } catch (e: Exception) {
             Log.e(TAG, "Libbox init failed", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Libbox init failed", e)
             false
         } catch (e: NoClassDefFoundError) {
             Log.e(TAG, "Libbox class not found", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Libbox class not found", e)
             false
         }
     }
@@ -165,6 +168,7 @@ class SingBoxCore private constructor(private val context: Context) {
             testWithLocalHttpProxy(outbound, url, fallbackUrl, timeoutMs, dependencyOutbounds)
         } catch (e: Exception) {
             Log.w(TAG, "Native HTTP proxy test failed: ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "Native HTTP proxy test failed: ${e.message}")
             -1L
         }
     }
@@ -264,6 +268,7 @@ class SingBoxCore private constructor(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "bindProcessToNetwork failed: ${e.message}")
+                BugLogHelper.logWithTag("ERR", TAG, "bindProcessToNetwork failed: ${e.message}")
             }
         }
 
@@ -382,6 +387,7 @@ class SingBoxCore private constructor(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Local HTTP proxy setup failed", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Local HTTP proxy setup failed", e)
             -1L
         } finally {
 
@@ -481,6 +487,7 @@ class SingBoxCore private constructor(private val context: Context) {
             ports = allocateMultipleLocalPorts(batchOutbounds.size)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to allocate ports for batch test", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to allocate ports for batch test", e)
             batchOutbounds.forEach { onResult(it.tag, -1L) }
             return
         }
@@ -514,6 +521,7 @@ class SingBoxCore private constructor(private val context: Context) {
             runPreciseLatencyTests(portToTagMap, targetUrl, timeoutMs, concurrency, onResult)
         } catch (e: Exception) {
             Log.e(TAG, "Batch test failed", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Batch test failed", e)
             batchOutbounds.forEach { onResult(it.tag, -1L) }
         } finally {
             runCatching { commandServer?.closeService() }
@@ -533,6 +541,7 @@ class SingBoxCore private constructor(private val context: Context) {
                 cm.bindProcessToNetwork(network)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to restore network binding", e)
+                BugLogHelper.logWithTag("ERR", TAG, "Failed to restore network binding", e)
             }
         }
     }
@@ -842,6 +851,7 @@ class SingBoxCore private constructor(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Port allocation attempt $attempts failed", e)
+                BugLogHelper.logWithTag("ERR", TAG, "Port allocation attempt $attempts failed", e)
             }
             attempts++
         }
@@ -903,6 +913,7 @@ class SingBoxCore private constructor(private val context: Context) {
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Config validation failed", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Config validation failed", e)
             Result.failure(e)
         }
     }
@@ -949,6 +960,7 @@ class SingBoxCore private constructor(private val context: Context) {
             true
         } catch (e: Exception) {
             Log.w(TAG, "Outbound validation failed for '${outbound.tag}': ${e.message}")
+            BugLogHelper.logWithTag("ERR", TAG, "Outbound validation failed for '${outbound.tag}': ${e.message}")
             false
         }
     }
@@ -973,6 +985,7 @@ class SingBoxCore private constructor(private val context: Context) {
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Socket protection error for fd=$fd: ${e.message}")
+                    BugLogHelper.logWithTag("ERR", TAG, "Socket protection error for fd=$fd: ${e.message}")
                 }
                 return
             }
@@ -994,6 +1007,7 @@ class SingBoxCore private constructor(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "autoDetectInterfaceControl: bind network error for fd=$fd: ${e.message}")
+                BugLogHelper.logWithTag("ERR", TAG, "autoDetectInterfaceControl: bind network error for fd=$fd: ${e.message}")
             }
         }
 
@@ -1028,6 +1042,7 @@ class SingBoxCore private constructor(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "TestPlatformInterface: failed to get default interface: ${e.message}")
+                BugLogHelper.logWithTag("ERR", TAG, "TestPlatformInterface: failed to get default interface: ${e.message}")
             }
         }
 
@@ -1116,6 +1131,7 @@ class SingBoxCore private constructor(private val context: Context) {
             BoxWrapperManager.isAvailable() && VpnStateStore.getActive()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to check active connections", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to check active connections", e)
             false
         }
     }

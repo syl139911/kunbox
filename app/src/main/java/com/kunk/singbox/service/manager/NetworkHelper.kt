@@ -236,6 +236,7 @@ class NetworkHelper(
                 Log.i(TAG, "DNS warmup completed in ${elapsed}ms")
             } catch (e: Exception) {
                 Log.w(TAG, "DNS warmup failed", e)
+                BugLogHelper.logWithTag("ERR", TAG, "DNS warmup failed", e)
             }
         }
     }
@@ -395,6 +396,7 @@ class NetworkHelper(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update default interface", e)
+            BugLogHelper.logWithTag("ERR", TAG, "Failed to update default interface", e)
         }
     }
 

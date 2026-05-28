@@ -187,6 +187,7 @@ class NetworkSwitchManager(
                 java.net.NetworkInterface.getByName(interfaceName)?.index ?: 0
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to get network interface index: ${e.message}")
+                BugLogHelper.logWithTag("ERR", TAG, "Failed to get network interface index: ${e.message}")
                 0
             }
             cb.updateInterfaceListener(interfaceName, index, isExpensive, false)

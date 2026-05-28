@@ -204,6 +204,7 @@ class ShutdownManager(
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Graceful close failed or timed out", e)
+                BugLogHelper.logWithTag("ERR", TAG, "Graceful close failed or timed out", e)
             }
 
             withContext(Dispatchers.Main) {
