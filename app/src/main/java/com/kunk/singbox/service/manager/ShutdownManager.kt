@@ -19,6 +19,7 @@ import com.kunk.singbox.service.network.TrafficMonitor
 import com.kunk.singbox.utils.NetworkClient
 import io.nekohasekai.libbox.InterfaceUpdateListener
 import kotlinx.coroutines.*
+import com.kunk.singbox.utils.BugLogHelper
 
 /**
  通知磁贴状态
