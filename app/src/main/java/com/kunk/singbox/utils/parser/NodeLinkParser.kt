@@ -1127,6 +1127,7 @@ class NodeLinkParser(private val gson: Gson) {
             // Parse query params
             val queryParams = parseQueryParams(uri.query)
             val path = queryParams["path"]?.takeIf { it.isNotBlank() }
+                ?.let { if (it.startsWith("/")) it else "/$it" }
             val hostHeader = queryParams["host"]?.takeIf { it.isNotBlank() }
             val delHost = queryParams["del_host"] == "1" || queryParams["del_host"] == "true"
 
