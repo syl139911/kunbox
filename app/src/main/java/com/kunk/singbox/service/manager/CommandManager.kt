@@ -571,7 +571,7 @@ class CommandManager(
                         if (msgLower.contains("outbound/") && msgLower.contains("dial") ||
                             msgLower.contains("proxy/") && (msgLower.contains("connect") || msgLower.contains("dial")) ||
                             msgLower.contains("tcp:") && msgLower.contains("connect") ||
-                            msgLower.contains("outbound/http")) {
+                            msgLower.contains("outbound/") && msgLower.contains("connect")) {
                             BugLogHelper.log("CONNECT", msg)
                         }
                     }

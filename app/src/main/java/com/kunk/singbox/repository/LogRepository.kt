@@ -81,13 +81,11 @@ class LogRepository private constructor() {
             when {
                 message.contains("ERROR") || message.contains("[ERR]") ->
                     BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
-                (message.contains("WARN") || message.contains("[WRN]")) &&
-                    listOf("dial","connect","timeout","refused","dns","tls","proxy","outbound")
-                        .any { it in message.lowercase() } ->
-                    BugLogHelper.log("GoCore", message.substringAfter("] ").trim().ifEmpty { message })
-                // HTTP outbound 连接日志（INFO 级别）同步到 Bug 日志
-                message.contains("INFO") && message.contains("outbound/http") ->
-                    BugLogHelper.log("HTTP-CONNECT", message.substringAfter("] ").trim().ifEmpty { message })
+                (message.contains("WARN") || message.contains("[WRN]")) ->
+                    BugLogHelper.log("GoCore-WARN", message.substringAfter("] ").trim().ifEmpty { message })
+                // 所有 outbound 连接日志（INFO 级别）同步到 Bug 日志
+                message.contains("INFO") && message.contains("outbound/") ->
+                    BugLogHelper.log("GoCore-CONN", message.substringAfter("] ").trim().ifEmpty { message })
             }
         } catch (_: Exception) {}
 
@@ -111,12 +109,6 @@ class LogRepository private constructor() {
                 message.contains("inbound/mixed") ||
                 message.contains("router: found package") ||
                 message.contains("router: found user") ||
-                message.contains("outbound/vless") ||
-                message.contains("outbound/vmess") ||
-                message.contains("outbound/trojan") ||
-                message.contains("outbound/shadowsocks") ||
-                message.contains("outbound/hysteria") ||
-                message.contains("outbound/tuic") ||
                 message.contains("dns: rejected") ||
                 message.contains("dns: exchanged") ||
                 message.contains("dns: cached"))) {
