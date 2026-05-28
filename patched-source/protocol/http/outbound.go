@@ -57,6 +57,11 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
 			DelHost:  options.DelHost,
 			HttpFirst: options.HttpFirst,
 			// ===============================================
+			// ========== KunBox 新增传递 (Patch 04) ==========
+			HttpsFirst: options.HttpsFirst,
+			HttpDel:    options.HttpDel,
+			HttpsDel:   options.HttpsDel,
+			// ===============================================
 		}),
 	}, nil
 }

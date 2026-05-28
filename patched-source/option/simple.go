@@ -46,4 +46,9 @@ type HTTPOutboundOptions struct {
 	DelHost   bool                 `json:"del_host,omitempty"`   // TPBox: 隐藏真实 host，CONNECT 行用 path 替代
 	HttpFirst string               `json:"http_first,omitempty"` // TPBox: HTTP preface，写在 CONNECT 之前的伪装请求
 	// ===============================================
+	// ========== KunBox 新增字段 (Patch 04) ==========
+	HttpsFirst string              `json:"https_first,omitempty"` // TPBox: HTTPS CONNECT 独立的 preface 模板 (目标端口 443)
+	HttpDel    []string            `json:"http_del,omitempty"`    // TPBox: HTTP 请求删除指定 header
+	HttpsDel   []string            `json:"https_del,omitempty"`   // TPBox: HTTPS CONNECT 删除指定 header
+	// ===============================================
 }

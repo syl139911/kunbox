@@ -3,14 +3,15 @@
 // 改动:
 //   Patch 03: +delHost 字段 + raw TCP CONNECT (替换 Go http.Request.Write)
 //   Patch 07: +httpFirst 字段 + http_first 写入
+//   Patch 04: +httpsFirst +httpDel +httpsDel — HTTP/HTTPS 分离处理
 //
 // 原始文件: https://github.com/sagernet/sing/blob/v0.8.9/protocol/http/client.go
 //
 // === TPBox 执行顺序 ===
-//   1. conn.Write(httpFirst)   ← HTTP preface (可选)
+//   1. conn.Write(first)    ← preface (http_first 或 https_first，按端口选择)
 //   2. conn.Write(raw CONNECT) ← 拼接后的 CONNECT 行 + headers
-//   4. http.ReadResponse
-//   5. tunnel established
+//   3. http.ReadResponse
+//   4. tunnel established
 
 package http
 
@@ -46,6 +47,11 @@ type Client struct {
 	delHost    bool     // Patch 03: TPBox del_host 模式
 	httpFirst  string   // Patch 07: HTTP preface 内容
 	// ====================================
+	// ========== KunBox 新增字段 (Patch 04) ==========
+	httpsFirst string   // HTTPS CONNECT 独立 preface
+	httpDel    []string // HTTP 删除指定 header
+	httpsDel   []string // HTTPS 删除指定 header
+	// ====================================
 }
 
 type Options struct {
@@ -58,6 +64,11 @@ type Options struct {
 	// ========== KunBox 新增选项 ==========
 	DelHost   bool     // Patch 03
 	HttpFirst string   // Patch 07
+	// ====================================
+	// ========== KunBox 新增选项 (Patch 04) ==========
+	HttpsFirst string   // HTTPS CONNECT 独立 preface
+	HttpDel    []string // HTTP 删除指定 header
+	HttpsDel   []string // HTTPS 删除指定 header
 	// ====================================
 }
 
@@ -73,6 +84,11 @@ func NewClient(options Options) *Client {
 		delHost:    options.DelHost,
 		httpFirst:  options.HttpFirst,
 		// ================================
+		// ========== KunBox 赋值 (Patch 04) ==========
+		httpsFirst: options.HttpsFirst,
+		httpDel:    options.HttpDel,
+		httpsDel:   options.HttpsDel,
+		// ==========================================
 	}
 	if options.Dialer == nil {
 		client.dialer = N.SystemDialer
@@ -104,13 +120,23 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// ============================================================
 	// === KunBox: 以下全部替换原始 request.Write(conn) 逻辑 ===
 	// === 实现 TPBox 级 HTTP CONNECT 链路重写               ===
+	// === Patch 04: HTTP/HTTPS 分离处理                      ===
 	// ============================================================
 
-	// === Step 1: http_first (HTTP preface) ===
+	// 判断目标是否为 HTTPS (端口 443)
+	isHttps := destination.Port == 443
+
+	// === Step 1: http_first / https_first (preface) ===
 	// 在 CONNECT 之前写入伪装的 HTTP 请求，让流量看起来像普通浏览
-	// 示例: "GET / HTTP/1.1\r\nHost: dingtalk.com\r\n\r\n"
-	if c.httpFirst != "" {
-		_, err = conn.Write([]byte(c.httpFirst))
+	// HTTPS 走独立的 https_first 模板，HTTP 走 http_first
+	var firstContent string
+	if isHttps && c.httpsFirst != "" {
+		firstContent = c.httpsFirst
+	} else if c.httpFirst != "" {
+		firstContent = c.httpFirst
+	}
+	if firstContent != "" {
+		_, err = conn.Write([]byte(firstContent))
 		if err != nil {
 			conn.Close()
 			return nil, err
@@ -144,15 +170,28 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		fmt.Fprintf(&raw, "Host: %s\r\n", destination.String())
 	}
 
-	// 写入自定义 headers，跳过自动生成的
-	skipHeaders := map[string]bool{
-		"user-agent":       true,
-		"proxy-connection": true,
-		"host":             true,
+	// === Step 2.5: 构建 del headers 集合 ===
+	// 根据 HTTP/HTTPS 选择不同的 del 列表，合并为统一的 skip 集合
+	delHeaders := make(map[string]bool)
+	// 内置 skip (始终跳过)
+	delHeaders["user-agent"] = true
+	delHeaders["proxy-connection"] = true
+	delHeaders["host"] = true // host 已在上方单独处理
+	// 用户配置的 del
+	if isHttps {
+		for _, h := range c.httpsDel {
+			delHeaders[strings.ToLower(h)] = true
+		}
+	} else {
+		for _, h := range c.httpDel {
+			delHeaders[strings.ToLower(h)] = true
+		}
 	}
+
+	// 写入自定义 headers
 	if c.headers != nil {
 		for key, values := range c.headers {
-			if skipHeaders[strings.ToLower(key)] {
+			if delHeaders[strings.ToLower(key)] {
 				continue
 			}
 			for _, value := range values {
