@@ -658,6 +658,10 @@ object OutboundFixer {
                     httpHeaders[k] = v
                 }
 
+                val expandedHttpFirst = fixed.httpFirst
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { expandHttpFirstTemplate(it, httpHeaders, httpPath) }
+
                 Outbound(
                     type = fixed.type,
                     tag = fixed.tag,
@@ -668,7 +672,7 @@ object OutboundFixer {
                     path = httpPath,
                     headers = httpHeaders.ifEmpty { null },
                     delHost = fixed.delHost,
-                    httpFirst = fixed.httpFirst?.takeIf { it.isNotBlank() },
+                    httpFirst = expandedHttpFirst,
                     tls = fixed.tls,
                     domainResolver = resolveDomainResolver(fixed),
                     tcpKeepAlive = tcpKeepAliveInterval,
@@ -833,6 +837,27 @@ object OutboundFixer {
             maxStreams = maxStreams,
             padding = false
         )
+    }
+
+    /**
+     * Expand HTTP preface variable templates.
+     * [M] → GET (HTTP method)
+     * [H] → Host (from headers Host value, or server address)
+     * [U] → / (URL path)
+     * [V] → HTTP/1.1
+     */
+    private fun expandHttpFirstTemplate(
+        template: String,
+        headers: Map<String, String>?,
+        path: String?
+    ): String {
+        val host = headers?.get("Host") ?: headers?.get("host") ?: ""
+        val urlPath = path?.takeIf { it.isNotBlank() } ?: "/"
+        return template
+            .replace("[M]", "GET")
+            .replace("[V]", "HTTP/1.1")
+            .replace("[H]", host)
+            .replace("[U]", urlPath)
     }
 
     private fun isIpLiteral(value: String): Boolean {

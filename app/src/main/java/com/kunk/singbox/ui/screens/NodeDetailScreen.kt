@@ -747,7 +747,7 @@ fun NodeDetailScreen(
                             title = stringResource(R.string.node_detail_http_first),
                             value = outbound.httpFirst ?: "",
                             subtitle = stringResource(R.string.node_detail_http_first_hint),
-                            placeholder = "GET / HTTP/1.1\r\nHost:dingtalk.com\r\n\r\n",
+                            placeholder = "[M] [U] [V]\\r\\nHost:[H]\\r\\n\\r\\n",
                             icon = Icons.Rounded.Language,
                             onValueChange = {
                                 editingOutbound = outbound.copy(httpFirst = if (it.isEmpty()) null else it)

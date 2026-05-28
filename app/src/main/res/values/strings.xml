@@ -523,7 +523,7 @@
     <string name="node_detail_http_path_hint">/example-path</string>
     <string name="node_detail_del_host">delHost</string>
     <string name="node_detail_http_first">HTTP Preface</string>
-    <string name="node_detail_http_first_hint">CONNECT 前发送的伪装 HTTP 请求，支持 \\r\\n 换行</string>
+    <string name="node_detail_http_first_hint">CONNECT 前发送的伪装 HTTP 请求。支持变量: [M]方法 [V]版本 [H]Host [U]路径</string>
     <string name="node_detail_obfuscation">混淆</string>
 
     <!-- Bug Log -->
