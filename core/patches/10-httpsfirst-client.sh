@@ -70,6 +70,7 @@ new_first = '''\t\t// 判断目标是否为 HTTPS (端口 443)
 \t\t\tfirstContent = c.httpFirst
 \t\t}
 \t\tif firstContent != "" {
+\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] http_first >>> %q\\n", firstContent)
 \t\t\t_, err = conn.Write([]byte(firstContent))
 \t\t\tif err != nil {
 \t\t\t\tconn.Close()

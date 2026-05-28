@@ -114,6 +114,9 @@ while i < len(lines):
             new_lines.append(indent + '\n')
             new_lines.append(indent + 'raw.WriteString("\\r\\n")\n')
             new_lines.append(indent + '\n')
+            new_lines.append(indent + '// [KunBox Debug] 打印完整 CONNECT 请求\n')
+            new_lines.append(indent + 'fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT >>> %s", raw.String())\n')
+            new_lines.append(indent + '\n')
             new_lines.append(indent + '_, err = conn.Write([]byte(raw.String()))\n')
             new_lines.append(indent + 'if err != nil {\n')
             new_lines.append(indent + '\tconn.Close()\n')
@@ -143,7 +146,7 @@ import sys
 target = sys.argv[1]
 with open(target, 'r') as f:
     content = f.read()
-needed = {'fmt': '"fmt"', 'strings': '"strings"'}
+needed = {'fmt': '"fmt"', 'strings': '"strings"', 'os': '"os"'}
 missing = [p for p, imp in needed.items() if imp not in content]
 if missing:
     lines = content.split('\n')
