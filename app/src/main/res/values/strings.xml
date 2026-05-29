@@ -808,4 +808,12 @@
     <string name="info_card_download">下载</string>
     <string name="info_card_ping">延迟</string>
 
+
+    <!-- Node JSON Editor -->
+    <string name="node_json_editor_title">编辑节点 JSON</string>
+    <string name="node_json_editor_empty">JSON 内容为空</string>
+    <string name="node_json_editor_load_failed">加载节点配置失败</string>
+    <string name="node_json_editor_parse_error">JSON 解析错误</string>
+    <string name="node_json_editor_missing_type">缺少必填字段: type</string>
+    <string name="node_json_editor_missing_tag">缺少必填字段: tag</string>
 </resources>

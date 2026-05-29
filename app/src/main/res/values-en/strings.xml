@@ -766,4 +766,12 @@
     <string name="info_card_download">Download</string>
     <string name="info_card_ping">Ping</string>
 
+
+    <!-- Node JSON Editor -->
+    <string name="node_json_editor_title">Edit Node JSON</string>
+    <string name="node_json_editor_empty">JSON content is empty</string>
+    <string name="node_json_editor_load_failed">Failed to load node config</string>
+    <string name="node_json_editor_parse_error">JSON parse error</string>
+    <string name="node_json_editor_missing_type">Required field missing: type</string>
+    <string name="node_json_editor_missing_tag">Required field missing: tag</string>
 </resources>
