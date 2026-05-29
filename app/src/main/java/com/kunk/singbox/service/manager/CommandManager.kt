@@ -557,23 +557,31 @@ class CommandManager(
 
         override fun setDefaultLogLevel(level: Int) {}
 
-        override fun writeLogs(messageList: LogIterator?) {
+                override fun writeLogs(messageList: LogIterator?) {
             if (messageList == null) return
             val repo = LogRepository.getInstance()
             runCatching {
                 while (messageList.hasNext()) {
                     val msg = messageList.next()?.message
-                    if (!msg.isNullOrBlank()) {
+                    if (msg != null) {
                         repo.addLog(msg)
-                        // Core error/warn 级别日志同步到 Bug 日志
-                        // ERR/WARN 已由 LogRepository BugLog Bridge 统一捕获，不重复写入
-                        // CONNECT 相关日志单独捕获（只匹配 outbound dial 和 proxy 层）
+                        // 直接捕获所有 ERR/WARN 级别 Go 核心日志到 Bug 日志
                         val msgLower = msg.lowercase()
-                        if (msgLower.contains("outbound/") && msgLower.contains("dial") ||
-                            msgLower.contains("proxy/") && (msgLower.contains("connect") || msgLower.contains("dial")) ||
-                            msgLower.contains("tcp:") && msgLower.contains("connect") ||
-                            msgLower.contains("outbound/") && msgLower.contains("connect")) {
-                            BugLogHelper.log("CONNECT", msg)
+                        val isError = msgLower.contains("[err]") || msgLower.contains("error")
+                        val isWarn = msgLower.contains("[wrn]") || msgLower.contains("warn")
+                        val isConnectionFail = msgLower.contains("dial") && msgLower.contains("failed") ||
+                            msgLower.contains("connect") && msgLower.contains("refused") ||
+                            msgLower.contains("timeout") ||
+                            msgLower.contains("connection reset") ||
+                            msgLower.contains("no route to host") ||
+                            msgLower.contains("network is unreachable") ||
+                            msgLower.contains("eof") ||
+                            msgLower.contains("i/o error")
+                        if (isError || isWarn || isConnectionFail) {
+                            BugLogHelper.log(
+                                if (isError) "GoCore-ERR" else if (isWarn) "GoCore-WARN" else "GoCore-CONN",
+                                msg.substringAfter("] ").trim().ifEmpty { msg }
+                            )
                         }
                     }
                 }
