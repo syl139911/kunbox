@@ -82,8 +82,8 @@
     <init>(...);
 }
 
-# BugLogEntry - Gson ååºååéè¦ä¿çå­æ®µåï¼æ  @SerializedName æ³¨è§£ï¼
-# R8 ä¼æ··æ·å­æ®µå timestamp/title/detail/stackTraceï¼å¯¼è´ Gson æ å°å¤±è´¥ â NPE é¯é
+# BugLogEntry - Gson deserialization needs field names preserved (no @SerializedName)
+# R8 obfuscates fields timestamp/title/detail/stackTrace -> Gson mapping failure -> NPE crash
 -keep class com.kunk.singbox.repository.BugLogEntry {
     <fields>;
     <init>(...);
