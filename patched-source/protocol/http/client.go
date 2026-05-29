@@ -123,8 +123,10 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	var conn net.Conn
 	conn, err := c.dialer.DialContext(ctx, N.NetworkTCP, c.serverAddr)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy FAILED: %s err=%v\n", c.serverAddr, err)
 		return nil, err
 	}
+	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy OK: %s\n", c.serverAddr)
 
 	// ============================================================
 	// === KunBox: 以下全部替换原始 request.Write(conn) 逻辑 ===
@@ -149,9 +151,11 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] first >>> %q\n", firstContent)
 		_, err = conn.Write([]byte(firstContent))
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write FAILED: err=%v\n", err)
 			conn.Close()
 			return nil, err
 		}
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write OK: %d bytes\n", len(firstContent))
 		// conn 是原始 TCP 连接，Write 直接进内核 socket buffer，无需 flush
 	}
 
@@ -225,9 +229,11 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// 一次性写入整条 CONNECT 请求
 	_, err = conn.Write([]byte(raw.String()))
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT write FAILED: err=%v\n", err)
 		conn.Close()
 		return nil, err
 	}
+	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT write OK: %d bytes\n", len(raw.String()))
 
 	// === Step 3: 读取响应 ===
 	// 用最小的 request 对象让 http.ReadResponse 工作
@@ -239,12 +245,14 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	reader := std_bufio.NewReader(conn)
 	response, err := http.ReadResponse(reader, request)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] ReadResponse FAILED: err=%v\n", err)
 		conn.Close()
 		return nil, err
 	}
 	// [KunBox Debug] 代理响应
 	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy response: %d %s\n", response.StatusCode, response.Status)
 	if response.StatusCode == http.StatusOK {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] tunnel established OK\n")
 		if reader.Buffered() > 0 {
 			buffer := buf.NewSize(reader.Buffered())
 			_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
@@ -256,6 +264,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		}
 		return conn, nil
 	} else {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] tunnel FAILED: status=%d\n", response.StatusCode)
 		conn.Close()
 		switch response.StatusCode {
 		case http.StatusProxyAuthRequired:
