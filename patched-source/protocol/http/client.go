@@ -156,6 +156,9 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// TPBox: CONNECT /@dingtalk HTTP/1.1           (del_host 模式)
 	target := destination.String()
 	if c.path != "" {
+		if !strings.HasPrefix(c.path, "/") {
+			target += "/"
+		}
 		target += c.path
 	}
 
