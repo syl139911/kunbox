@@ -812,6 +812,8 @@
     <!-- Node JSON Editor -->
     <string name="node_detail_custom_config">自定义配置</string>
     <string name="node_detail_custom_config_subtitle">直接编辑节点 JSON 出站配置</string>
+    <string name="nodes_custom_json">自定义 JSON</string>
+    <string name="node_json_editor_create_title">新建自定义配置</string>
     <string name="node_json_editor_title">编辑节点 JSON</string>
     <string name="node_json_editor_empty">JSON 内容为空</string>
     <string name="node_json_editor_load_failed">加载节点配置失败</string>
