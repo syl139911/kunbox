@@ -57,6 +57,29 @@ class BugLogRepository private constructor() {
 
     fun getBugLogs(): List<BugLogEntry> = logs.toList()
 
+    /**
+     * Add an info-level lifecycle log (VPN start/stop/switch).
+     * Skips if the last entry has the same title AND detail (dedup).
+     */
+    fun addInfoLog(title: String, detail: String) {
+        val lastEntry = logs.lastOrNull()
+        if (lastEntry != null && lastEntry.title == title && lastEntry.detail == detail) {
+            return
+        }
+        val entry = BugLogEntry(
+            timestamp = System.currentTimeMillis(),
+            title = title,
+            detail = detail,
+            stackTrace = null
+        )
+        logs.add(entry)
+        while (logs.size > maxLogSize) {
+            logs.removeAt(0)
+        }
+        _bugLogs.value = logs.toList()
+        saveToDisk()
+    }
+
     fun clearBugLogs() {
         logs.clear()
         _bugLogs.value = emptyList()
