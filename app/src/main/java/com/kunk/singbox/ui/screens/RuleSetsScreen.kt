@@ -251,9 +251,10 @@ fun RuleSetsScreen(
             selectedIndex = RuleSetOutboundMode.entries.indexOf(currentMode),
             onSelect = { index ->
                 val selectedMode = RuleSetOutboundMode.entries[index]
+                val modeChanged = selectedMode != currentRuleSet.outboundMode
                 val updatedRuleSet = currentRuleSet.copy(
                     outboundMode = selectedMode,
-                    outboundValue = null
+                    outboundValue = if (modeChanged) null else currentRuleSet.outboundValue
                 )
 
                 if (selectedMode == RuleSetOutboundMode.NODE ||
@@ -663,7 +664,8 @@ fun RuleSetsScreen(
                                 } else {
                                     allNodes.find { it.id == value } ?: allNodes.find { it.name == value }
                                 }
-                                node?.name
+                                // Fallback: extract node name from stored reference when allNodes is empty or node not found
+                                node?.name ?: if (parts.size == 2) parts[1] else value
                             } else null
                         }
                         RuleSetOutboundMode.PROFILE -> {
