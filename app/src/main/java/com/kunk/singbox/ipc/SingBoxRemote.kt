@@ -219,9 +219,9 @@ object SingBoxRemote {
         manuallyStopped?.let { _manuallyStopped.value = it }
         lastSyncTimeMs = System.currentTimeMillis()
 
-        // Go 核心日志拦截器：VPN 运行时捕获 Go 层错误日志
+        // Go 核心日志拦截器：提前到 STARTING 阶段启动，避免丢失 Go 核心初始化日志
         when (st) {
-            ServiceState.RUNNING -> GoCoreLogInterceptor.start()
+            ServiceState.STARTING, ServiceState.RUNNING -> GoCoreLogInterceptor.start()
             ServiceState.STOPPED -> GoCoreLogInterceptor.stop()
             else -> {}
         }
