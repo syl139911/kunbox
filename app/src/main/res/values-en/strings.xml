@@ -768,6 +768,8 @@
 
 
     <!-- Node JSON Editor -->
+    <string name="node_detail_custom_config">Custom Config</string>
+    <string name="node_detail_custom_config_subtitle">Directly edit node JSON outbound config</string>
     <string name="node_json_editor_title">Edit Node JSON</string>
     <string name="node_json_editor_empty">JSON content is empty</string>
     <string name="node_json_editor_load_failed">Failed to load node config</string>
