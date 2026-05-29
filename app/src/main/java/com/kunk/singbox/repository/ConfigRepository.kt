@@ -5081,12 +5081,12 @@ class ConfigRepository(private val context: Context) {
         val sniffRule = listOf(RouteRule(inbound = listOf("tun-in", "mixed-in"), action = "sniff"))
 
         val allRules = when (settings.routingMode) {
-            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules
+            RoutingMode.GLOBAL_PROXY -> sniffRule + hijackDnsRule + quicRule + multicastRejectRules + icmpEchoRules
             RoutingMode.GLOBAL_DIRECT ->
-                hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules +
+                sniffRule + hijackDnsRule + quicRule + multicastRejectRules + icmpEchoRules +
                     listOf(RouteRule(outbound = "direct"))
             RoutingMode.RULE -> {
-                hijackDnsRule + sniffRule + quicRule + multicastRejectRules + bypassLanRules + icmpEchoRules +
+                sniffRule + hijackDnsRule + quicRule + multicastRejectRules + bypassLanRules + icmpEchoRules +
                     customDomainRules + appRoutingRules + customRuleSetRules + defaultRuleCatchAll
             }
         }
