@@ -99,6 +99,9 @@ jobs:
           # Apply 10-httpsfirst-client.sh (https_first + del headers)
           bash ../core/patches/10-httpsfirst-client.sh "$CLIENT_GO"
 
+          # Apply 11-debug-logging.sh (error logging on all failure paths)
+          bash ../core/patches/11-debug-logging.sh "$CLIENT_GO"
+
           # Add replace directive to go.mod
           echo "" >> go.mod
           echo "replace github.com/sagernet/sing => ../local-sing" >> go.mod

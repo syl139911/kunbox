@@ -87,6 +87,9 @@ bash "$SCRIPT_DIR/patches/09-httpsfirst-outbound.sh" "$UPSTREAM_DIR"
 echo "--- Applying patch 10 (https_first + del client) ---"
 bash "$SCRIPT_DIR/patches/10-httpsfirst-client.sh" "$CLIENT_GO"
 
+echo "--- Applying patch 11 (debug logging) ---"
+bash "$SCRIPT_DIR/patches/11-debug-logging.sh" "$CLIENT_GO"
+
 # Add replace directive
 echo "" >> go.mod
 echo "replace github.com/sagernet/sing => $LOCAL_SING_DIR" >> go.mod
