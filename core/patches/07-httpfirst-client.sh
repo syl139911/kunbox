@@ -60,7 +60,7 @@ while i < len(lines):
         new_lines.append(indent + '// === KunBox http_first (HTTP preface) ===\n')
         new_lines.append(indent + '// conn 是原始 TCP 连接，Write 直接进内核 socket buffer，无需 flush\n')
         new_lines.append(indent + 'if c.httpFirst != "" {\n')
-        new_lines.append(indent + '\t// http_first write (debug logging removed for production)\n')
+        new_lines.append(indent + '\tfmt.Fprintf(os.Stderr, \"[KunBox-HTTP] http_first >>> %q\\\\n\", c.httpFirst)\n')
         new_lines.append(indent + '\t_, err = conn.Write([]byte(c.httpFirst))\n')
         new_lines.append(indent + '\tif err != nil {\n')
         new_lines.append(indent + '\t\tconn.Close()\n')
