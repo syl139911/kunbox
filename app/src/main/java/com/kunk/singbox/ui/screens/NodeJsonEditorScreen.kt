@@ -72,8 +72,9 @@ fun NodeJsonEditorScreen(
         }
     }
 
+    val isCreateMode = nodeId == "_new"
     val nodes by configRepository.nodes.collectAsState(initial = emptyList())
-    val node = nodes.find { it.id == nodeId }
+    val node = if (isCreateMode) null else nodes.find { it.id == nodeId }
 
     // JSON text state
     var jsonText by remember { mutableStateOf("") }
@@ -83,12 +84,24 @@ fun NodeJsonEditorScreen(
     // Load the outbound JSON on first composition or when nodeId changes
     LaunchedEffect(nodeId) {
         if (!isLoaded) {
-            val outbound = configRepository.getOutboundByNodeId(nodeId)
-            if (outbound != null) {
-                jsonText = gson.toJson(outbound)
+            if (isCreateMode) {
+                // Create mode: start with a minimal VMess template
+                val template = Outbound(
+                    type = "vmess",
+                    tag = "Custom-Node",
+                    server = "",
+                    serverPort = 443
+                )
+                jsonText = gson.toJson(template)
                 isLoaded = true
             } else {
-                parseError = context.getString(R.string.node_json_editor_load_failed)
+                val outbound = configRepository.getOutboundByNodeId(nodeId)
+                if (outbound != null) {
+                    jsonText = gson.toJson(outbound)
+                    isLoaded = true
+                } else {
+                    parseError = context.getString(R.string.node_json_editor_load_failed)
+                }
             }
         }
     }
@@ -125,7 +138,11 @@ fun NodeJsonEditorScreen(
         // Apply automatic fixes (interval normalization, flow cleanup, TLS compat, etc.)
         val fixed = OutboundFixer.fix(parsed)
 
-        configRepository.updateNode(nodeId, fixed)
+        if (isCreateMode) {
+            configRepository.createNode(fixed)
+        } else {
+            configRepository.updateNode(nodeId, fixed)
+        }
         parseError = null
         return true
     }
@@ -137,7 +154,7 @@ fun NodeJsonEditorScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.node_json_editor_title),
+                        text = stringResource(if (isCreateMode) R.string.node_json_editor_create_title else R.string.node_json_editor_title),
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 },
