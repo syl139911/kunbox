@@ -73,54 +73,54 @@ if old_dial in content:
 else:
     print('WARN: dial block not found')
 
-# 2. httpFirst 写入失败日志 (patch 07 生成的代码)
-old_first_err = '''_, err = conn.Write([]byte(c.httpFirst))
-\t\t\tif err != nil {
-\t\t\t\tconn.Close()
-\t\t\t\treturn nil, err
-\t\t\t}'''
-new_first_err = '''_, err = conn.Write([]byte(firstContent))
-\t\t\tif err != nil {
-\t\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write FAILED: err=%v\\n", err)
-\t\t\t\tconn.Close()
-\t\t\t\treturn nil, err
-\t\t\t}'''
-# Also handle the patch 07 version with c.httpFirst
-old_first_err2 = '''_, err = conn.Write([]byte(c.httpFirst))
-\t\tif err != nil {
-\t\t\tconn.Close()
-\t\t\treturn nil, err
-\t\t}'''
-new_first_err2 = '''_, err = conn.Write([]byte(c.httpFirst))
-\t\tif err != nil {
-\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write FAILED: err=%v\\n", err)
-\t\t\tconn.Close()
-\t\t\treturn nil, err
-\t\t}'''
+# 2. httpFirst 写入日志 (匹配 patch 07 生成的缩进: 外层4tab + 内层5tab)
+old_first_err = '''\t\t\t\t_, err = conn.Write([]byte(c.httpFirst))
+\t\t\t\t\tif err != nil {
+\t\t\t\t\t\tconn.Close()
+\t\t\t\t\t\treturn nil, err
+\t\t\t\t\t}'''
+new_first_err = '''\t\t\t\t_, err = conn.Write([]byte(c.httpFirst))
+\t\t\t\t\tif err != nil {
+\t\t\t\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write FAILED: err=%v\\n", err)
+\t\t\t\t\t\tconn.Close()
+\t\t\t\t\t\treturn nil, err
+\t\t\t\t\t}'''
+# Patch 10 版本 (firstContent, 3tab + 4tab)
+old_first_err_p10 = '''\t\t\t_, err = conn.Write([]byte(firstContent))
+\t\t\t\tif err != nil {
+\t\t\t\t\tconn.Close()
+\t\t\t\t\treturn nil, err
+\t\t\t\t}'''
+new_first_err_p10 = '''\t\t\t_, err = conn.Write([]byte(firstContent))
+\t\t\t\tif err != nil {
+\t\t\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write FAILED: err=%v\\n", err)
+\t\t\t\t\tconn.Close()
+\t\t\t\t\treturn nil, err
+\t\t\t\t}'''
 if old_first_err in content:
     content = content.replace(old_first_err, new_first_err, 1)
     changes += 1
-    print('OK: Added httpFirst write error log (patch 10 version)')
-elif old_first_err2 in content:
-    content = content.replace(old_first_err2, new_first_err2, 1)
-    changes += 1
     print('OK: Added httpFirst write error log (patch 07 version)')
+elif old_first_err_p10 in content:
+    content = content.replace(old_first_err_p10, new_first_err_p10, 1)
+    changes += 1
+    print('OK: Added httpFirst write error log (patch 10 version)')
 else:
     print('WARN: httpFirst write block not found')
 
-# 3. CONNECT 写入失败日志 + 请求日志
-old_connect = '''_, err = conn.Write([]byte(raw.String()))
-\t\tif err != nil {
-\t\t\tconn.Close()
-\t\t\treturn nil, err
-\t\t}'''
-new_connect = '''fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT >>> %s", raw.String())
-\t\t_, err = conn.Write([]byte(raw.String()))
-\t\tif err != nil {
-\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT write FAILED: err=%v\\n", err)
-\t\t\tconn.Close()
-\t\t\treturn nil, err
-\t\t}'''
+# 3. CONNECT 写入失败日志 + 请求日志 (3tab)
+old_connect = '''\t\t\t_, err = conn.Write([]byte(raw.String()))
+\t\t\tif err != nil {
+\t\t\t\tconn.Close()
+\t\t\t\treturn nil, err
+\t\t\t}'''
+new_connect = '''\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT >>> %s", raw.String())
+\t\t\t_, err = conn.Write([]byte(raw.String()))
+\t\t\tif err != nil {
+\t\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT write FAILED: err=%v\\n", err)
+\t\t\t\tconn.Close()
+\t\t\t\treturn nil, err
+\t\t\t}'''
 if old_connect in content:
     content = content.replace(old_connect, new_connect, 1)
     changes += 1
@@ -148,18 +148,18 @@ if old_read in content:
 else:
     print('WARN: ReadResponse block not found')
 
-# 5. ReadFullFrom 失败日志
-old_full = '''_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
-\t\t\tif err != nil {
-\t\t\t\tconn.Close()
-\t\t\t\treturn nil, err
-\t\t\t}'''
-new_full = '''_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
-\t\t\tif err != nil {
-\t\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] ReadFullFrom FAILED: err=%v\\n", err)
-\t\t\t\tconn.Close()
-\t\t\t\treturn nil, err
-\t\t\t}'''
+# 5. ReadFullFrom 失败日志 (4tab, 在 if response.StatusCode == http.StatusOK 内)
+old_full = '''\t\t\t\t_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
+\t\t\t\t\tif err != nil {
+\t\t\t\t\t\tconn.Close()
+\t\t\t\t\t\treturn nil, err
+\t\t\t\t\t}'''
+new_full = '''\t\t\t\t_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
+\t\t\t\t\tif err != nil {
+\t\t\t\t\t\tfmt.Fprintf(os.Stderr, "[KunBox-HTTP] ReadFullFrom FAILED: err=%v\\n", err)
+\t\t\t\t\t\tconn.Close()
+\t\t\t\t\t\treturn nil, err
+\t\t\t\t\t}'''
 if old_full in content:
     content = content.replace(old_full, new_full, 1)
     changes += 1
