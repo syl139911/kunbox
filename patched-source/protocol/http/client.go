@@ -127,7 +127,9 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy FAILED: %s err=%v\n", c.serverAddr, err)
 		return nil, err
 	}
+	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy OK: %s\n", c.serverAddr)
 	// [KunBox Debug] TLS 握手详情
+	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy OK: %s\n", c.serverAddr)
 	if tlsConn, ok := conn.(*tls.Conn); ok {
 		state := tlsConn.ConnectionState()
 			state.Version, state.CipherSuite, state.ServerName, state.VerifiedChains != nil)
