@@ -4994,12 +4994,8 @@ class ConfigRepository(private val context: Context) {
             }
         }
 
-        // [KunBox Fix] Add DNS outbound to prevent UDP packets from routing through HTTP proxy
-        val finalOutbounds = if (safeOutbounds.none { it.type == "dns" }) {
-            safeOutbounds + Outbound(type = "dns", tag = "dns-out")
-        } else {
-            safeOutbounds
-        }
+        // sing-box 1.13.0+: dns outbound removed, use route action "hijack-dns" instead
+        val finalOutbounds = safeOutbounds
 
         return RunOutboundsContext(
             outbounds = finalOutbounds,
@@ -5080,18 +5076,17 @@ class ConfigRepository(private val context: Context) {
         val icmpEchoRules = buildIcmpEchoRules(settings)
         val customDomainRules = buildCustomDomainRules(settings, selectorTag, outbounds, nodeTagResolver)
         val defaultRuleCatchAll = buildDefaultRules(settings, selectorTag)
-        // [KunBox Fix] Route DNS to dedicated outbound before hijack/sniff to prevent UDP through HTTP proxy
-        val dnsOutRule = listOf(RouteRule(protocolRaw = listOf("dns"), outbound = "dns-out"))
+        // [KunBox Fix] hijack-dns action replaces deprecated dns outbound (sing-box 1.13.0+)
         val hijackDnsRule = listOf(RouteRule(protocolRaw = listOf("dns"), action = "hijack-dns"))
         val sniffRule = listOf(RouteRule(inbound = listOf("tun-in", "mixed-in"), action = "sniff"))
 
         val allRules = when (settings.routingMode) {
-            RoutingMode.GLOBAL_PROXY -> dnsOutRule + hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules
+            RoutingMode.GLOBAL_PROXY -> hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules
             RoutingMode.GLOBAL_DIRECT ->
-                dnsOutRule + hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules +
+                hijackDnsRule + sniffRule + quicRule + multicastRejectRules + icmpEchoRules +
                     listOf(RouteRule(outbound = "direct"))
             RoutingMode.RULE -> {
-                dnsOutRule + hijackDnsRule + sniffRule + quicRule + multicastRejectRules + bypassLanRules + icmpEchoRules +
+                hijackDnsRule + sniffRule + quicRule + multicastRejectRules + bypassLanRules + icmpEchoRules +
                     customDomainRules + appRoutingRules + customRuleSetRules + defaultRuleCatchAll
             }
         }
