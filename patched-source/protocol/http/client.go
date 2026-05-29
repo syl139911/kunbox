@@ -137,7 +137,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		firstContent = c.httpFirst
 	}
 	if firstContent != "" {
-		// http_first write (debug logging removed for production)
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] first >>> %q\n", firstContent)
 		_, err = conn.Write([]byte(firstContent))
 		if err != nil {
 			conn.Close()
