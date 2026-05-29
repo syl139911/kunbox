@@ -33,6 +33,7 @@ import com.kunk.singbox.ui.screens.RuleSetHubScreen
 import com.kunk.singbox.ui.screens.DomainRulesScreen
 import com.kunk.singbox.ui.screens.TrafficStatsScreen
 import com.kunk.singbox.ui.screens.BugLogScreen
+import com.kunk.singbox.ui.screens.NodeJsonEditorScreen
 
 sealed class Screen(val route: String) {
     object Dashboard : Screen("dashboard")
@@ -61,6 +62,9 @@ sealed class Screen(val route: String) {
     object RuleSetHub : Screen("rule_set_hub")
     object TrafficStats : Screen("traffic_stats")
     object BugLog : Screen("bug_log")
+    object NodeJsonEditor : Screen("node_json_editor/{nodeId}") {
+        fun createRoute(nodeId: String) = "node_json_editor/$nodeId"
+    }
 }
 
 const val NAV_ANIMATION_DURATION = 450
@@ -104,6 +108,7 @@ fun getTabForRoute(route: String?): String {
         route == Screen.Logs.route -> Screen.Settings.route
         route == Screen.TrafficStats.route -> Screen.Settings.route
         route == Screen.BugLog.route -> Screen.Settings.route
+        route.startsWith("node_json_editor") -> Screen.Nodes.route
 
         else -> Screen.Dashboard.route
     }
@@ -343,5 +348,18 @@ fun AppNavigation(navController: NavHostController) {
             popEnterTransition = popEnterTransition,
             popExitTransition = popExitTransition
         ) { BugLogScreen(navController) }
+        composable(
+            route = Screen.NodeJsonEditor.route,
+            arguments = listOf(
+                androidx.navigation.navArgument("nodeId") { type = androidx.navigation.NavType.StringType }
+            ),
+            enterTransition = enterTransition,
+            exitTransition = exitTransition,
+            popEnterTransition = popEnterTransition,
+            popExitTransition = popExitTransition
+        ) { backStackEntry ->
+            val nodeId = backStackEntry.arguments?.getString("nodeId") ?: ""
+            NodeJsonEditorScreen(navController = navController, nodeId = nodeId)
+        }
     }
 }
