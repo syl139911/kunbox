@@ -127,6 +127,10 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		return nil, err
 	}
 	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy OK: %s\n", c.serverAddr)
+	// [KunBox Debug] TLS 握手详情
+	if tlsConn, ok := conn.(interface{ ConnectionState() interface{} }); ok {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] TLS handshake completed\n")
+	}
 
 	// ============================================================
 	// === KunBox: 以下全部替换原始 request.Write(conn) 逻辑 ===
