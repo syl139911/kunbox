@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"crypto/tls"
 	"os"
 	"strings"
 
@@ -128,8 +129,10 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	}
 	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy OK: %s\n", c.serverAddr)
 	// [KunBox Debug] TLS 握手详情
-	if tlsConn, ok := conn.(interface{ ConnectionState() interface{} }); ok {
-		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] TLS handshake completed\n")
+	if tlsConn, ok := conn.(*tls.Conn); ok {
+		state := tlsConn.ConnectionState()
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] TLS: version=%x cipher=%x server=%q verified=%v\n",
+			state.Version, state.CipherSuite, state.ServerName, state.VerifiedChains != nil)
 	}
 
 	// ============================================================
