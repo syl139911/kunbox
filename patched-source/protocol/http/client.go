@@ -127,11 +127,9 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy FAILED: %s err=%v\n", c.serverAddr, err)
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy OK: %s\n", c.serverAddr)
 	// [KunBox Debug] TLS 握手详情
 	if tlsConn, ok := conn.(*tls.Conn); ok {
 		state := tlsConn.ConnectionState()
-		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] TLS: version=%x cipher=%x server=%q verified=%v\n",
 			state.Version, state.CipherSuite, state.ServerName, state.VerifiedChains != nil)
 	}
 
@@ -155,14 +153,12 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		firstContent = c.httpFirst
 	}
 	if firstContent != "" {
-		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] first >>> %q\n", firstContent)
 		_, err = conn.Write([]byte(firstContent))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write FAILED: err=%v\n", err)
 			conn.Close()
 			return nil, err
 		}
-		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write OK: %d bytes\n", len(firstContent))
 		// conn 是原始 TCP 连接，Write 直接进内核 socket buffer，无需 flush
 	}
 
@@ -236,7 +232,6 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	if len(connectLog) > 200 {
 		connectLog = connectLog[:200] + "...(truncated)"
 	}
-	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT >>> %s", connectLog)
 
 	// 一次性写入整条 CONNECT 请求
 	_, err = conn.Write([]byte(raw.String()))
@@ -260,9 +255,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		conn.Close()
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT write OK: %d bytes\n", len(raw.String()))
 	// [KunBox Debug] 代理响应
-	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy response: %d %s\n", response.StatusCode, response.Status)
 	if response.StatusCode == http.StatusOK {
 		if reader.Buffered() > 0 {
 			buffer := buf.NewSize(reader.Buffered())
