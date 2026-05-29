@@ -93,6 +93,7 @@ import com.kunk.singbox.model.UdpOverTcpConfig
 import com.kunk.singbox.model.WireGuardPeer
 import com.kunk.singbox.repository.ConfigRepository
 import com.kunk.singbox.ui.components.AppNotificationManager
+import com.kunk.singbox.ui.navigation.Screen
 import com.kunk.singbox.ui.components.EditableMultilineTextItem
 import com.kunk.singbox.ui.components.EditableSelectionItem
 import com.kunk.singbox.ui.components.EditableTextItem
@@ -1287,6 +1288,21 @@ fun NodeDetailScreen(
                         checked = outbound.tcpFastOpen == true,
                         icon = Icons.Rounded.Bolt,
                         onCheckedChange = { editingOutbound = outbound.copy(tcpFastOpen = it) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // --- Custom Config JSON Editor ---
+                SectionHeader(stringResource(R.string.node_detail_custom_config))
+                StandardCard {
+                    SettingItem(
+                        title = stringResource(R.string.node_detail_custom_config),
+                        value = stringResource(R.string.node_detail_custom_config_subtitle),
+                        icon = Icons.Rounded.Code,
+                        onClick = {
+                            navController.navigate(Screen.NodeJsonEditor.createRoute(nodeId))
+                        }
                     )
                 }
 
