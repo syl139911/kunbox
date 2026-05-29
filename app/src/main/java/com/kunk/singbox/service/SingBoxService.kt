@@ -658,6 +658,7 @@ class SingBoxService : VpnService() {
 
         override fun onStarted(configContent: String) {
             Log.i(TAG, "KunBox VPN started successfully")
+            BugLogHelper.logVpnStarted(nodeName = realTimeNodeName, protocol = null)
             notificationManager.setSuppressUpdates(false)
             autoFailoverServiceStartedAtMs = System.currentTimeMillis()
             isProxyIdleForAutoFailover = false
@@ -3052,6 +3053,7 @@ class SingBoxService : VpnService() {
         }
 
         Log.i(TAG, "stopVpn(stopService=$stopService) isManuallyStopped=$isManuallyStopped")
+        BugLogHelper.logVpnStopped()
 
         // 获取代理端口用于等待释放
         val proxyPort = currentSettings?.proxyPort ?: 2080
