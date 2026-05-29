@@ -106,6 +106,36 @@ object BugLogHelper {
         }
     }
 
+    // ── VPN Lifecycle Logging ─────────────────────────────────────
+
+    fun logVpnStarted(nodeName: String?, protocol: String?) {
+        try {
+            val detail = buildString {
+                append("VPN started")
+                nodeName?.let { append("\nNode: $it") }
+                protocol?.let { append("\nProtocol: $it") }
+            }
+            BugLogRepository.getInstance().addInfoLog("VPN Started", detail)
+        } catch (_: Exception) {}
+    }
+
+    fun logVpnStopped() {
+        try {
+            BugLogRepository.getInstance().addInfoLog("VPN Stopped", "VPN service stopped")
+        } catch (_: Exception) {}
+    }
+
+    fun logVpnSwitching(fromNode: String?, toNode: String?) {
+        try {
+            val detail = buildString {
+                append("Switching node")
+                fromNode?.let { append("\nFrom: $it") }
+                toNode?.let { append("\nTo: $it") }
+            }
+            BugLogRepository.getInstance().addInfoLog("VPN Switching", detail)
+        } catch (_: Exception) {}
+    }
+
     // ── Convenience Wrappers (unchanged) ───────────────────────────
 
     fun logConfigError(detail: String, throwable: Throwable? = null) {
