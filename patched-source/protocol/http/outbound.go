@@ -8,6 +8,7 @@ package http
 import (
 	"context"
 	"net"
+	"fmt"
 	"os"
 
 	"github.com/sagernet/sing-box/adapter"
@@ -71,6 +72,9 @@ func (h *Outbound) DialContext(ctx context.Context, network string, destination 
 	metadata.Outbound = h.Tag()
 	metadata.Destination = destination
 	h.logger.InfoContext(ctx, "outbound connection to ", destination)
+	// [KunBox Debug] outbound 连接详情
+	fmt.Fprintf(os.Stderr, "[KunBox-OUT] dial %s -> server=%s delHost=%v path=%q httpFirst=%q httpsFirst=%q\n",
+		network, h.client.ServerAddr(), h.client.DelHost(), h.client.Path(), h.client.HttpFirst(), h.client.HttpsFirst())
 	return h.client.DialContext(ctx, network, destination)
 }
 
