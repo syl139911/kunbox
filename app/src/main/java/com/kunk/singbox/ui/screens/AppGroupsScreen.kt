@@ -204,7 +204,7 @@ fun AppGroupsScreen(
                                 if (node != null && profileName != null) {
                                     "${node.name} ($profileName)"
                                 } else {
-                                    stringResource(R.string.app_rules_not_selected)
+                                    node?.name ?: if (parts != null && parts.size == 2) parts[1] else stringResource(R.string.app_rules_not_selected)
                                 }
                             }
                             RuleSetOutboundMode.PROFILE -> profiles.find { it.id == group.outboundValue }?.name ?: stringResource(R.string.app_rules_unknown_profile)

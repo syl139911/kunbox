@@ -314,7 +314,8 @@ private fun resolveOutboundText(
                 nodes.find { it.id == value } ?: nodes.find { it.name == value }
             }
             val profileName = profiles.find { p -> p.id == node?.sourceProfileId }?.name
-            if (node != null && profileName != null) "${node.name} ($profileName)" else stringResource(R.string.app_rules_not_selected)
+            if (node != null && profileName != null) "${node.name} ($profileName)"
+            else node?.name ?: if (parts != null && parts.size == 2) parts[1] else stringResource(R.string.app_rules_not_selected)
         }
         RuleSetOutboundMode.PROFILE -> profiles.find { it.id == value }?.name ?: stringResource(R.string.app_rules_unknown_profile)
     }
