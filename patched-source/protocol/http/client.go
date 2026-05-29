@@ -266,6 +266,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 			buffer := buf.NewSize(reader.Buffered())
 			_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
 			if err != nil {
+				fmt.Fprintf(os.Stderr, "[KunBox-HTTP] ReadFullFrom FAILED: err=%v\n", err)
 				conn.Close()
 				return nil, err
 			}
