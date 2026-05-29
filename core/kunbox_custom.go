@@ -1,7 +1,6 @@
 package libbox
 
 import (
-	"sync"
 	"sync/atomic"
 )
 
@@ -77,5 +76,3 @@ func CheckNetworkRecoveryNeeded() bool {
 	return false
 }
 
-// Ensure sync import is used
-var _ sync.Once
