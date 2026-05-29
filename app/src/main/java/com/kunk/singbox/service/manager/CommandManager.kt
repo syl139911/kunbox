@@ -558,35 +558,35 @@ class CommandManager(
         override fun setDefaultLogLevel(level: Int) {}
 
                 override fun writeLogs(messageList: LogIterator?) {
-            if (messageList == null) return
-            val repo = LogRepository.getInstance()
-            runCatching {
-                while (messageList.hasNext()) {
-                    val msg = messageList.next()?.message
-                    if (msg != null) {
-                        repo.addLog(msg)
-                        // 直接捕获所有 ERR/WARN 级别 Go 核心日志到 Bug 日志
-                        val msgLower = msg.lowercase()
-                        val isError = msgLower.contains("[err]") || msgLower.contains("error")
-                        val isWarn = msgLower.contains("[wrn]") || msgLower.contains("warn")
-                        val isConnectionFail = msgLower.contains("dial") && msgLower.contains("failed") ||
-                            msgLower.contains("connect") && msgLower.contains("refused") ||
-                            msgLower.contains("timeout") ||
-                            msgLower.contains("connection reset") ||
-                            msgLower.contains("no route to host") ||
-                            msgLower.contains("network is unreachable") ||
-                            msgLower.contains("eof") ||
-                            msgLower.contains("i/o error")
-                        if (isError || isWarn || isConnectionFail) {
-                            BugLogHelper.log(
-                                if (isError) "GoCore-ERR" else if (isWarn) "GoCore-WARN" else "GoCore-CONN",
-                                msg.substringAfter("] ").trim().ifEmpty { msg }
-                            )
+                    if (messageList == null) return
+                    val repo = LogRepository.getInstance()
+                    runCatching {
+                        while (messageList.hasNext()) {
+                            val msg = messageList.next()?.message
+                            if (msg != null) {
+                                repo.addLog(msg)
+                                // 直接捕获所有 ERR/WARN 级别 Go 核心日志到 Bug 日志
+                                val msgLower = msg.lowercase()
+                                val isError = msgLower.contains("[err]") || msgLower.contains("error")
+                                val isWarn = msgLower.contains("[wrn]") || msgLower.contains("warn")
+                                val isConnectionFail = msgLower.contains("dial") && msgLower.contains("failed") ||
+                                    msgLower.contains("connect") && msgLower.contains("refused") ||
+                                    msgLower.contains("timeout") ||
+                                    msgLower.contains("connection reset") ||
+                                    msgLower.contains("no route to host") ||
+                                    msgLower.contains("network is unreachable") ||
+                                    msgLower.contains("eof") ||
+                                    msgLower.contains("i/o error")
+                                if (isError || isWarn || isConnectionFail) {
+                                    BugLogHelper.log(
+                                        if (isError) "GoCore-ERR" else if (isWarn) "GoCore-WARN" else "GoCore-CONN",
+                                        msg.substringAfter("] ").trim().ifEmpty { msg }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
 
         @Suppress("LongMethod")
         override fun writeStatus(message: StatusMessage?) {
