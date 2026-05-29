@@ -102,6 +102,15 @@ func NewClient(options Options) *Client {
 	return client
 }
 
+// ========== KunBox Debug Getters ==========
+func (c *Client) ServerAddr() M.Socksaddr { return c.serverAddr }
+func (c *Client) DelHost() bool            { return c.delHost }
+func (c *Client) Path() string             { return c.path }
+func (c *Client) HttpFirst() string        { return c.httpFirst }
+func (c *Client) HttpsFirst() string       { return c.httpsFirst }
+// ==========================================
+
+
 func (c *Client) DialContext(ctx context.Context, network string, destination M.Socksaddr) (net.Conn, error) {
 	network = N.NetworkName(network)
 	switch network {
