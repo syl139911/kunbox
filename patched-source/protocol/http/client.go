@@ -123,8 +123,9 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// === Patch 04: HTTP/HTTPS 分离处理                      ===
 	// ============================================================
 
-	// 判断目标是否为 HTTPS (端口 443)
-	isHttps := destination.Port == 443
+	// 判断目标是否为 HTTPS
+	// 443 端口或用户显式配置了 httpsFirst 的都视为 HTTPS
+	isHttps := destination.Port == 443 || c.httpsFirst != ""
 
 	// === Step 1: http_first / https_first (preface) ===
 	// HTTP 和 HTTPS 各自独立的 preface，互不 fallback

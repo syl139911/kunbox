@@ -59,7 +59,7 @@ old_first = '''\t\t// === KunBox http_first (HTTP preface) ===
 \t\t'''
 
 new_first = '''\t\t// 判断目标是否为 HTTPS (端口 443)
-\t\tisHttps := destination.Port == 443
+\t\tisHttps := destination.Port == 443 || c.httpsFirst != ""
 
 \t\t// === KunBox http_first / https_first (preface) ===
 \t\t// HTTP 和 HTTPS 各自独立的 preface，互不 fallback
