@@ -224,18 +224,25 @@ fun NodesScreen(
     if (showProtocolSelectDialog) {
         val protocolOptions = listOf(
             "VMess", "VLESS", "Trojan", "Shadowsocks", "Hysteria2", "Hysteria",
-            "TUIC", "Naive", "WireGuard", "SSH", "AnyTLS", "SOCKS", "HTTP"
+            "TUIC", "Naive", "WireGuard", "SSH", "AnyTLS", "SOCKS", "HTTP",
+            "✏️ " + context.getString(R.string.nodes_custom_json)
         )
         val protocolValues = listOf(
             "vmess", "vless", "trojan", "shadowsocks", "hysteria2", "hysteria",
-            "tuic", "naive", "wireguard", "ssh", "anytls", "socks", "http"
+            "tuic", "naive", "wireguard", "ssh", "anytls", "socks", "http",
+            "_custom_json"
         )
         SingleSelectDialog(
             title = stringResource(R.string.nodes_select_protocol),
             options = protocolOptions,
             selectedIndex = -1,
             onSelect = { index ->
-                navController.navigate(Screen.NodeCreate.createRoute(protocolValues[index]))
+                val protocol = protocolValues[index]
+                if (protocol == "_custom_json") {
+                    navController.navigate("node_json_editor/_new")
+                } else {
+                    navController.navigate(Screen.NodeCreate.createRoute(protocol))
+                }
                 showProtocolSelectDialog = false
             },
             onDismiss = { showProtocolSelectDialog = false }
