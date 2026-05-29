@@ -131,8 +131,8 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// [KunBox Debug] TLS 握手详情
 	if tlsConn, ok := conn.(*tls.Conn); ok {
 		state := tlsConn.ConnectionState()
-		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] TLS: version=%x cipher=%x server=%q\n",
-			state.Version, state.CipherSuite, state.ServerName)
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] TLS: version=%x cipher=%x server=%q verified=%v\n",
+			state.Version, state.CipherSuite, state.ServerName, state.VerifiedChains != nil)
 	}
 
 	// ============================================================
@@ -162,6 +162,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 			conn.Close()
 			return nil, err
 		}
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] httpFirst write OK: %d bytes\n", len(firstContent))
 		// conn 是原始 TCP 连接，Write 直接进内核 socket buffer，无需 flush
 	}
 
@@ -259,6 +260,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		conn.Close()
 		return nil, err
 	}
+	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT write OK: %d bytes\n", len(raw.String()))
 	// [KunBox Debug] 代理响应
 	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy response: %d %s\n", response.StatusCode, response.Status)
 	if response.StatusCode == http.StatusOK {
@@ -273,6 +275,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		}
 		return conn, nil
 	} else {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] tunnel FAILED: status=%d\n", response.StatusCode)
 		conn.Close()
 		switch response.StatusCode {
 		case http.StatusProxyAuthRequired:
