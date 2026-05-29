@@ -1,22 +1,16 @@
 package com.kunk.singbox.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.kunk.singbox.repository.BugLogEntry
 import com.kunk.singbox.repository.BugLogRepository
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 
 class BugLogViewModel : ViewModel() {
     private val repository = BugLogRepository.getInstance()
 
+    // 直接暴露 Repository 的 StateFlow，不用 stateIn 包装
+    // stateIn(WhileSubscribed) 在清空后上游重新发射时可能丢失更新
     val bugLogs: StateFlow<List<BugLogEntry>> = repository.bugLogs
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
 
     fun clearLogs() {
         repository.clearBugLogs()
