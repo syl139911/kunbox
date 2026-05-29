@@ -652,8 +652,28 @@ fun RuleSetsScreen(
                             )
                         }
                 ) {
+                    val outboundMode = ruleSet.outboundMode ?: RuleSetOutboundMode.DIRECT
+                    val outboundDetail = when (outboundMode) {
+                        RuleSetOutboundMode.NODE -> {
+                            val value = ruleSet.outboundValue
+                            if (!value.isNullOrBlank()) {
+                                val parts = value.split("::", limit = 2)
+                                val node = if (parts.size == 2) {
+                                    allNodes.find { it.sourceProfileId == parts[0] && it.name == parts[1] }
+                                } else {
+                                    allNodes.find { it.id == value } ?: allNodes.find { it.name == value }
+                                }
+                                node?.name
+                            } else null
+                        }
+                        RuleSetOutboundMode.PROFILE -> {
+                            profiles.find { it.id == ruleSet.outboundValue }?.name
+                        }
+                        else -> null
+                    }
                     RuleSetItem(
                         ruleSet = ruleSet,
+                        outboundDetail = outboundDetail,
                         isSelectionMode = isSelectionMode,
                         isSelected = selectedItems[ruleSet.id] ?: false,
                         isDownloading = downloadingRuleSets.contains(ruleSet.tag),
@@ -686,6 +706,7 @@ fun RuleSetsScreen(
 @Composable
 fun RuleSetItem(
     ruleSet: RuleSet,
+    outboundDetail: String? = null,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
     isDownloading: Boolean = false,
@@ -769,7 +790,11 @@ fun RuleSetItem(
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     val outboundMode = ruleSet.outboundMode ?: RuleSetOutboundMode.DIRECT
-                    val outboundText = stringResource(outboundMode.displayNameRes)
+                    val outboundLabel = if (outboundDetail != null && outboundMode in listOf(RuleSetOutboundMode.NODE, RuleSetOutboundMode.PROFILE)) {
+                        outboundDetail
+                    } else {
+                        stringResource(outboundMode.displayNameRes)
+                    }
                     val outboundColor = when (outboundMode) {
                         RuleSetOutboundMode.DIRECT -> Color(0xFF1565C0)
                         RuleSetOutboundMode.BLOCK -> Color(0xFFC62828)
@@ -782,7 +807,7 @@ fun RuleSetItem(
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            text = outboundText,
+                            text = outboundLabel,
                             color = Color.White,
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
