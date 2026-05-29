@@ -92,12 +92,11 @@ object GoCoreLogInterceptor {
         readerThread = Thread({
             Log.i(TAG, "Go core log interceptor started")
             try {
-                // 清空旧缓冲区，只捕获新日志
-                Runtime.getRuntime().exec(arrayOf("logcat", "-c")).waitFor()
-
+                // 不清空缓冲区（会丢失 VPN 启动期间的 Go 日志）
+                // 用 -T 0 跳过已有行，只读新增日志
                 val pid = android.os.Process.myPid()
                 val proc = Runtime.getRuntime().exec(arrayOf(
-                    "logcat", "--pid=$pid", "*:W"
+                    "logcat", "--pid=$pid", "-T", "0", "*:W"
                 ))
                 process = proc
 
