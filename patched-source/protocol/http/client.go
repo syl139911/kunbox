@@ -242,6 +242,8 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		conn.Close()
 		return nil, err
 	}
+	// [KunBox Debug] 代理响应
+	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy response: %d %s\n", response.StatusCode, response.Status)
 	if response.StatusCode == http.StatusOK {
 		if reader.Buffered() > 0 {
 			buffer := buf.NewSize(reader.Buffered())
