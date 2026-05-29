@@ -520,14 +520,14 @@ object BoxWrapperManager {
             }
             count
         } catch (e: NoSuchMethodException) {
-
-            Log.w(TAG, "closeIdleConnections not available in kernel: ${e.message}, fallback")
-            BugLogHelper.logWithTag("ERR", TAG, "closeIdleConnections not available in kernel: ${e.message}, fallback")
-            closeAllTrackedConnections()
+            // closeIdleConnections not exported by current kernel — return 0
+            // instead of falling back to closeAllTrackedConnections(), which has
+            // completely different semantics (closes ALL connections, not just idle).
+            Log.w(TAG, "closeIdleConnections not available in kernel: ${e.message}")
+            0
         } catch (e: Exception) {
-            Log.w(TAG, "closeIdleConnections failed: ${e.message}, fallback to closeAllTrackedConnections")
-            BugLogHelper.logWithTag("ERR", TAG, "closeIdleConnections failed: ${e.message}, fallback to closeAllTrackedConnections")
-            closeAllTrackedConnections()
+            Log.w(TAG, "closeIdleConnections failed: ${e.message}")
+            0
         }
     }
 

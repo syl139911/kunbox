@@ -136,7 +136,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		firstContent = c.httpFirst
 	}
 	if firstContent != "" {
-		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] http_first >>> %q\n", firstContent)
+		// http_first write (debug logging removed for production)
 		_, err = conn.Write([]byte(firstContent))
 		if err != nil {
 			conn.Close()
@@ -210,8 +210,6 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// 结束 header
 	raw.WriteString("\r\n")
 
-	// [KunBox Debug] 打印完整 CONNECT 请求
-	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT >>> %s", raw.String())
 
 	// 一次性写入整条 CONNECT 请求
 	_, err = conn.Write([]byte(raw.String()))
