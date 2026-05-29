@@ -902,7 +902,6 @@ fun RuleSetItem(
             }
         }
     }
-}
 
 @Composable
 fun RuleSetEditorDialog(
