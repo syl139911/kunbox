@@ -7,7 +7,7 @@
 [![Sing-box](https://img.shields.io/badge/Core-Sing--box-success.svg?style=flat)](https://github.com/SagerNet/sing-box)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)](LICENSE)
 [![Telegram](https://img.shields.io/badge/Telegram-Chat-blue?style=flat&logo=telegram)](https://t.me/+978J0WfmJLk4ZmQ1)
-[![Downloads](https://img.shields.io/github/downloads/syl139911/kunbox/total.svg?style=flat&logo=github)](https://github.com/syl139911/kunbox/releases)
+[![Downloads](https://img.shields.io/github/downloads/roseforljh/KunBox/total.svg?style=flat&logo=github)](https://github.com/roseforljh/KunBox/releases)
 
 > **OLED Hyper-Minimalist**
 >
@@ -26,7 +26,7 @@
 
 ### Download from GitHub Releases
 
-Visit the [Releases page](https://github.com/syl139911/kunbox/releases) to download the latest APK file.
+Visit the [Releases page](https://github.com/roseforljh/KunBox/releases) to download the latest APK file.
 
 > **Note**: Release assets include `arm64-v8a` and `armeabi-v7a` builds.
 
@@ -187,7 +187,7 @@ SingBoxService -> CoreManager -> BoxWrapperManager -> libbox.aar
 ### Clone Project
 
 ```bash
-git clone https://github.com/syl139911/kunbox.git
+git clone https://github.com/roseforljh/KunBox.git
 cd KunBox
 ```
 

@@ -176,3 +176,48 @@ jobs:
         with:
           name: libbox-aar
           path: app/libs/libbox.aar
+
+      - name: Prepare Keystore
+        env:
+          KS_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_BASE64" ]; then
+            echo "$KS_BASE64" | base64 -d > ${{ github.workspace }}/release.keystore
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=$KS_PASS" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$KS_ALIAS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$KS_KEY_PASS" >> $GITHUB_ENV
+          else
+            echo "No signing secrets found, generating temporary keystore..."
+            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore \
+              -alias temp -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass temp123 -keypass temp123 \
+              -dname "CN=KunBox, OU=Dev, O=KunBox, L=SH, ST=SH, C=CN"
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=temp123" >> $GITHUB_ENV
+            echo "KEY_ALIAS=temp" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=temp123" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Normalize gradlew
+        run: |
+          sed -i 's/\r$//' ./gradlew
+          chmod +x ./gradlew
+
+      - name: Build Release APK (arm64-v8a)
+        run: |
+          mkdir -p dist
+          ./gradlew assembleRelease -PabiOnly=arm64-v8a
+          find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kunbox-go-release-apk
+          path: dist/*.apk

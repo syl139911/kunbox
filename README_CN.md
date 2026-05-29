@@ -19,7 +19,7 @@
 
 ### 从 GitHub Releases 下载
 
-前往 [Releases 页面](https://github.com/syl139911/kunbox/releases) 下载最新版本的 APK 文件。
+前往 [Releases 页面](https://github.com/roseforljh/KunBox/releases) 下载最新版本的 APK 文件。
 
 > **提示**: 发布产物包含 `arm64-v8a` 与 `armeabi-v7a` 两个架构版本。
 
@@ -180,7 +180,7 @@ SingBoxService -> CoreManager -> BoxWrapperManager -> libbox.aar
 ### 克隆项目
 
 ```bash
-git clone https://github.com/syl139911/kunbox.git
+git clone https://github.com/roseforljh/KunBox.git
 cd KunBox
 ```
 
