@@ -191,11 +191,13 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		fmt.Fprintf(&raw, "Host: %s\r\n", destination.String())
 	}
 
+	// User-Agent（默认 Go-http-client/1.1，用户可通过自定义 headers 覆盖）
+	fmt.Fprintf(&raw, "User-Agent: Go-http-client/1.1\r\n")
+
 	// === Step 2.5: 构建 del headers 集合 ===
 	// 根据 HTTP/HTTPS 选择不同的 del 列表，合并为统一的 skip 集合
 	delHeaders := make(map[string]bool)
 	// 内置 skip (始终跳过)
-	delHeaders["user-agent"] = true
 	delHeaders["proxy-connection"] = true
 	delHeaders["host"] = true // host 已在上方单独处理
 	// 用户配置的 del

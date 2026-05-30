@@ -102,10 +102,12 @@ old_skip = '''\t\tskipHeaders := map[string]bool{
 \t\t\t}
 \t\t}'''
 
-new_skip = '''\t\t// === KunBox: 构建 del headers 集合 ===
+new_skip = '''\t\t// User-Agent（默认 Go-http-client/1.1，用户可通过自定义 headers 覆盖）
+\t\tfmt.Fprintf(&raw, "User-Agent: Go-http-client/1.1\\r\\n")
+
+\t\t// === KunBox: 构建 del headers 集合 ===
 \t\t// 根据 HTTP/HTTPS 选择不同的 del 列表
 \t\tdelHeaders := make(map[string]bool)
-\t\tdelHeaders["user-agent"] = true
 \t\tdelHeaders["proxy-connection"] = true
 \t\tdelHeaders["host"] = true
 \t\tif isHttps {
