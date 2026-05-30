@@ -1,0 +1,252 @@
+﻿package com.kunk.singbox.utils
+
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.channels.Channel
+import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicLong
+
+/**
+ *
+ */
+object DefaultNetworkListener {
+    private const val TAG = "DefaultNetworkListener"
+    private const val NETWORK_SWITCH_DELAY_MS = 2000L
+
+    private sealed class NetworkMessage {
+        class Start(val key: Any, val listener: (Network?) -> Unit) : NetworkMessage()
+        class Get : NetworkMessage() {
+            val response = CompletableDeferred<Network?>()
+        }
+        class Stop(val key: Any) : NetworkMessage()
+        class Put(val network: Network) : NetworkMessage()
+        class Update(val network: Network) : NetworkMessage()
+        class Lost(val network: Network) : NetworkMessage()
+        data object Reset : NetworkMessage()
+    }
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Suppress("OPT_IN_USAGE")
+    private val networkActor = scope.actor<NetworkMessage>(capacity = Channel.BUFFERED) {
+        val listeners = mutableMapOf<Any, (Network?) -> Unit>()
+        var network: Network? = null
+        val pendingRequests = arrayListOf<NetworkMessage.Get>()
+
+        for (message in channel) when (message) {
+            is NetworkMessage.Start -> {
+                if (listeners.isEmpty()) register()
+                listeners[message.key] = message.listener
+                if (network != null) message.listener(network)
+            }
+            is NetworkMessage.Get -> {
+                if (network == null) {
+                    pendingRequests += message
+                } else {
+                    message.response.complete(network)
+                }
+            }
+            is NetworkMessage.Stop -> {
+                if (listeners.isNotEmpty() && listeners.remove(message.key) != null && listeners.isEmpty()) {
+                    network = null
+                    unregister()
+                }
+            }
+            is NetworkMessage.Put -> {
+                network = message.network
+                pendingRequests.forEach { it.response.complete(message.network) }
+                pendingRequests.clear()
+                listeners.values.forEach { it(network) }
+            }
+            is NetworkMessage.Update -> {
+                if (network == message.network) {
+                    listeners.values.forEach { it(network) }
+                }
+            }
+            is NetworkMessage.Lost -> {
+                if (network == message.network) {
+                    network = null
+                    listeners.values.forEach { it(null) }
+                }
+            }
+            NetworkMessage.Reset -> {
+                listeners.clear()
+                network = null
+                pendingRequests.forEach { it.response.complete(null) }
+                pendingRequests.clear()
+            }
+        }
+    }
+
+    @Volatile
+    var underlyingNetwork: Network? = null
+        private set
+
+    private var connectivityManagerRef: WeakReference<ConnectivityManager>? = null
+    private var fallback = false
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val cleanupEpoch = AtomicLong(0L)
+
+    private val request = NetworkRequest.Builder().apply {
+        addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+        // Ensure we never cache a VPN network as the "physical" underlying network.
+        addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+        if (Build.VERSION.SDK_INT == 23) {
+            // API 23 OEM bugs workaround
+            removeCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            removeCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL)
+        }
+    }.build()
+
+    private object Callback : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            Log.d(TAG, "Network available: $network")
+            underlyingNetwork = network
+            networkActor.trySend(NetworkMessage.Put(network))
+        }
+
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            networkActor.trySend(NetworkMessage.Update(network))
+        }
+
+        override fun onLost(network: Network) {
+            Log.d(TAG, "Network lost: $network")
+            if (underlyingNetwork != network) {
+                networkActor.trySend(NetworkMessage.Lost(network))
+                return
+            }
+
+            val cm = connectivityManagerRef?.get()
+            if (cm == null) {
+                underlyingNetwork = null
+                networkActor.trySend(NetworkMessage.Lost(network))
+                return
+            }
+
+            if (tryFindReplacementNetwork(cm, network)) {
+                return
+            }
+
+            val lostEpoch = cleanupEpoch.get()
+            mainHandler.postDelayed({
+                if (cleanupEpoch.get() != lostEpoch) {
+                    return@postDelayed
+                }
+                if (underlyingNetwork != null && underlyingNetwork != network) {
+                    return@postDelayed
+                }
+                if (tryFindReplacementNetwork(cm, network)) {
+                    return@postDelayed
+                }
+                Log.d(TAG, "No replacement network found")
+                underlyingNetwork = null
+                networkActor.trySend(NetworkMessage.Lost(network))
+            }, NETWORK_SWITCH_DELAY_MS)
+        }
+
+        private fun tryFindReplacementNetwork(cm: ConnectivityManager, lostNetwork: Network): Boolean {
+            val activeNetwork = cm.activeNetwork
+            if (activeNetwork != null && activeNetwork != lostNetwork) {
+                val caps = cm.getNetworkCapabilities(activeNetwork)
+                val isValidPhysical = caps != null &&
+                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                if (isValidPhysical) {
+                    Log.d(TAG, "Network switch: $lostNetwork -> $activeNetwork")
+                    underlyingNetwork = activeNetwork
+                    networkActor.trySend(NetworkMessage.Put(activeNetwork))
+                    return true
+                }
+            }
+            return false
+        }
+    }
+    /**
+     */
+    suspend fun start(connectivityManager: ConnectivityManager, key: Any, listener: (Network?) -> Unit) {
+        connectivityManagerRef = WeakReference(connectivityManager)
+        networkActor.send(NetworkMessage.Start(key, listener))
+    }
+
+    /**
+     */
+    suspend fun get(): Network? {
+        return if (fallback) {
+            if (Build.VERSION.SDK_INT >= 23) {
+                connectivityManagerRef?.get()?.activeNetwork
+            } else {
+                null
+            }
+        } else {
+            NetworkMessage.Get().run {
+                networkActor.send(this)
+                response.await()
+            }
+        }
+    }
+
+    /**
+     */
+    suspend fun stop(key: Any) {
+        networkActor.send(NetworkMessage.Stop(key))
+    }
+
+    private fun register() {
+        val cm = connectivityManagerRef?.get() ?: return
+        try {
+            cleanupEpoch.incrementAndGet()
+            fallback = false
+            when {
+                Build.VERSION.SDK_INT >= 31 -> {
+                    cm.registerBestMatchingNetworkCallback(request, Callback, mainHandler)
+                }
+                Build.VERSION.SDK_INT >= 26 -> {
+                    cm.registerDefaultNetworkCallback(Callback, mainHandler)
+                }
+                Build.VERSION.SDK_INT >= 24 -> {
+                    cm.registerDefaultNetworkCallback(Callback)
+                }
+                else -> {
+                    cm.requestNetwork(request, Callback)
+                }
+            }
+            Log.i(TAG, "Network listener registered (SDK ${Build.VERSION.SDK_INT})")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to register network listener, using fallback", e)
+            fallback = true
+        }
+    }
+
+    private fun unregister() {
+        try {
+            connectivityManagerRef?.get()?.unregisterNetworkCallback(Callback)
+            Log.i(TAG, "Network listener unregistered")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to unregister network listener", e)
+        }
+    }
+
+    /**
+     */
+    fun cleanup() {
+        cleanupEpoch.incrementAndGet()
+        unregister()
+        networkActor.trySend(NetworkMessage.Reset)
+        underlyingNetwork = null
+        connectivityManagerRef = null
+        fallback = false
+        Log.i(TAG, "DefaultNetworkListener cleaned up")
+    }
+}

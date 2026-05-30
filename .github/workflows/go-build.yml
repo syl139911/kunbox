@@ -1,0 +1,226 @@
+name: Go Core Build (libbox.aar)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sing_box_tag:
+        description: 'sing-box upstream tag (e.g. v1.13.11)'
+        required: false
+        default: 'v1.13.11'
+
+permissions:
+  contents: write
+
+jobs:
+  build-libbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;29.0.13113456"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/29.0.13113456" >> $GITHUB_ENV
+
+      - name: Install gomobile & gobind (sagernet fork)
+        run: |
+          go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.12
+          go install github.com/sagernet/gomobile/cmd/gobind@v0.1.12
+          gomobile init
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Clone sing-box upstream
+        run: |
+          TAG="${{ github.event.inputs.sing_box_tag || 'v1.13.11' }}"
+          echo "Target sing-box tag: $TAG"
+          git clone --branch "$TAG" --depth 1 \
+            https://github.com/SagerNet/sing-box.git upstream-sing-box
+
+      - name: Inject KunBox custom libbox methods
+        working-directory: upstream-sing-box
+        run: |
+          cp ../core/kunbox_custom.go experimental/libbox/kunbox_custom.go
+          echo "=== KunBox custom libbox methods injected ==="
+          cat experimental/libbox/kunbox_custom.go
+
+      - name: Apply KunBox option & outbound patches
+        working-directory: upstream-sing-box
+        run: |
+          bash ../core/patches/01-options.sh .
+          bash ../core/patches/02-outbound.sh .
+          bash ../core/patches/05-httpfirst-option.sh .
+          bash ../core/patches/06-httpfirst-outbound.sh .
+          bash ../core/patches/08-httpsfirst-option.sh .
+          bash ../core/patches/09-httpsfirst-outbound.sh .
+          echo "=== All option & outbound patches applied ==="
+
+      - name: Patch sing dependency via replace directive
+        working-directory: upstream-sing-box
+        run: |
+          # Get the sing version from go.mod
+          SING_VERSION=$(grep 'github.com/sagernet/sing ' go.mod | awk '{print $2}')
+          echo "sing version: $SING_VERSION"
+
+          # Download the sing module to cache
+          go mod download github.com/sagernet/sing@${SING_VERSION}
+
+          # Find the cached module
+          SING_CACHE="$(go env GOMODCACHE)/github.com/sagernet/sing@${SING_VERSION}"
+          echo "sing cache path: $SING_CACHE"
+
+          # Copy sing to a local directory for patching
+          cp -r "$SING_CACHE" ../local-sing
+          chmod -R u+w ../local-sing
+
+          # Apply 03-client.sh (raw TCP CONNECT)
+          CLIENT_GO="../local-sing/protocol/http/client.go"
+          bash ../core/patches/03-client.sh "$CLIENT_GO"
+
+          # Apply 07-httpfirst-client.sh (http_first write)
+          bash ../core/patches/07-httpfirst-client.sh "$CLIENT_GO"
+
+          # Apply 10-httpsfirst-client.sh (https_first + del headers)
+          bash ../core/patches/10-httpsfirst-client.sh "$CLIENT_GO"
+
+          # Apply 11-debug-logging.sh (error logging on all failure paths)
+          bash ../core/patches/11-debug-logging.sh "$CLIENT_GO"
+
+          # Add replace directive to go.mod
+          echo "" >> go.mod
+          echo "replace github.com/sagernet/sing => ../local-sing" >> go.mod
+          echo "=== go.mod replace added ==="
+          tail -3 go.mod
+
+      - name: Add gomobile dependencies to module
+        working-directory: upstream-sing-box
+        run: |
+          go get -tool github.com/sagernet/gomobile/cmd/gobind
+          go get github.com/sagernet/gomobile
+          echo "=== go.mod updated ==="
+
+      - name: Build libbox.aar
+        run: |
+          cd upstream-sing-box
+          export ANDROID_HOME=$ANDROID_HOME
+          export ANDROID_NDK_HOME=$ANDROID_NDK_HOME
+
+          echo "=== Building libbox.aar with gomobile ==="
+          gomobile bind -v -androidapi 24 -javapkg=io.nekohasekai \
+            -tags "with_clash_api,with_gvisor" \
+            -target android -libname=box \
+            -trimpath -ldflags="-s -w -checklinkname=0" \
+            -o ../app/libs/libbox.aar \
+            ./experimental/libbox
+
+          cd ..
+          echo "=== libbox.aar built ==="
+          ls -lh app/libs/libbox.aar
+
+      - name: Verify libbox.aar exports
+        run: |
+          echo "Checking libbox.aar..."
+          AAR="app/libs/libbox.aar"
+          if [ ! -f "$AAR" ]; then
+            echo "ERROR: libbox.aar not found!"
+            exit 1
+          fi
+          SIZE=$(stat -c%s "$AAR")
+          echo "libbox.aar size: $SIZE bytes ($(( SIZE / 1048576 )) MB)"
+          if [ "$SIZE" -lt 5000000 ]; then
+            echo "ERROR: libbox.aar too small (< 5MB), build likely failed"
+            exit 1
+          fi
+          if ! unzip -l "$AAR" | grep -q "libbox\.so"; then
+            echo "ERROR: libbox.aar does not contain libbox.so"
+            exit 1
+          fi
+          ABIS=$(unzip -l "$AAR" | grep -oP 'jni/\K[^/]+(?=/libbox\.so)' | sort)
+          echo "Found ABIs: $ABIS"
+          if [ -z "$ABIS" ]; then
+            echo "ERROR: No ABI-specific libbox.so found"
+            exit 1
+          fi
+          echo "OK: libbox.aar verified"
+
+      - name: Commit libbox.aar to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/libs/libbox.aar
+          if git diff --cached --quiet; then
+            echo "libbox.aar unchanged, skipping commit"
+          else
+            SIZE=$(stat -c%s app/libs/libbox.aar)
+            MB=$((SIZE / 1048576))
+            git commit -m "chore: update libbox.aar (${MB}MB) [skip ci]"
+            git push
+            echo "✅ libbox.aar committed (${MB}MB)"
+          fi
+
+      - name: Upload libbox.aar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libbox-aar
+          path: app/libs/libbox.aar
+
+      - name: Prepare Keystore
+        env:
+          KS_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_BASE64" ]; then
+            echo "$KS_BASE64" | base64 -d > ${{ github.workspace }}/release.keystore
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=$KS_PASS" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$KS_ALIAS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$KS_KEY_PASS" >> $GITHUB_ENV
+          else
+            echo "No signing secrets found, generating temporary keystore..."
+            keytool -genkeypair -v -keystore ${{ github.workspace }}/release.keystore \
+              -alias temp -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass temp123 -keypass temp123 \
+              -dname "CN=KunBox, OU=Dev, O=KunBox, L=SH, ST=SH, C=CN"
+            echo "KEYSTORE_PATH=${{ github.workspace }}/release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=temp123" >> $GITHUB_ENV
+            echo "KEY_ALIAS=temp" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=temp123" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Normalize gradlew
+        run: |
+          sed -i 's/\r$//' ./gradlew
+          chmod +x ./gradlew
+
+      - name: Build Release APK (arm64-v8a)
+        run: |
+          mkdir -p dist
+          ./gradlew assembleRelease -PabiOnly=arm64-v8a
+          find app/build/outputs/apk/release -type f -name "*.apk" -exec cp {} dist/ \;
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kunbox-go-release-apk
+          path: dist/*.apk
