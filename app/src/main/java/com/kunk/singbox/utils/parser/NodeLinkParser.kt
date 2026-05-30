@@ -1132,6 +1132,9 @@ class NodeLinkParser(private val gson: Gson) {
 
             val headers = if (hostHeader != null) mapOf("Host" to hostHeader) else null
 
+            // 端口 443 自动启用 TLS（http:// 但走 443 端口的代理通常需要 TLS）
+            val effectiveTls = useTls || port == 443
+
             return Outbound(
                 type = "http",
                 tag = name,
@@ -1142,7 +1145,7 @@ class NodeLinkParser(private val gson: Gson) {
                 path = path,
                 headers = headers,
                 delHost = delHost.takeIf { it },
-                tls = if (useTls) {
+                tls = if (effectiveTls) {
                     TlsConfig(
                         enabled = true,
                         serverName = defaultTlsServerName(
