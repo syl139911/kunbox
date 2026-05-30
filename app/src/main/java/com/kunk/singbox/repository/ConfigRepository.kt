@@ -1900,8 +1900,38 @@ class ConfigRepository(private val context: Context) {
         coroutineScope {
             if (infos.isEmpty()) return@coroutineScope
 
+            // 先尝试通过真实隧道测试（与 regular 节点一致）
+            // 隧道通 → 用真实延迟；隧道不通 → 报超时，不用 TCP 握手延迟
+            val tunnelTestedTags = ConcurrentHashMap.newKeySet<String>()
+
+            if (VpnStateStore.getActive()) {
+                // VPN 运行中，通过 SafeLatencyTester 做 URL test
+                val tagToInfo = infos.associateBy { it.outbound.tag }
+                val outbounds = infos.map { it.outbound }
+                singBoxCore.testOutboundsLatency(outbounds) { tag, latency ->
+                    val info = tagToInfo[tag] ?: return@testOutboundsLatency
+                    tunnelTestedTags.add(tag)
+                    applyLatencyResult(info, latency, onNodeComplete)
+                }
+            } else {
+                // VPN 未运行，通过临时 service 测试
+                val preparedInfoPairs = infos.map { info ->
+                    info to prepareOfflineProbeOutbound(info.outbound)
+                }
+                val infoByTag = preparedInfoPairs.associate { (info, outbound) ->
+                    outbound.tag to Pair(info, outbound)
+                }
+
+                singBoxCore.testOutboundsLatency(preparedInfoPairs.map { it.second }) { tag, latency ->
+                    val pair = infoByTag[tag] ?: return@testOutboundsLatency
+                    tunnelTestedTags.add(tag)
+                    applyLatencyResult(pair.first, latency, onNodeComplete)
+                }
+            }
+
+            // 对隧道测试失败的节点，回退到 TCP ping
             val semaphore = Semaphore(concurrency)
-            infos.map { info ->
+            infos.filter { it.outbound.tag !in tunnelTestedTags }.map { info ->
                 async {
                     semaphore.withPermit {
                         val latency = tcpLatencyFallback(info.outbound)
