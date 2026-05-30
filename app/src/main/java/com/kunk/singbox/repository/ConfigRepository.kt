@@ -1732,14 +1732,6 @@ class ConfigRepository(private val context: Context) {
         return TcpPing.connect(host = host, port = port, timeout = timeout)
     }
 
-    private suspend fun ipv6TcpLatencyFallback(outbound: Outbound): Long {
-        val host = outbound.server?.trim().orEmpty()
-        if (host.isBlank()) return -1L
-        val port = outbound.serverPort ?: 443
-        val timeout = settingsRepository.settings.first().latencyTestTimeout
-        return TcpPing.connect(host = host, port = port, timeout = timeout)
-    }
-
     private suspend fun testNodeLatencyViaRunningService(nodeTag: String): Long {
         val timeoutMs = settingsRepository.settings.first().latencyTestTimeout
         SingBoxRemote.ensureBound(context)
@@ -1879,12 +1871,7 @@ class ConfigRepository(private val context: Context) {
                         val latency = initialResults[probeOutbound.tag] ?: -1L
                         if (latency > 0L) return@withPermit
 
-                        val finalLatency = if (latency > 0L) {
-                            latency
-                        } else {
-                            val fallback = ipv6TcpLatencyFallback(probeOutbound)
-                            if (fallback > 0L) fallback else resolveIpv6OnlyStatus(probeOutbound, latency)
-                        }
+                        val finalLatency = resolveIpv6OnlyStatus(probeOutbound, latency)
                         applyLatencyResult(info, finalLatency, onNodeComplete)
                     }
                 }
@@ -3435,16 +3422,7 @@ class ConfigRepository(private val context: Context) {
                         } else {
                             singBoxCore.testOutboundLatency(probeOutbound, allOutbounds)
                         }
-                        val finalLatency = if (latency > 0) {
-                            latency
-                        } else {
-                            val fallback = ipv6TcpLatencyFallback(probeOutbound)
-                            if (fallback > 0) {
-                                fallback
-                            } else {
-                                resolveIpv6OnlyStatus(probeOutbound, latency)
-                            }
-                        }
+                        val finalLatency = resolveIpv6OnlyStatus(probeOutbound, latency)
 
                         _nodes.update { list ->
                             list.map {
