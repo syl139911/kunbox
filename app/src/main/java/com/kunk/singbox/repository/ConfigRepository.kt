@@ -5305,12 +5305,16 @@ class ConfigRepository(private val context: Context) {
         writeConfigFileOrThrow(profileId, newConfig)
         scope.launch {
             val newNodes = extractNodesFromConfig(newConfig, profileId)
-            profileNodes[profileId] = newNodes
+            val nodesWithLatency = newNodes.map { node ->
+                val latency = savedNodeLatencies[node.id]
+                if (latency != null) node.copy(latencyMs = latency) else node
+            }
+            profileNodes[profileId] = nodesWithLatency
             updateAllNodesAndGroups()
             if (_activeProfileId.value == profileId) {
-                _nodes.value = newNodes
+                _nodes.value = nodesWithLatency
                 if (_activeNodeId.value == nodeId) {
-                    _activeNodeId.value = newNodes.firstOrNull()?.id
+                    _activeNodeId.value = nodesWithLatency.firstOrNull()?.id
                 }
             }
 
