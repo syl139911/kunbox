@@ -4,9 +4,9 @@ import android.os.Build
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tencent.mmkv.MMKV
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.text.SimpleDateFormat
@@ -21,8 +21,8 @@ class BugLogRepository private constructor() {
     }
     private val gson = Gson()
 
-    private val _bugLogs = MutableStateFlow<List<BugLogEntry>>(emptyList())
-    val bugLogs: StateFlow<List<BugLogEntry>> = _bugLogs.asStateFlow()
+    private val _bugLogs = MutableSharedFlow<List<BugLogEntry>>(replay = 1)
+    val bugLogs: SharedFlow<List<BugLogEntry>> = _bugLogs.asSharedFlow()
 
     private val logs = CopyOnWriteArrayList<BugLogEntry>()
     private val maxLogSize = 200
@@ -50,7 +50,7 @@ class BugLogRepository private constructor() {
             logs.removeAt(0)
         }
 
-        _bugLogs.value = logs.toList()
+        _bugLogs.tryEmit(logs.toList())
         // Persist to disk
         saveToDisk()
     }
@@ -76,13 +76,13 @@ class BugLogRepository private constructor() {
         while (logs.size > maxLogSize) {
             logs.removeAt(0)
         }
-        _bugLogs.value = logs.toList()
+        _bugLogs.tryEmit(logs.toList())
         saveToDisk()
     }
 
     fun clearBugLogs() {
         logs.clear()
-        _bugLogs.value = emptyList()
+        _bugLogs.tryEmit(emptyList())
         mmkv.remove("bug_logs_json")
     }
 
@@ -132,7 +132,7 @@ class BugLogRepository private constructor() {
                 val loaded: List<BugLogEntry> = gson.fromJson(json, type) ?: emptyList()
                 logs.clear()
                 logs.addAll(loaded.takeLast(maxLogSize))
-                _bugLogs.value = logs.toList()
+                _bugLogs.tryEmit(logs.toList())
             }
         } catch (_: Exception) {
             // Corrupted data, start fresh
