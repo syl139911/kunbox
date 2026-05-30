@@ -1882,8 +1882,8 @@ class ConfigRepository(private val context: Context) {
                         val finalLatency = if (latency > 0L) {
                             latency
                         } else {
-                            val fallback = ipv6TcpLatencyFallback(probeOutbound)
-                            if (fallback > 0L) fallback else resolveIpv6OnlyStatus(probeOutbound, latency)
+                            // 隧道测试失败时，不再用 TCP 插握手延迟冒充隧道延迟
+                            resolveIpv6OnlyStatus(probeOutbound, latency)
                         }
                         applyLatencyResult(info, finalLatency, onNodeComplete)
                     }
@@ -1929,13 +1929,13 @@ class ConfigRepository(private val context: Context) {
                 }
             }
 
-            // 对隧道测试失败的节点，回退到 TCP ping
+            // 对隧道测试失败的节点，标记为超时，不再用 TCP 插握手延迟冒充隧道延迟
             val semaphore = Semaphore(concurrency)
             infos.filter { it.outbound.tag !in tunnelTestedTags }.map { info ->
                 async {
                     semaphore.withPermit {
-                        val latency = tcpLatencyFallback(info.outbound)
-                        applyLatencyResult(info, latency, onNodeComplete)
+                        // 隧道不通就报超时，不要用 TCP 握手时间误导用户
+                        applyLatencyResult(info, -1L, onNodeComplete)
                     }
                 }
             }.awaitAll()
@@ -3438,12 +3438,10 @@ class ConfigRepository(private val context: Context) {
                         val finalLatency = if (latency > 0) {
                             latency
                         } else {
-                            val fallback = ipv6TcpLatencyFallback(probeOutbound)
-                            if (fallback > 0) {
-                                fallback
-                            } else {
-                                resolveIpv6OnlyStatus(probeOutbound, latency)
-                            }
+                            // 隧道测试失败时，不再用 TCP 插握手延迟冒充隧道延迟
+                            // TCP ping 只能证明代理服务器 TCP 可达，不能证明隧道可用
+                            // 显示超时/失败，让用户知道隧道不通
+                            resolveIpv6OnlyStatus(probeOutbound, latency)
                         }
 
                         _nodes.update { list ->
