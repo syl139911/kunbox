@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.2](https://github.com/syl139911/kunbox/compare/v2.13.1...v2.13.2) (2026-05-30)
+
+
+### Bug Fixes
+
+* 隧道测试失败时不再用 TCP 插延迟冒充隧道延迟 ([d7adfef](https://github.com/syl139911/kunbox/commit/d7adfef09df82fd826d36e9db5b6262dc2301cf3))
+
 ## [2.13.1](https://github.com/roseforljh/KunBox/compare/v2.13.0...v2.13.1) (2026-04-24)
 
 
