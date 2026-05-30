@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.2](https://github.com/syl139911/kunbox/compare/v2.13.1...v2.13.2) (2026-05-30)
+
+
+### Bug Fixes
+
+* 删除节点后保留其他节点的延迟数据，从 savedNodeLatencies 恢复 ([ceedbfe](https://github.com/syl139911/kunbox/commit/ceedbfe976fa05314a0c2526c6cd8dadda772009))
+* 隧道测试失败时不再用 TCP 插延迟冒充隧道延迟 ([2474552](https://github.com/syl139911/kunbox/commit/24745523c5b570c4613d3014e91244c63b3e92c1))
+
 ## [2.13.1](https://github.com/roseforljh/KunBox/compare/v2.13.0...v2.13.1) (2026-04-24)
 
 
