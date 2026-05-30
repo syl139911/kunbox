@@ -1096,16 +1096,24 @@ class SingBoxService : VpnService() {
                 is com.kunk.singbox.service.manager.SelectorManager.SwitchResult.Success -> {
                     L.result("HotSwitch", true, "Switched to $nodeTag via ${result.method}")
                     BugLogHelper.setNodeContext(name = nodeTag)
+                    BugLogHelper.logVpnSwitching(fromNode = null, toNode = nodeTag)
                     requestNotificationUpdate(force = true)
                     return true
                 }
                 is com.kunk.singbox.service.manager.SelectorManager.SwitchResult.NeedRestart -> {
                     L.warn("HotSwitch", "Need restart: ${result.reason}")
-                    // 需要完整重启，返回 false 让调用者处理
+                    BugLogHelper.reportVpnError(
+                        phase = BugLogHelper.PHASE_HOT_SWITCH,
+                        message = "Need restart: ${result.reason}"
+                    )
                     return false
                 }
                 is com.kunk.singbox.service.manager.SelectorManager.SwitchResult.Failed -> {
                     L.error("HotSwitch", "Failed: ${result.error}")
+                    BugLogHelper.reportVpnError(
+                        phase = BugLogHelper.PHASE_HOT_SWITCH,
+                        message = "Switch failed: ${result.error}"
+                    )
                     return false
                 }
             }
