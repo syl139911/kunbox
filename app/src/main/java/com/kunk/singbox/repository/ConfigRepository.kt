@@ -4327,8 +4327,8 @@ class ConfigRepository(private val context: Context) {
         val bootstrapV4Tag = "dns-bootstrap-v4"
         val bootstrapV6Tag = "dns-bootstrap-v6"
 
-        // sing-box 1.13+: 不设 detour 即为直连，显式设 detour="direct" 会报
-        // "detour to an empty direct outbound makes no sense"
+        // sing-box 1.13+: bootstrap DNS 不设 detour（用 IP 地址，不需要绕代理）
+        // 注意：remote DNS 必须设 detour="direct"，否则 DNS 查询走 HTTP 代理会失败（不支持 UDP）
         dnsServers.add(
             DnsServer(
                 tag = bootstrapV4Tag,
@@ -4368,6 +4368,7 @@ class ConfigRepository(private val context: Context) {
         val remoteServer = buildDnsServer(
             address = remoteDnsAddr,
             tag = "remote",
+            detour = "direct",
             domainStrategy = resolveDnsStrategy(settings.remoteDnsStrategy, settings.ipVersionMode),
             domainResolver = remoteResolver
         )
