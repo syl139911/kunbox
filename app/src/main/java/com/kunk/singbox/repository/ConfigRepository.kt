@@ -4398,7 +4398,6 @@ class ConfigRepository(private val context: Context) {
         val remoteServer = buildDnsServer(
             address = remoteDnsAddr,
             tag = "remote",
-            detour = "direct",
             domainStrategy = resolveDnsStrategy(settings.remoteDnsStrategy, settings.ipVersionMode),
             domainResolver = remoteResolver
         )
