@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.13.3](https://github.com/syl139911/kunbox/compare/v2.13.2...v2.13.3) (2026-05-30)
+
+
+### Bug Fixes
+
+* bug 日志清空后新日志不实时刷新到 UI ([2a97679](https://github.com/syl139911/kunbox/commit/2a97679d8dbee9806071ae96e848fe5a560e4a26))
+* VPN 切换时补全 bug 日志（成功/失败/需重启三种状态） ([91430cf](https://github.com/syl139911/kunbox/commit/91430cfba87303a99f59aea3257e1d876026220c))
+* 更新 DNS detour 注释，与 1a7eeef 代码变更保持一致 ([edf3ae5](https://github.com/syl139911/kunbox/commit/edf3ae5df0d11b246b245af76bdc53a1b7a7bae8))
+* 移除 ipv6TcpLatencyFallback，隧道不通就报超时不冒充延迟 ([2a8d6a0](https://github.com/syl139911/kunbox/commit/2a8d6a0bdfc2890cb611deaaeb4217b979f8b626))
+* 移除 remote DNS 的 detour="direct"，修复 sing-box 1.13+ 启动崩溃 ([1a7eeef](https://github.com/syl139911/kunbox/commit/1a7eeef44aef562c2b4c7c5810eb4d3dfad56edc))
+
 ## [2.13.2](https://github.com/syl139911/kunbox/compare/v2.13.1...v2.13.2) (2026-05-30)
 
 
