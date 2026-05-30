@@ -1,0 +1,37 @@
+package com.kunk.singbox.manager
+
+import com.kunk.singbox.service.ProxyOnlyService
+import com.kunk.singbox.service.SingBoxService
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class VpnServiceManagerTest {
+
+    @Test
+    fun buildStartCommandForVpnIncludesProvidedConfigPath() {
+        val command = VpnServiceManager.buildStartCommand(
+            tunMode = true,
+            configPath = "/data/user/0/com.kunk.singbox/files/running_config.json",
+            cleanCache = true
+        )
+
+        assertEquals(SingBoxService::class.java, command.serviceClass)
+        assertEquals(SingBoxService.ACTION_START, command.action)
+        assertEquals(
+            "/data/user/0/com.kunk.singbox/files/running_config.json",
+            command.configPath
+        )
+        assertEquals(true, command.cleanCache)
+    }
+
+    @Test
+    fun buildStartCommandForProxyKeepsConfigPathOptional() {
+        val command = VpnServiceManager.buildStartCommand(tunMode = false)
+
+        assertEquals(ProxyOnlyService::class.java, command.serviceClass)
+        assertEquals(ProxyOnlyService.ACTION_START, command.action)
+        assertNull(command.configPath)
+        assertEquals(false, command.cleanCache)
+    }
+}
