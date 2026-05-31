@@ -90,6 +90,14 @@ bash "$SCRIPT_DIR/patches/10-httpsfirst-client.sh" "$CLIENT_GO"
 echo "--- Applying patch 11 (debug logging) ---"
 bash "$SCRIPT_DIR/patches/11-debug-logging.sh" "$CLIENT_GO"
 
+# Patch 12/13/14: RemovePort + Host + DelHost 修复 + 宽松响应解析
+echo "--- Applying patch 12 (remove_port + host option) ---"
+bash "$SCRIPT_DIR/patches/12-removeport-option.sh" "$UPSTREAM_DIR"
+echo "--- Applying patch 13 (remove_port outbound) ---"
+bash "$SCRIPT_DIR/patches/13-removeport-outbound.sh" "$UPSTREAM_DIR"
+echo "--- Applying patch 14 (remove_port + host + delhost fix + lenient response) ---"
+bash "$SCRIPT_DIR/patches/14-removeport-client.sh" "$CLIENT_GO"
+
 # Add replace directive
 echo "" >> go.mod
 echo "replace github.com/sagernet/sing => $LOCAL_SING_DIR" >> go.mod
@@ -141,3 +149,7 @@ echo "  07-httpfirst-client.sh  → client.go: http_first write + flush order"
 echo "  08-httpsfirst-option.sh → option/simple.go: HttpsFirst + HttpDel + HttpsDel"
 echo "  09-httpsfirst-outbound.sh→ outbound.go: pass HttpsFirst + HttpDel + HttpsDel"
 echo "  10-httpsfirst-client.sh → client.go: port-aware CONNECT + dynamic del"
+echo "  11-debug-logging.sh     → client.go: debug logging"
+echo "  12-removeport-option.sh → option/simple.go: RemovePort + Host fields"
+echo "  13-removeport-outbound.sh→ outbound.go: pass RemovePort + Host"
+echo "  14-removeport-client.sh → client.go: delHost fix + removePort + host + lenient response"
