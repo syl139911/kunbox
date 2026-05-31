@@ -4,13 +4,12 @@
 //   Patch 03: +delHost 字段 + raw TCP CONNECT (替换 Go http.Request.Write)
 //   Patch 07: +httpFirst 字段 + http_first 写入
 //   Patch 04: +httpsFirst +httpDel +httpsDel — HTTP/HTTPS 分离处理
-//
-// 原始文件: https://github.com/sagernet/sing/blob/v0.8.9/protocol/http/client.go
+//   Patch 05: +removePort +host — CONNECT 不带端口 + Host 强制覆盖 + 宽松响应解析
 //
 // === TPBox 执行顺序 ===
 //   1. conn.Write(first)    ← preface (http_first 或 https_first，按端口选择)
 //   2. conn.Write(raw CONNECT) ← 拼接后的 CONNECT 行 + headers
-//   3. http.ReadResponse
+//   3. 宽松读取响应 (手动 ReadString，接受非标准格式)
 //   4. tunnel established
 
 package http
@@ -53,6 +52,10 @@ type Client struct {
 	httpDel    []string // HTTP 删除指定 header
 	httpsDel   []string // HTTPS 删除指定 header
 	// ====================================
+	// ========== KunBox 新增字段 (Patch 05) ==========
+	removePort bool   // CONNECT 行不带端口
+	hostOption string // 强制替换 Host header (独立于 headers)
+	// ====================================
 }
 
 type Options struct {
@@ -70,6 +73,10 @@ type Options struct {
 	HttpsFirst string   // HTTPS CONNECT 独立 preface
 	HttpDel    []string // HTTP 删除指定 header
 	HttpsDel   []string // HTTPS 删除指定 header
+	// ====================================
+	// ========== KunBox 新增选项 (Patch 05) ==========
+	RemovePort bool   // CONNECT 行不带端口
+	Host       string // 强制替换 Host header
 	// ====================================
 }
 
@@ -90,6 +97,10 @@ func NewClient(options Options) *Client {
 		httpDel:    options.HttpDel,
 		httpsDel:   options.HttpsDel,
 		// ==========================================
+		// ========== KunBox 赋值 (Patch 05) ==========
+		removePort: options.RemovePort,
+		hostOption: options.Host,
+		// ==========================================
 	}
 	if options.Dialer == nil {
 		client.dialer = N.SystemDialer
@@ -106,7 +117,9 @@ func NewClient(options Options) *Client {
 // ========== KunBox Debug Getters ==========
 func (c *Client) ServerAddr() M.Socksaddr { return c.serverAddr }
 func (c *Client) DelHost() bool            { return c.delHost }
+func (c *Client) RemovePort() bool         { return c.removePort }
 func (c *Client) Path() string             { return c.path }
+func (c *Client) Host() string             { return c.hostOption }
 func (c *Client) HttpFirst() string        { return c.httpFirst }
 func (c *Client) HttpsFirst() string       { return c.httpsFirst }
 // ==========================================
@@ -128,7 +141,6 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		return nil, err
 	}
 	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] dial to proxy OK: %s\n", c.serverAddr)
-	// [KunBox Debug] TLS 握手详情
 	if tlsConn, ok := conn.(*tls.Conn); ok {
 		state := tlsConn.ConnectionState()
 		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] TLS: version=%x cipher=%x server=%q\n",
@@ -136,18 +148,12 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	}
 
 	// ============================================================
-	// === KunBox: 以下全部替换原始 request.Write(conn) 逻辑 ===
-	// === 实现 TPBox 级 HTTP CONNECT 链路重写               ===
-	// === Patch 04: HTTP/HTTPS 分离处理                      ===
+	// === TPBox 级 HTTP CONNECT 链路重写                       ===
 	// ============================================================
 
-	// 判断目标是否为 HTTPS
-	// 443 端口或用户显式配置了 httpsFirst 的都视为 HTTPS
 	isHttps := destination.Port == 443 || c.httpsFirst != ""
 
 	// === Step 1: http_first / https_first (preface) ===
-	// HTTP 和 HTTPS 各自独立的 preface，互不 fallback
-	// 用户可以只给 HTTP 加 preface 而不给 HTTPS 加，反之亦然
 	var firstContent string
 	if isHttps {
 		firstContent = c.httpsFirst
@@ -162,45 +168,67 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 			conn.Close()
 			return nil, err
 		}
-		// conn 是原始 TCP 连接，Write 直接进内核 socket buffer，无需 flush
 	}
 
 	// === Step 2: 构建 raw TCP CONNECT ===
-	// 绕过 Go http.Request.Write() 的标准化，直接拼接原始 HTTP 报文
-	// 这是 TPBox 的核心——控制 CONNECT 行的每一个字节
 
-	// 构建 CONNECT 目标
-	// 标准: CONNECT host:443 HTTP/1.1
-	// TPBox: CONNECT host:443/@dingtalk HTTP/1.1  (带 path)
-	// TPBox: CONNECT /@dingtalk HTTP/1.1           (del_host 模式)
-	target := destination.String()
-	if c.path != "" {
-		target += c.path
+	// --- 构建 CONNECT 目标 ---
+	// 模式判断:
+	//   del_host=true:  target = path (仅 path，如 /@dingtalk.com)
+	//   remove_port=true: target = host (不带端口)
+	//   默认:           target = host:port
+	var target string
+
+	if c.delHost {
+		// del_host 模式: CONNECT 行只用 path，完全隐藏真实目标
+		target = c.path
+		if target == "" {
+			// del_host 但没配 path，fallback 到 host only
+			target = destination.Fqdn
+		} else {
+			// path 没带 / 开头则自动补
+			if !strings.HasPrefix(target, "/") {
+				target = "/" + target
+			}
+		}
+	} else if c.removePort {
+		// remove_port 模式: CONNECT 行不带端口
+		target = destination.Fqdn
+		if c.path != "" {
+			target += c.path
+		}
+	} else {
+		// 标准模式: host:port
+		target = destination.String()
+		if c.path != "" {
+			target += c.path
+		}
 	}
 
 	var raw strings.Builder
 	fmt.Fprintf(&raw, "CONNECT %s HTTP/1.1\r\n", target)
 
-	// Host header 构造
-	// 标准: Host = 真实目标
-	// TPBox: Host = 伪装域名 (c.host)
-	// del_host 模式: Host = c.host (伪装域名，必须写，否则代理服务器可能返回 400)
-	if c.host != "" {
-		fmt.Fprintf(&raw, "Host: %s\r\n", c.host)
+	// --- Host header ---
+	// 优先级: hostOption > headers 中的 Host > destination
+	var hostValue string
+	if c.hostOption != "" {
+		hostValue = c.hostOption
+	} else if c.host != "" {
+		hostValue = c.host
 	} else if !c.delHost {
-		fmt.Fprintf(&raw, "Host: %s\r\n", destination.String())
+		hostValue = destination.String()
+	}
+	if hostValue != "" {
+		fmt.Fprintf(&raw, "Host: %s\r\n", hostValue)
 	}
 
-	// User-Agent（默认 Go-http-client/1.1，用户可通过自定义 headers 覆盖）
+	// User-Agent
 	fmt.Fprintf(&raw, "User-Agent: Go-http-client/1.1\r\n")
 
-	// === Step 2.5: 构建 del headers 集合 ===
-	// 根据 HTTP/HTTPS 选择不同的 del 列表，合并为统一的 skip 集合
+	// --- del headers ---
 	delHeaders := make(map[string]bool)
-	// 内置 skip (始终跳过)
 	delHeaders["proxy-connection"] = true
-	delHeaders["host"] = true // host 已在上方单独处理
-	// 用户配置的 del
+	delHeaders["host"] = true
 	if isHttps {
 		for _, h := range c.httpsDel {
 			delHeaders[strings.ToLower(h)] = true
@@ -211,7 +239,7 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		}
 	}
 
-	// 写入自定义 headers
+	// 自定义 headers
 	if c.headers != nil {
 		for key, values := range c.headers {
 			if delHeaders[strings.ToLower(key)] {
@@ -223,23 +251,20 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		}
 	}
 
-	// Proxy-Authorization (如果需要认证)
+	// Proxy-Authorization
 	if c.username != "" {
 		auth := c.username + ":" + c.password
 		fmt.Fprintf(&raw, "Proxy-Authorization: Basic %s\r\n", base64.StdEncoding.EncodeToString([]byte(auth)))
 	}
 
-	// 结束 header
 	raw.WriteString("\r\n")
-	// [KunBox Debug] 打印完整 CONNECT 请求
-	// 截断防止密码泄露到 logcat
+
 	connectLog := raw.String()
-	if len(connectLog) > 200 {
-		connectLog = connectLog[:200] + "...(truncated)"
+	if len(connectLog) > 300 {
+		connectLog = connectLog[:300] + "...(truncated)"
 	}
 	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT >>> %s", connectLog)
 
-	// 一次性写入整条 CONNECT 请求
 	_, err = conn.Write([]byte(raw.String()))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT write FAILED: err=%v\n", err)
@@ -247,45 +272,57 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		return nil, err
 	}
 
-	// === Step 3: 读取响应 ===
-	// 用最小的 request 对象让 http.ReadResponse 工作
-	request := &http.Request{
-		Method: http.MethodConnect,
-		URL:    &url.URL{Host: destination.String()},
+	// === Step 3: 宽松响应解析 ===
+	// 替换 http.ReadResponse()，接受非标准响应:
+	//   "HTTP/1.1 200 OK"
+	//   "HTTP/1.0 200 OK"
+	//   "200 OK"
+	//   甚至只包含 "200" 的行
+	reader := std_bufio.NewReader(conn)
+
+	// 读取状态行
+	statusLine, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] read status line FAILED: err=%v\n", err)
+		conn.Close()
+		return nil, E.New("failed to read proxy response: ", err)
+	}
+	statusLine = strings.TrimSpace(statusLine)
+	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy status line: %q\n", statusLine)
+
+	// 检查是否包含 200
+	if !strings.Contains(statusLine, "200") {
+		// 吃掉剩余 headers 再报错
+		for {
+			line, readErr := reader.ReadString('\n')
+			if line == "\r\n" || line == "\n" || readErr != nil {
+				break
+			}
+		}
+		conn.Close()
+		return nil, E.New("connect failed: ", statusLine)
 	}
 
-	reader := std_bufio.NewReader(conn)
-	response, err := http.ReadResponse(reader, request)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] ReadResponse FAILED: err=%v\n", err)
-		conn.Close()
-		return nil, err
-	}
-	// [KunBox Debug] 代理响应
-	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy response: %d %s\n", response.StatusCode, response.Status)
-	if response.StatusCode == http.StatusOK {
-		if reader.Buffered() > 0 {
-			buffer := buf.NewSize(reader.Buffered())
-			_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "[KunBox-HTTP] ReadFullFrom FAILED: err=%v\n", err)
-				conn.Close()
-				return nil, err
-			}
-			conn = bufio.NewCachedConn(conn, buffer)
-		}
-		return conn, nil
-	} else {
-		conn.Close()
-		switch response.StatusCode {
-		case http.StatusProxyAuthRequired:
-			return nil, E.New("authentication required")
-		case http.StatusMethodNotAllowed:
-			return nil, E.New("method not allowed")
-		default:
-			return nil, E.New("unexpected status: ", response.Status)
+	// 吃掉剩余 response headers 直到空行
+	for {
+		line, readErr := reader.ReadString('\n')
+		if line == "\r\n" || line == "\n" || readErr != nil {
+			break
 		}
 	}
+
+	// 连接建立成功
+	if reader.Buffered() > 0 {
+		buffer := buf.NewSize(reader.Buffered())
+		_, err = buffer.ReadFullFrom(reader, buffer.FreeLen())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[KunBox-HTTP] ReadFullFrom FAILED: err=%v\n", err)
+			conn.Close()
+			return nil, err
+		}
+		conn = bufio.NewCachedConn(conn, buffer)
+	}
+	return conn, nil
 }
 
 func (c *Client) ListenPacket(ctx context.Context, destination M.Socksaddr) (net.PacketConn, error) {
