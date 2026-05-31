@@ -25,20 +25,48 @@ with open(target, 'r') as f:
 
 # --- 1. 添加字段到 Client struct ---
 if 'removePort' not in content:
-    content = content.replace(
-        'httpsDel   []string // HTTPS 删除指定 header',
-        'httpsDel   []string // HTTPS 删除指定 header\n\t// ========== KunBox 新增字段 (Patch 05) ==========\n\tremovePort bool   // CONNECT 行不带端口\n\thostOption string // 强制替换 Host header (独立于 headers)\n\t// ============================================'
-    )
+    # 先尝试带注释的精确匹配
+    if 'httpsDel   []string // HTTPS 删除指定 header' in content:
+        content = content.replace(
+            'httpsDel   []string // HTTPS 删除指定 header',
+            'httpsDel   []string // HTTPS 删除指定 header\n\t// ========== KunBox 新增字段 (Patch 05) ==========\n\tremovePort bool   // CONNECT 行不带端口\n\thostOption string // 强制替换 Host header (独立于 headers)\n\t// ============================================'
+        )
+    # fallback: 匹配 patch 10 写入的无注释版本
+    elif 'httpsDel   []string' in content:
+        content = content.replace(
+            'httpsDel   []string',
+            'httpsDel   []string\n\t// ========== KunBox 新增字段 (Patch 05) ==========\n\tremovePort bool   // CONNECT 行不带端口\n\thostOption string // 强制替换 Host header (独立于 headers)\n\t// ============================================'
+        )
+    # fallback2: 匹配 tab 缩进的无注释版本
+    elif 'httpsDel\t[]string' in content:
+        content = content.replace(
+            'httpsDel\t[]string',
+            'httpsDel\t[]string\n\tremovePort bool\n\thostOption string'
+        )
     print("  + Client.removePort + hostOption fields added")
 else:
     print("  ~ Client fields already exist, skip")
 
 # --- 2. 添加字段到 Options struct ---
 if 'RemovePort' not in content:
-    content = content.replace(
-        'HttpsDel   []string // HTTPS 删除指定 header',
-        'HttpsDel   []string // HTTPS 删除指定 header\n\t// ========== KunBox 新增选项 (Patch 05) ==========\n\tRemovePort bool   // CONNECT 行不带端口\n\tHost       string // 强制替换 Host header\n\t// ============================================'
-    )
+    # 先尝试带注释的精确匹配
+    if 'HttpsDel   []string // HTTPS 删除指定 header' in content:
+        content = content.replace(
+            'HttpsDel   []string // HTTPS 删除指定 header',
+            'HttpsDel   []string // HTTPS 删除指定 header\n\t// ========== KunBox 新增选项 (Patch 05) ==========\n\tRemovePort bool   // CONNECT 行不带端口\n\tHost       string // 强制替换 Host header\n\t// ============================================'
+        )
+    # fallback: 匹配 patch 10 写入的无注释版本
+    elif 'HttpsDel   []string' in content:
+        content = content.replace(
+            'HttpsDel   []string',
+            'HttpsDel   []string\n\t// ========== KunBox 新增选项 (Patch 05) ==========\n\tRemovePort bool   // CONNECT 行不带端口\n\tHost       string // 强制替换 Host header\n\t// ============================================'
+        )
+    # fallback2: 匹配 tab 缩进的无注释版本
+    elif 'HttpsDel\t[]string' in content:
+        content = content.replace(
+            'HttpsDel\t[]string',
+            'HttpsDel\t[]string\n\tRemovePort bool\n\tHost       string'
+        )
     print("  + Options.RemovePort + Host fields added")
 else:
     print("  ~ Options fields already exist, skip")
@@ -55,10 +83,18 @@ else:
 
 # --- 4. 在 NewClient 赋值 ---
 if 'removePort: options.RemovePort' not in content:
-    content = content.replace(
-        'httpsDel:   options.HttpsDel,\n\t\t// ==========================================',
-        'httpsDel:   options.HttpsDel,\n\t\t// ==========================================\n\t\t// ========== KunBox 赋值 (Patch 05) ==========\n\t\tremovePort: options.RemovePort,\n\t\thostOption: options.Host,\n\t\t// =========================================='
-    )
+    # 先尝试带分隔注释的精确匹配
+    if 'httpsDel:   options.HttpsDel,\n\t\t// ==========================================' in content:
+        content = content.replace(
+            'httpsDel:   options.HttpsDel,\n\t\t// ==========================================',
+            'httpsDel:   options.HttpsDel,\n\t\t// ==========================================\n\t\t// ========== KunBox 赋值 (Patch 05) ==========\n\t\tremovePort: options.RemovePort,\n\t\thostOption: options.Host,\n\t\t// =========================================='
+        )
+    # fallback: 匹配无注释的 httpsDel 赋值行
+    elif 'httpsDel:   options.HttpsDel,' in content:
+        content = content.replace(
+            'httpsDel:   options.HttpsDel,',
+            'httpsDel:   options.HttpsDel,\n\t\t\tremovePort: options.RemovePort,\n\t\t\thostOption: options.Host,'
+        )
     print("  + NewClient removePort + hostOption assignment added")
 else:
     print("  ~ NewClient assignment already exists, skip")
