@@ -173,37 +173,44 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	// === Step 2: 构建 raw TCP CONNECT ===
 
 	// --- 构建 CONNECT 目标 ---
-	// path 特性: 拼在 host:port 后面 (如 "host:port@gw.alicdn.com")
-	// removePort: 去掉端口 (如 "host" 而不是 "host:443")
-	// del_host: 不改变 CONNECT 行，只删除 Host header
+	// del_host=true:  target = path only (如 "/@dingtalk.com")
+	// removePort:     target = host (不带端口)
+	// 默认:           target = host:port (+ path)
 	var target string
-	if c.removePort {
+
+	if c.delHost {
+		// del_host 模式: CONNECT 行用 path 替代真实目标
+		target = c.path
+		if !strings.HasPrefix(target, "/") {
+			target = "/" + target
+		}
+	} else if c.removePort {
 		target = destination.Fqdn
+		if c.path != "" {
+			target += c.path
+		}
 	} else {
 		target = destination.String()
-	}
-	if c.path != "" {
-		target += c.path
+		if c.path != "" {
+			target += c.path
+		}
 	}
 
 	var raw strings.Builder
 	fmt.Fprintf(&raw, "CONNECT %s HTTP/1.1\r\n", target)
 
 	// --- Host header ---
-	// del_host=true: 完全不发 Host header (文档: "删除Host字段")
-	// hostOption: 强制替换 Host 值
+	// hostOption: 强制替换
 	// 默认: Host = destination
-	if !c.delHost {
-		var hostValue string
-		if c.hostOption != "" {
-			hostValue = c.hostOption
-		} else if c.host != "" {
-			hostValue = c.host
-		} else {
-			hostValue = destination.String()
-		}
-		fmt.Fprintf(&raw, "Host: %s\r\n", hostValue)
+	var hostValue string
+	if c.hostOption != "" {
+		hostValue = c.hostOption
+	} else if c.host != "" {
+		hostValue = c.host
+	} else {
+		hostValue = destination.String()
 	}
+	fmt.Fprintf(&raw, "Host: %s\r\n", hostValue)
 
 	// User-Agent
 	fmt.Fprintf(&raw, "User-Agent: Go-http-client/1.1\r\n")
