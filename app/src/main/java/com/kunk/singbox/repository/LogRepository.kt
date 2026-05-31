@@ -24,7 +24,8 @@ import com.kunk.singbox.utils.BugLogHelper
 data class LogEntry(
     val message: String,
     val count: Int = 1,
-    val rawMessage: String = ""
+    val rawMessage: String = "",
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 class LogRepository private constructor() {
@@ -217,6 +218,13 @@ class LogRepository private constructor() {
                 entry.message.contains("[ERR]") || entry.message.contains("[E]") || entry.message.contains("error", ignoreCase = true)
             }.toList()
         }
+    }
+
+    /**
+     * 返回运行日志条目列表（带时间戳），供合并导出使用
+     */
+    fun getLogsAsList(): List<LogEntry> {
+        return synchronized(buffer) { buffer.toList() }
     }
 
     fun getLogsAsText(): String {

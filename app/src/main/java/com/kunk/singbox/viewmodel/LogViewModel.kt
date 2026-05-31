@@ -7,6 +7,7 @@ import com.kunk.singbox.model.AppSettings
 import com.kunk.singbox.repository.LogEntry
 import com.kunk.singbox.repository.LogRepository
 import com.kunk.singbox.repository.SettingsRepository
+import com.kunk.singbox.utils.LogExporter
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -50,7 +51,7 @@ class LogViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun getLogsForExport(): String {
-        return repository.getLogsAsText()
+        return LogExporter.getMergedLogsAsText()
     }
 
     override fun onCleared() {

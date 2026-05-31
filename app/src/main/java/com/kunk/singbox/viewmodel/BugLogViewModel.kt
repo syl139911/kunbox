@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kunk.singbox.repository.BugLogEntry
 import com.kunk.singbox.repository.BugLogRepository
+import com.kunk.singbox.utils.LogExporter
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -19,6 +20,6 @@ class BugLogViewModel : ViewModel() {
     }
 
     fun getLogsForExport(): String {
-        return repository.getBugLogsAsText()
+        return LogExporter.getMergedLogsAsText()
     }
 }

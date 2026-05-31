@@ -210,7 +210,6 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 
 	// --- del headers ---
 	delHeaders := make(map[string]bool)
-	delHeaders["proxy-connection"] = true
 	delHeaders["host"] = true
 	if isHttps {
 		for _, h := range c.httpsDel {
@@ -223,15 +222,24 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	}
 
 	// 自定义 headers
+	hasProxyConnection := false
 	if c.headers != nil {
 		for key, values := range c.headers {
 			if delHeaders[strings.ToLower(key)] {
 				continue
 			}
+			if strings.ToLower(key) == "proxy-connection" {
+				hasProxyConnection = true
+			}
 			for _, value := range values {
 				fmt.Fprintf(&raw, "%s: %s\r\n", key, value)
 			}
 		}
+	}
+
+	// 默认 Proxy-Connection: Keep-Alive（自定义 headers 已设置则跳过）
+	if !hasProxyConnection {
+		fmt.Fprintf(&raw, "Proxy-Connection: Keep-Alive\r\n")
 	}
 
 	// Proxy-Authorization
@@ -243,8 +251,8 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 	raw.WriteString("\r\n")
 
 	connectLog := raw.String()
-	if len(connectLog) > 300 {
-		connectLog = connectLog[:300] + "...(truncated)"
+	if len(connectLog) > 1024 {
+		connectLog = connectLog[:1024] + "...(truncated)"
 	}
 	fmt.Fprintf(os.Stderr, "[KunBox-HTTP] CONNECT >>> %s", connectLog)
 
@@ -275,23 +283,33 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 
 	// 检查是否包含 200
 	if !strings.Contains(statusLine, "200") {
-		// 吃掉剩余 headers 再报错
+		// 吃掉剩余 headers，同时记录到日志
+		var respHeaders strings.Builder
 		for {
 			line, readErr := reader.ReadString('\n')
 			if line == "\r\n" || line == "\n" || readErr != nil {
 				break
 			}
+			respHeaders.WriteString(line)
+		}
+		if respHeaders.Len() > 0 {
+			fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy response headers:\n%s", respHeaders.String())
 		}
 		conn.Close()
 		return nil, E.New("connect failed: ", statusLine)
 	}
 
-	// 吃掉剩余 response headers 直到空行
+	// 吃掉剩余 response headers 直到空行，同时记录
+	var respHeaders strings.Builder
 	for {
 		line, readErr := reader.ReadString('\n')
 		if line == "\r\n" || line == "\n" || readErr != nil {
 			break
 		}
+		respHeaders.WriteString(line)
+	}
+	if respHeaders.Len() > 0 {
+		fmt.Fprintf(os.Stderr, "[KunBox-HTTP] proxy response headers:\n%s", respHeaders.String())
 	}
 
 	// 连接建立成功

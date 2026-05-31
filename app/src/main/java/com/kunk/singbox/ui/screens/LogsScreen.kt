@@ -73,7 +73,7 @@ fun LogsScreen(navController: NavController, viewModel: LogViewModel = viewModel
                         val exportTitle = stringResource(R.string.logs_export)
                         IconButton(onClick = {
                             val logsText = viewModel.getLogsForExport()
-                            LogExporter.shareLogFile(context, logsText, "KunBox_Runtime_Log.txt")
+                            LogExporter.shareLogFile(context, logsText, "KunBox_Log.txt")
                         }) {
                             Icon(Icons.Rounded.Share, contentDescription = exportTitle, tint = MaterialTheme.colorScheme.onBackground)
                         }

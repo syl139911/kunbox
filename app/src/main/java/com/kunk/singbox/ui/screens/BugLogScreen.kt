@@ -85,7 +85,7 @@ fun BugLogScreen(navController: NavController, viewModel: BugLogViewModel = view
                     val shareLabel = stringResource(R.string.bug_log_share)
                     IconButton(onClick = {
                         val logsText = viewModel.getLogsForExport()
-                        LogExporter.shareLogFile(context, logsText, "KunBox_Bug_Log.txt")
+                        LogExporter.shareLogFile(context, logsText, "KunBox_Log.txt")
                     }) {
                         Icon(Icons.Rounded.Share, contentDescription = shareLabel, tint = MaterialTheme.colorScheme.onBackground)
                     }

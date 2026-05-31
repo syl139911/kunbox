@@ -70,6 +70,11 @@ object GoCoreLogInterceptor {
         ErrorPattern(listOf("eof", "broken pipe", "i/o"), ErrorCategory.CONNECTION)
     )
 
+    // KunBox HTTP 出站连接日志关键词（直接从 logcat 行匹配，不依赖 tag）
+    private val KUNBOX_HTTP_KEYWORDS = listOf(
+        "[KunBox-HTTP]", "KunBox-HTTP"
+    )
+
     // 排除的噪声日志
     private val NOISE_PATTERNS = listOf(
         "GoCoreLogInterceptor", "BugLogHelper",
@@ -94,9 +99,11 @@ object GoCoreLogInterceptor {
             try {
                 // 不清空缓冲区（会丢失 VPN 启动期间的 Go 日志）
                 // 用 -T 0 跳过已有行，只读新增日志
+                // *:W = 默认 Warning 以上；GoLog:I + stderr:I = 额外抓取 Go 层 Info 日志
+                //       （[KunBox-HTTP] 的 CONNECT 请求/响应日志走 stderr，级别为 Info）
                 val pid = android.os.Process.myPid()
                 val proc = Runtime.getRuntime().exec(arrayOf(
-                    "logcat", "--pid=$pid", "-T", "0", "*:W"
+                    "logcat", "--pid=$pid", "-T", "0", "*:W", "GoLog:I", "system.err:I"
                 ))
                 process = proc
 
@@ -134,6 +141,16 @@ object GoCoreLogInterceptor {
         // 排除噪声
         if (NOISE_PATTERNS.any { lowerLine.contains(it.lowercase()) }) return
 
+        // ── KunBox HTTP 出站连接日志（优先匹配，不走 tag/分类过滤）──
+        if (KUNBOX_HTTP_KEYWORDS.any { line.contains(it) }) {
+            val detail = extractKunBoxHttpDetail(line)
+            if (detail.isNotBlank()) {
+                // CONNECT 请求和响应不走去重（每条都有价值）
+                BugLogHelper.log("GoCore-CONN", detail)
+            }
+            return
+        }
+
         // 检查是否匹配 Go 核心 tag
         val tag = extractTag(line)
         val isGoCore = tag != null && GO_CORE_TAGS.any { goTag ->
@@ -155,6 +172,23 @@ object GoCoreLogInterceptor {
         // 上报
         Log.w(TAG, "[${category.title}] $detail")
         reportError(category, detail)
+    }
+
+    /**
+     * 提取 [KunBox-HTTP] 日志的详情，保留完整 CONNECT 请求内容（不截断）
+     */
+    private fun extractKunBoxHttpDetail(line: String): String {
+        // 找到 [KunBox-HTTP] 或 KunBox-HTTP 关键词后的内容
+        val markers = listOf("[KunBox-HTTP]", "KunBox-HTTP")
+        for (marker in markers) {
+            val idx = line.indexOf(marker)
+            if (idx >= 0) {
+                val start = idx + marker.length
+                val msg = line.substring(start).trimStart(':', ' ', '-')
+                return msg.trim()
+            }
+        }
+        return extractDetail(line)
     }
 
     private fun classifyError(line: String): ErrorCategory? {
