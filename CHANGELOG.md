@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.14.0](https://github.com/syl139911/kunbox/compare/v2.13.3...v2.14.0) (2026-05-31)
+
+
+### Features
+
+* add patch 12/13/14 to build pipeline ([c5eb3e3](https://github.com/syl139911/kunbox/commit/c5eb3e3f5b2679f47af32d44a1769e156fcb243d))
+* add remove_port and forced_host support for HTTP outbound ([51d4ece](https://github.com/syl139911/kunbox/commit/51d4ece3c7ca988e6bfc112fe0903c24f673a384))
+* add RemovePort + Host fields to HTTPOutboundOptions ([f53ef44](https://github.com/syl139911/kunbox/commit/f53ef44a8ecaea3c3a8c3d5d86699d6fda73b205))
+* delHost fix + removePort + host override + lenient response parsing ([5e9f004](https://github.com/syl139911/kunbox/commit/5e9f0049cd34a1defb551479c1173ddccdcf9568))
+* HTTP outbound CONNECT 日志完整捕获 + 合并日志导出 ([03876d6](https://github.com/syl139911/kunbox/commit/03876d66e3db6b6f2fab42faf34bfe64761ac07c))
+* pass RemovePort + Host to sHTTP.Client ([0be93a2](https://github.com/syl139911/kunbox/commit/0be93a25e1828f8384580ae7a811d3b1acdaa4ff))
+* patch 12 - RemovePort + Host option fields ([7bc27cf](https://github.com/syl139911/kunbox/commit/7bc27cfb43dad380d2815e81e074c5df4c379b54))
+* patch 13 - RemovePort + Host outbound pass-through ([8f257c5](https://github.com/syl139911/kunbox/commit/8f257c52b08f5e877cb6e8e4f10709e722c7c20c))
+* patch 14 - delHost fix + removePort + host + lenient response ([a4fce6f](https://github.com/syl139911/kunbox/commit/a4fce6fff521da6c838f5e1009cd6574d1d9d314))
+* User-Agent/Proxy-Connection 可通过 http_del/https_del 删除 ([74db513](https://github.com/syl139911/kunbox/commit/74db5135d8f7a5191ee795c56504528548fb98fc))
+
+
+### Bug Fixes
+
+* **ci:** add missing patches 12-14 (remove_port + forced_host) ([de54d70](https://github.com/syl139911/kunbox/commit/de54d707e4fe4869c332db33a3bbde4f95082326))
+* del_host = path-only CONNECT + host override, per original analysis ([7b730a0](https://github.com/syl139911/kunbox/commit/7b730a0eed18f6eb4925cd4b229d878abd007568))
+* del_host only removes Host header, does not change CONNECT target ([b3607ab](https://github.com/syl139911/kunbox/commit/b3607ab07572fbd9079716494cf84d18ddab3603))
+* del_host only removes Host header, does NOT change CONNECT target ([c203793](https://github.com/syl139911/kunbox/commit/c203793ef121cc348c8bd34f6585e8e181f5ed47))
+* del_host only removes Host header, does NOT change CONNECT target ([a92b1ff](https://github.com/syl139911/kunbox/commit/a92b1ff1704c99896cef941b03887d0e1edf899a))
+* EditableTextItem 添加 placeholder 参数，修复编译错误 ([1e7a1ec](https://github.com/syl139911/kunbox/commit/1e7a1ec44c1022cd5e040ac58bb770e6a3f626c0))
+* exclude HTTP outbounds from PROXY selector (UDP not supported) ([76f51b8](https://github.com/syl139911/kunbox/commit/76f51b830c5f3577cc8d6d3e6e2a01b8a6719600))
+* fall back to PROXY default when selected node filtered by OutboundFixer ([14ed2fc](https://github.com/syl139911/kunbox/commit/14ed2fcae24f88381a3be955e70633c5f0ce3576)), closes [#2](https://github.com/syl139911/kunbox/issues/2)
+* fall back to PROXY default when selected node filtered by OutboundFixer ([36e7902](https://github.com/syl139911/kunbox/commit/36e7902cb4def5dc062aea95b21ea17789058fd7)), closes [#2](https://github.com/syl139911/kunbox/issues/2)
+* HTTP outbound path 不再自动补 / 前缀 ([53c423e](https://github.com/syl139911/kunbox/commit/53c423ecfa321b75a12b929ccdb3aa7ef60dba69))
+* Outbound字段排序优化 + tcp_fast_open关闭时不写入JSON ([ce70208](https://github.com/syl139911/kunbox/commit/ce702084f4d13c90b73eb90e501dbe08f13ca78f))
+* **patch14:** fallback pattern matching for Options struct and NewClient ([addaeb4](https://github.com/syl139911/kunbox/commit/addaeb489cce0be6379245d43e7dbe06c8b11f45))
+* prefer UDP-capable outbounds as PROXY selector default ([a84da8a](https://github.com/syl139911/kunbox/commit/a84da8a90138ce454cc737013a03ee39dd58fca8))
+
 ## [2.13.3](https://github.com/syl139911/kunbox/compare/v2.13.2...v2.13.3) (2026-05-30)
 
 
