@@ -205,9 +205,6 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		fmt.Fprintf(&raw, "Host: %s\r\n", hostValue)
 	}
 
-	// User-Agent
-	fmt.Fprintf(&raw, "User-Agent: Go-http-client/1.1\r\n")
-
 	// --- del headers ---
 	delHeaders := make(map[string]bool)
 	delHeaders["host"] = true
@@ -219,6 +216,11 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		for _, h := range c.httpDel {
 			delHeaders[strings.ToLower(h)] = true
 		}
+	}
+
+	// User-Agent（可通过 http_del/https_del 删除）
+	if !delHeaders["user-agent"] {
+		fmt.Fprintf(&raw, "User-Agent: Go-http-client/1.1\r\n")
 	}
 
 	// 自定义 headers
@@ -237,8 +239,8 @@ func (c *Client) DialContext(ctx context.Context, network string, destination M.
 		}
 	}
 
-	// 默认 Proxy-Connection: Keep-Alive（自定义 headers 已设置则跳过）
-	if !hasProxyConnection {
+	// 默认 Proxy-Connection: Keep-Alive（自定义 headers 已设置或已删除则跳过）
+	if !hasProxyConnection && !delHeaders["proxy-connection"] {
 		fmt.Fprintf(&raw, "Proxy-Connection: Keep-Alive\r\n")
 	}
 
