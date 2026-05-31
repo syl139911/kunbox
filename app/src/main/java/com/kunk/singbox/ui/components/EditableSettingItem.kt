@@ -15,7 +15,8 @@ fun EditableTextItem(
     value: String,
     onValueChange: (String) -> Unit,
     icon: ImageVector? = null,
-    subtitle: String? = null
+    subtitle: String? = null,
+    placeholder: String = ""
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -23,6 +24,7 @@ fun EditableTextItem(
         InputDialog(
             title = stringResource(R.string.common_edit_title, title),
             initialValue = value,
+            placeholder = placeholder,
             confirmText = stringResource(R.string.common_ok),
             onConfirm = {
                 onValueChange(it)
