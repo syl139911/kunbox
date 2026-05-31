@@ -523,6 +523,10 @@
     <string name="node_detail_http_path_hint">/example-path</string>
     <string name="node_detail_del_host">删除 Host 请求头</string>
     <string name="node_detail_del_host_subtitle">HTTP 请求中移除 Host 头，用于特殊代理场景</string>
+    <string name="node_detail_remove_port">去除端口号</string>
+    <string name="node_detail_remove_port_subtitle">CONNECT 行不带端口（如 CONNECT host 而非 CONNECT host:443）</string>
+    <string name="node_detail_forced_host">强制 Host</string>
+    <string name="node_detail_forced_host_hint">替换 CONNECT 请求的 Host 头，留空则使用真实目标</string>
     <string name="node_detail_http_first">HTTP Preface</string>
     <string name="node_detail_http_first_hint">CONNECT 前发送的伪装 HTTP 请求。支持变量: [M]方法 [V]版本 [H]Host [U]路径</string>
     <string name="node_detail_https_first">HTTPS Preface</string>

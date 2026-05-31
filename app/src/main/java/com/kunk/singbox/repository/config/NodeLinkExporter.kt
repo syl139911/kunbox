@@ -314,6 +314,8 @@ object NodeLinkExporter {
         outbound.path?.takeIf { it.isNotBlank() }?.let { params.add("path=${encodeUrlComponent(it)}") }
         outbound.headers?.get("Host")?.takeIf { it.isNotBlank() }?.let { params.add("host=${encodeUrlComponent(it)}") }
         if (outbound.delHost == true) params.add("del_host=1")
+        if (outbound.removePort == true) params.add("remove_port=1")
+        outbound.host?.takeIf { it.isNotBlank() }?.let { params.add("forced_host=${encodeUrlComponent(it)}") }
 
         val host = formatServerHost(server)
         val queryPart = buildOptionalQuery(params)

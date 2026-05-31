@@ -1103,6 +1103,8 @@ class NodeLinkParser(private val gson: Gson) {
      *     path=...       - HTTP path (e.g. /dingtalk)
      *     host=...       - Host header
      *     del_host=1     - Enable del_host
+     *     remove_port=1  - CONNECT without port
+     *     forced_host=... - Forced Host header replacement
      */
     private fun parseHttpLink(link: String, useTls: Boolean): Outbound? {
         try {
@@ -1129,6 +1131,8 @@ class NodeLinkParser(private val gson: Gson) {
             val path = queryParams["path"]?.takeIf { it.isNotBlank() }
             val hostHeader = queryParams["host"]?.takeIf { it.isNotBlank() }
             val delHost = queryParams["del_host"] == "1" || queryParams["del_host"] == "true"
+            val removePort = queryParams["remove_port"] == "1" || queryParams["remove_port"] == "true"
+            val forcedHost = queryParams["forced_host"]?.takeIf { it.isNotBlank() }
 
             val headers = if (hostHeader != null) mapOf("Host" to hostHeader) else null
 
@@ -1142,6 +1146,8 @@ class NodeLinkParser(private val gson: Gson) {
                 path = path,
                 headers = headers,
                 delHost = delHost.takeIf { it },
+                removePort = removePort.takeIf { it },
+                host = forcedHost,
                 tls = if (useTls) {
                     TlsConfig(
                         enabled = true,

@@ -677,6 +677,8 @@ object OutboundFixer {
                     path = httpPath,
                     headers = httpHeaders.ifEmpty { null },
                     delHost = fixed.delHost,
+                    removePort = fixed.removePort,
+                    host = fixed.host,
                     httpFirst = expandedHttpFirst,
                     httpsFirst = expandedHttpsFirst,
                     httpDel = fixed.httpDel,

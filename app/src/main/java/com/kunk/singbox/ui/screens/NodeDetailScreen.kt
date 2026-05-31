@@ -744,6 +744,27 @@ fun NodeDetailScreen(
                                 editingOutbound = outbound.copy(delHost = it)
                             }
                         )
+                        // --- removePort: CONNECT without port ---
+                        SettingSwitchItem(
+                            title = stringResource(R.string.node_detail_remove_port),
+                            subtitle = stringResource(R.string.node_detail_remove_port_subtitle),
+                            checked = outbound.removePort == true,
+                            icon = Icons.Rounded.Numbers,
+                            onCheckedChange = {
+                                editingOutbound = outbound.copy(removePort = it)
+                            }
+                        )
+                        // --- forced Host header ---
+                        EditableTextItem(
+                            title = stringResource(R.string.node_detail_forced_host),
+                            value = outbound.host ?: "",
+                            subtitle = stringResource(R.string.node_detail_forced_host_hint),
+                            placeholder = "dingtalk.com",
+                            icon = Icons.Rounded.Language,
+                            onValueChange = {
+                                editingOutbound = outbound.copy(host = if (it.isBlank()) null else it)
+                            }
+                        )
                         // --- HTTP First (HTTP Preface) ---
                         EditableMultilineTextItem(
                             title = stringResource(R.string.node_detail_http_first),

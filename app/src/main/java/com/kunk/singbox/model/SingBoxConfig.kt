@@ -241,6 +241,8 @@ data class Outbound(
     @SerializedName("path") val path: String? = null,
     @SerializedName("headers") val headers: Map<String, String>? = null,
     @SerializedName("del_host") val delHost: Boolean? = null,
+    @SerializedName("remove_port") val removePort: Boolean? = null,
+    @SerializedName("host") val host: String? = null,
     @SerializedName("http_first") val httpFirst: String? = null,
     @SerializedName("https_first") val httpsFirst: String? = null,
     @SerializedName("http_del") val httpDel: List<String>? = null,
