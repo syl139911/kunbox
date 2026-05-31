@@ -4918,24 +4918,13 @@ class ConfigRepository(private val context: Context) {
                 }
             }
         }
-        // [KunBox Fix] Exclude HTTP outbounds from PROXY selector.
-        // HTTP outbounds only support TCP (no UDP), so when selected as the
-        // active proxy, all UDP traffic (video streaming in Douyin/Bilibili/etc.)
-        // fails with "UDP is not supported by outbound: PROXY".
-        // HTTP outbounds are still available in the config for custom rules.
         val proxyTags = fixedOutbounds.filter {
             it.type in listOf(
                 "vless", "vmess", "trojan", "shadowsocks",
                 "hysteria2", "hysteria", "anytls", "tuic",
-                "wireguard", "ssh", "shadowtls", "socks", "naive"
+                "wireguard", "ssh", "shadowtls", "http", "socks", "naive"
             )
         }.map { it.tag }.toMutableList()
-
-        // Log warning if HTTP outbounds were excluded
-        val httpOutbounds = fixedOutbounds.filter { it.type == "http" }
-        if (httpOutbounds.isNotEmpty()) {
-            Log.w(TAG, "Excluded ${httpOutbounds.size} HTTP outbound(s) from PROXY selector (no UDP support): ${httpOutbounds.map { it.tag }}")
-        }
         val selectorTag = "PROXY"
         if (proxyTags.isEmpty()) {
             proxyTags.add("direct")
