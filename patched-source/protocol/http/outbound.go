@@ -1,6 +1,6 @@
 // KunBox patched: protocol/http/outbound.go
 // 基于 sing-box v1.13.11
-// 改动: +DelHost +HttpFirst 传递到 sHTTP.Client (Patch 02)
+// 改动: +DelHost +HttpFirst +RemovePort +Host 传递到 sHTTP.Client
 // 原始文件: https://github.com/SagerNet/sing-box/blob/v1.13.11/protocol/http/outbound.go
 
 package http
@@ -54,15 +54,15 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
 			Password: options.Password,
 			Path:     options.Path,
 			Headers:  options.Headers.Build(),
-			// ========== KunBox 新增传递 (Patch 02) ==========
-			DelHost:  options.DelHost,
-			HttpFirst: options.HttpFirst,
-			// ===============================================
-			// ========== KunBox 新增传递 (Patch 04) ==========
+			// ========== KunBox 新增传递 ==========
+			DelHost:    options.DelHost,
+			HttpFirst:  options.HttpFirst,
 			HttpsFirst: options.HttpsFirst,
 			HttpDel:    options.HttpDel,
 			HttpsDel:   options.HttpsDel,
-			// ===============================================
+			RemovePort: options.RemovePort,
+			Host:       options.Host,
+			// ====================================
 		}),
 	}, nil
 }
@@ -72,9 +72,8 @@ func (h *Outbound) DialContext(ctx context.Context, network string, destination 
 	metadata.Outbound = h.Tag()
 	metadata.Destination = destination
 	h.logger.InfoContext(ctx, "outbound connection to ", destination)
-	// [KunBox Debug] outbound 连接详情
-	fmt.Fprintf(os.Stderr, "[KunBox-OUT] dial %s -> server=%s delHost=%v path=%q httpFirst=%q httpsFirst=%q\n",
-		network, h.client.ServerAddr(), h.client.DelHost(), h.client.Path(), h.client.HttpFirst(), h.client.HttpsFirst())
+	fmt.Fprintf(os.Stderr, "[KunBox-OUT] dial %s -> server=%s delHost=%v removePort=%v path=%q host=%q httpFirst=%q httpsFirst=%q\n",
+		network, h.client.ServerAddr(), h.client.DelHost(), h.client.RemovePort(), h.client.Path(), h.client.Host(), h.client.HttpFirst(), h.client.HttpsFirst())
 	return h.client.DialContext(ctx, network, destination)
 }
 
