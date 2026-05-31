@@ -1,10 +1,10 @@
 #!/bin/bash
-# Patch 14: sing protocol/http/client.go — RemovePort + Host + DelHost 修复 + 宽松响应解析
+# Patch 14: sing protocol/http/client.go — RemovePort + Host + 宽松响应解析
 #
 # 核心改动:
-#   1. del_host 真正生效: CONNECT 行改用 path-only
-#   2. remove_port: CONNECT 行不带端口
-#   3. host 强制覆盖: 独立 Host header 选项
+#   1. remove_port: CONNECT 行不带端口
+#   2. host 强制覆盖: 独立 Host header 选项
+#   3. del_host: 仅删除 Host header，不改变 CONNECT 行
 #   4. 宽松响应解析: 手动 ReadString 替代 http.ReadResponse
 #
 # 必须在 patch 03, 07, 10, 11 之后运行
@@ -14,7 +14,7 @@ set -e
 CLIENT_GO="$1"
 [ -f "$CLIENT_GO" ] || { echo "ERROR: $CLIENT_GO not found"; exit 1; }
 
-echo "=== Patch 14: client.go - RemovePort + Host + DelHost Fix + Lenient Response ==="
+echo "=== Patch 14: client.go - RemovePort + Host + Lenient Response ==="
 
 python3 - "$CLIENT_GO" << 'PYEOF'
 import sys, re
@@ -25,7 +25,6 @@ with open(target, 'r') as f:
 
 # --- 1. 添加字段到 Client struct ---
 if 'removePort' not in content:
-    # 在 hostOption 不存在的情况下，在 httpsDel 之后添加
     content = content.replace(
         'httpsDel   []string // HTTPS 删除指定 header',
         'httpsDel   []string // HTTPS 删除指定 header\n\t// ========== KunBox 新增字段 (Patch 05) ==========\n\tremovePort bool   // CONNECT 行不带端口\n\thostOption string // 强制替换 Host header (独立于 headers)\n\t// ============================================'
@@ -65,7 +64,9 @@ else:
     print("  ~ NewClient assignment already exists, skip")
 
 # --- 5. 替换 CONNECT 目标构建逻辑 ---
-# 找到并替换从 "target := destination.String()" 到 "var raw strings.Builder" 之间的代码
+# del_host 不改变 CONNECT 行，只删 Host header
+# path 拼接在 host:port 后面
+# removePort 去掉端口
 old_target_block = '''\t// --- 构建 CONNECT 目标 ---
 \ttarget := destination.String()
 \tif c.path != "" {
@@ -73,45 +74,28 @@ old_target_block = '''\t// --- 构建 CONNECT 目标 ---
 \t}'''
 
 new_target_block = '''\t// --- 构建 CONNECT 目标 ---
-\t// 模式判断:
-\t//   del_host=true:  target = path (仅 path，如 /@dingtalk.com)
-\t//   remove_port=true: target = host (不带端口)
-\t//   默认:           target = host:port
+\t// path 特性: 拼在 host:port 后面 (如 "host:port@gw.alicdn.com")
+\t// removePort: 去掉端口 (如 "host" 而不是 "host:443")
+\t// del_host: 不改变 CONNECT 行，只删除 Host header
 \tvar target string
-
-\tif c.delHost {
-\t\t// del_host 模式: CONNECT 行只用 path，完全隐藏真实目标
-\t\ttarget = c.path
-\t\tif target == "" {
-\t\t\t// del_host 但没配 path，fallback 到 host only
-\t\t\ttarget = destination.Fqdn
-\t\t} else {
-\t\t\t// path 没带 / 开头则自动补
-\t\t\tif !strings.HasPrefix(target, "/") {
-\t\t\t\ttarget = "/" + target
-\t\t\t}
-\t\t}
-\t} else if c.removePort {
-\t\t// remove_port 模式: CONNECT 行不带端口
+\tif c.removePort {
 \t\ttarget = destination.Fqdn
-\t\tif c.path != "" {
-\t\t\ttarget += c.path
-\t\t}
 \t} else {
-\t\t// 标准模式: host:port
 \t\ttarget = destination.String()
-\t\tif c.path != "" {
-\t\t\ttarget += c.path
-\t\t}
+\t}
+\tif c.path != "" {
+\t\ttarget += c.path
 \t}'''
 
-if 'if c.delHost' not in content:
+if 'if c.removePort' not in content:
     content = content.replace(old_target_block, new_target_block)
-    print("  + CONNECT target logic rewritten (delHost + removePort)")
+    print("  + CONNECT target logic rewritten (removePort + path)")
 else:
     print("  ~ CONNECT target logic already rewritten, skip")
 
 # --- 6. 替换 Host header 构建逻辑 ---
+# del_host=true: 完全不发 Host header
+# hostOption: 强制替换
 old_host_block = '''\tif c.host != "" {
 \t\tfmt.Fprintf(&raw, "Host: %s\\r\\n", c.host)
 \t} else if !c.delHost {
@@ -119,22 +103,24 @@ old_host_block = '''\tif c.host != "" {
 \t}'''
 
 new_host_block = '''\t// --- Host header ---
-\t// 优先级: hostOption > headers 中的 Host > destination
-\tvar hostValue string
-\tif c.hostOption != "" {
-\t\thostValue = c.hostOption
-\t} else if c.host != "" {
-\t\thostValue = c.host
-\t} else if !c.delHost {
-\t\thostValue = destination.String()
-\t}
-\tif hostValue != "" {
+\t// del_host=true: 完全不发 Host header (文档: "删除Host字段")
+\t// hostOption: 强制替换 Host 值
+\t// 默认: Host = destination
+\tif !c.delHost {
+\t\tvar hostValue string
+\t\tif c.hostOption != "" {
+\t\t\thostValue = c.hostOption
+\t\t} else if c.host != "" {
+\t\t\thostValue = c.host
+\t\t} else {
+\t\t\thostValue = destination.String()
+\t\t}
 \t\tfmt.Fprintf(&raw, "Host: %s\\r\\n", hostValue)
 \t}'''
 
-if 'hostValue' not in content:
+if 'if !c.delHost' not in content or 'hostValue' not in content:
     content = content.replace(old_host_block, new_host_block)
-    print("  + Host header logic rewritten (hostOption priority)")
+    print("  + Host header logic rewritten (del_host skips Host)")
 else:
     print("  ~ Host header logic already rewritten, skip")
 
@@ -238,9 +224,6 @@ else:
     print("  ~ Response parsing already rewritten, skip")
 
 # --- 8. 清理不再需要的 import ---
-# http.ReadResponse 不再使用，但 http.Request 和 url.URL 可能还被其他地方引用
-# 实际上我们不再需要 net/url，但保留 http 包因为 http.Header 等还在用
-# 移除 url import 如果不再使用
 if 'url.URL{' not in content and '"net/url"' in content:
     content = content.replace('\t"net/url"\n', '')
     print("  - Removed unused net/url import")
