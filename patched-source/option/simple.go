@@ -1,6 +1,6 @@
 // KunBox patched: option/simple.go
 // 基于 sing-box v1.13.11
-// 改动: +DelHost +HttpFirst (KunBox TPBox 扩展)
+// 改动: +DelHost +HttpFirst +RemovePort +Host (KunBox TPBox 扩展)
 // 原始文件: https://github.com/SagerNet/sing-box/blob/v1.13.11/option/simple.go
 
 package option
@@ -50,5 +50,9 @@ type HTTPOutboundOptions struct {
 	HttpsFirst string              `json:"https_first,omitempty"` // TPBox: HTTPS CONNECT 独立的 preface 模板 (目标端口 443)
 	HttpDel    []string            `json:"http_del,omitempty"`    // TPBox: HTTP 请求删除指定 header
 	HttpsDel   []string            `json:"https_del,omitempty"`   // TPBox: HTTPS CONNECT 删除指定 header
+	// ===============================================
+	// ========== KunBox 新增字段 (Patch 05) ==========
+	RemovePort bool                `json:"remove_port,omitempty"` // TPBox: CONNECT 行不带端口
+	Host       string              `json:"host,omitempty"`        // TPBox: 强制替换 Host header
 	// ===============================================
 }
