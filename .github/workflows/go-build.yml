@@ -69,6 +69,8 @@ jobs:
           bash ../core/patches/06-httpfirst-outbound.sh .
           bash ../core/patches/08-httpsfirst-option.sh .
           bash ../core/patches/09-httpsfirst-outbound.sh .
+          bash ../core/patches/12-removeport-option.sh .
+          bash ../core/patches/13-removeport-outbound.sh .
           echo "=== All option & outbound patches applied ==="
 
       - name: Patch sing dependency via replace directive
@@ -101,6 +103,9 @@ jobs:
 
           # Apply 11-debug-logging.sh (error logging on all failure paths)
           bash ../core/patches/11-debug-logging.sh "$CLIENT_GO"
+
+          # Apply 14-removeport-client.sh (remove_port + host + delhost fix + lenient response)
+          bash ../core/patches/14-removeport-client.sh "$CLIENT_GO"
 
           # Add replace directive to go.mod
           echo "" >> go.mod
