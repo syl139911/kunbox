@@ -4918,22 +4918,42 @@ class ConfigRepository(private val context: Context) {
                 }
             }
         }
+        // All outbound types eligible for the PROXY selector.
+        // HTTP is kept so users can still select it manually, but it will
+        // never be auto-chosen as default when a UDP-capable outbound exists,
+        // because HTTP outbounds only support TCP (no UDP).
+        val udpCapableTypes = setOf(
+            "vless", "vmess", "trojan", "shadowsocks",
+            "hysteria2", "hysteria", "anytls", "tuic",
+            "wireguard", "ssh", "shadowtls", "socks", "naive"
+        )
         val proxyTags = fixedOutbounds.filter {
-            it.type in listOf(
-                "vless", "vmess", "trojan", "shadowsocks",
-                "hysteria2", "hysteria", "anytls", "tuic",
-                "wireguard", "ssh", "shadowtls", "http", "socks", "naive"
-            )
+            it.type in udpCapableTypes || it.type == "http"
         }.map { it.tag }.toMutableList()
         val selectorTag = "PROXY"
         if (proxyTags.isEmpty()) {
             proxyTags.add("direct")
         }
 
-        val selectorDefault = activeNode
-            ?.let { nodeTagMap[it.id] ?: it.name }
-            ?.takeIf { it in proxyTags }
-            ?: proxyTags.firstOrNull()
+        // Prefer UDP-capable outbounds as selector default.
+        // HTTP outbounds cannot carry UDP (video/audio streaming fails).
+        val udpCapableTags = fixedOutbounds.filter { it.type in udpCapableTypes }.map { it.tag }
+        val selectorDefault = run {
+            // 1) If user selected an active node, honour it
+            val userPick = activeNode
+                ?.let { nodeTagMap[it.id] ?: it.name }
+                ?.takeIf { it in proxyTags }
+            if (userPick != null) return@run userPick
+            // 2) Otherwise prefer the first UDP-capable outbound
+            udpCapableTags.firstOrNull()
+            // 3) Fall back to any outbound (including HTTP)
+                ?: proxyTags.firstOrNull()
+        }
+        if (udpCapableTags.isEmpty() && proxyTags.any { tag ->
+                fixedOutbounds.find { it.tag == tag }?.type == "http"
+            }) {
+            Log.w(TAG, "Only HTTP outbounds available in PROXY selector – UDP traffic (video/audio) will not be proxied")
+        }
         if (activeNode != null) {
             val mappedTag = nodeTagMap[activeNode.id]
             Log.d(TAG, "Selector default: activeNode=${activeNode.name}, id=${activeNode.id}, mappedTag=$mappedTag, selectorDefault=$selectorDefault, inProxyTags=${selectorDefault in proxyTags}")
