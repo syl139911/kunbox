@@ -3808,9 +3808,9 @@ class ConfigRepository(private val context: Context) {
                             "This usually means the outbound failed validation or was filtered by OutboundFixer."
                     )
 
-                    throw IllegalStateException(
-                        "Selected node is not available in runtime outbounds: $candidateTag (type=$nodeType)"
-                    )
+                    // Fall back to PROXY selector default instead of crashing
+                    val proxySelector = runConfig.outbounds?.find { it.tag == "PROXY" }
+                    proxySelector?.default ?: proxySelector?.outbounds?.firstOrNull()
                 }
             }
             val configFile = File(context.filesDir, "running_config.json")
