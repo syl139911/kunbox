@@ -156,18 +156,40 @@ data class InboundUser(
 
 @Keep
 data class Outbound(
-    @SerializedName("type") val type: String = "",
+    // === 核心字段（JSON 编辑器优先显示） ===
     @SerializedName("tag") val tag: String = "",
-
+    @SerializedName("type") val type: String = "",
     @SerializedName("server") val server: String? = null,
     @SerializedName("server_port") val serverPort: Int? = null,
-    @SerializedName("tcp_fast_open") val tcpFastOpen: Boolean? = null,
+    @SerializedName("path") val path: String? = null,
+    @SerializedName("del_host") val delHost: Boolean? = null,
+    @SerializedName("remove_port") val removePort: Boolean? = null,
+    @SerializedName("host") val host: String? = null,
+    @SerializedName("username") val username: String? = null,
+    @SerializedName("password") val password: String? = null,
 
+    // === HTTP KunBox 扩展 ===
+    @SerializedName("http_first") val httpFirst: String? = null,
+    @SerializedName("https_first") val httpsFirst: String? = null,
+    @SerializedName("http_del") val httpDel: List<String>? = null,
+    @SerializedName("https_del") val httpsDel: List<String>? = null,
+    @SerializedName("headers") val headers: Map<String, String>? = null,
+    @SerializedName("network") val network: String? = null,
+
+    // === TLS / Transport ===
+    @SerializedName("tls") val tls: TlsConfig? = null,
+    @SerializedName("transport") val transport: TransportConfig? = null,
+    @SerializedName("multiplex") val multiplex: MultiplexConfig? = null,
+
+    // === 连接参数 ===
+    @SerializedName("tcp_fast_open") val tcpFastOpen: Boolean? = null,
     @SerializedName("tcp_keep_alive") val tcpKeepAlive: String? = null,
     @SerializedName("tcp_keep_alive_interval") val tcpKeepAliveInterval: String? = null,
     @SerializedName("connect_timeout") val connectTimeout: String? = null,
     @SerializedName("domain_resolver") val domainResolver: DomainResolveConfig? = null,
+    @SerializedName("detour") val detour: String? = null,
 
+    // === Selector / URLTest ===
     @SerializedName("outbounds") val outbounds: List<String>? = null,
     @SerializedName("default") val default: String? = null,
     @SerializedName("url") val url: String? = null,
@@ -175,19 +197,21 @@ data class Outbound(
     @SerializedName("tolerance") val tolerance: Int? = null,
     @SerializedName("interrupt_exist_connections") val interruptExistConnections: Boolean? = null,
 
+    // === Shadowsocks ===
     @SerializedName("method") val method: String? = null,
-    @SerializedName("password") val password: String? = null,
     @SerializedName("plugin") val plugin: String? = null,
     @SerializedName("plugin_opts") val pluginOpts: String? = null,
     @SerializedName("udp_over_tcp") val udpOverTcp: UdpOverTcpConfig? = null,
 
+    // === VMess / VLESS ===
     @SerializedName("uuid") val uuid: String? = null,
     @SerializedName(value = "security", alternate = ["cipher"]) val security: String? = null,
-    @SerializedName("alter_id") val alterId: Int? = null, // 0=AEAD, >0=legacy VMess MD5
+    @SerializedName("alter_id") val alterId: Int? = null,
     @SerializedName("flow") val flow: String? = null,
     @SerializedName("packet_encoding") val packetEncoding: String? = null,
     @SerializedName("encryption") val encryption: String? = null,
 
+    // === Hysteria / TUIC ===
     @SerializedName("up_mbps") val upMbps: Int? = null,
     @SerializedName("down_mbps") val downMbps: Int? = null,
     @SerializedName("obfs") val obfs: ObfsConfig? = null,
@@ -198,16 +222,7 @@ data class Outbound(
     @SerializedName("hop_interval") val hopInterval: String? = null,
     @SerializedName("server_ports") val serverPorts: List<String>? = null,
 
-    @SerializedName("idle_session_check_interval") val idleSessionCheckInterval: String? = null,
-    @SerializedName("idle_session_timeout") val idleSessionTimeout: String? = null,
-    @SerializedName("min_idle_session") val minIdleSession: Int? = null,
-
-    @SerializedName("tls") val tls: TlsConfig? = null,
-
-    @SerializedName("transport") val transport: TransportConfig? = null,
-
-    @SerializedName("multiplex") val multiplex: MultiplexConfig? = null,
-
+    // === QUIC ===
     @SerializedName("congestion_control") val congestionControl: String? = null,
     @SerializedName("quic") val quic: Boolean? = null,
     @SerializedName("quic_congestion_control") val quicCongestionControl: String? = null,
@@ -219,6 +234,7 @@ data class Outbound(
     @SerializedName("disable_sni") val disableSni: Boolean? = null,
     @SerializedName("mtu") val mtu: Int? = null,
 
+    // === WireGuard ===
     @SerializedName("local_address") val localAddress: List<String>? = null,
     @SerializedName("private_key") val privateKey: String? = null,
     @SerializedName("peer_public_key") val peerPublicKey: String? = null,
@@ -226,6 +242,7 @@ data class Outbound(
     @SerializedName("reserved") val reserved: List<Int>? = null,
     @SerializedName("peers") val peers: List<WireGuardPeer>? = null,
 
+    // === SSH ===
     @SerializedName("user") val user: String? = null,
     @SerializedName("private_key_path") val privateKeyPath: String? = null,
     @SerializedName("private_key_passphrase") val privateKeyPassphrase: String? = null,
@@ -233,20 +250,11 @@ data class Outbound(
     @SerializedName("host_key_algorithms") val hostKeyAlgorithms: List<String>? = null,
     @SerializedName("client_version") val clientVersion: String? = null,
 
+    // === 其他 ===
     @SerializedName("version") val version: Int? = null,
-    @SerializedName("detour") val detour: String? = null,
-
-    @SerializedName("username") val username: String? = null,
-    @SerializedName("network") val network: String? = null,
-    @SerializedName("path") val path: String? = null,
-    @SerializedName("headers") val headers: Map<String, String>? = null,
-    @SerializedName("del_host") val delHost: Boolean? = null,
-    @SerializedName("remove_port") val removePort: Boolean? = null,
-    @SerializedName("host") val host: String? = null,
-    @SerializedName("http_first") val httpFirst: String? = null,
-    @SerializedName("https_first") val httpsFirst: String? = null,
-    @SerializedName("http_del") val httpDel: List<String>? = null,
-    @SerializedName("https_del") val httpsDel: List<String>? = null
+    @SerializedName("idle_session_check_interval") val idleSessionCheckInterval: String? = null,
+    @SerializedName("idle_session_timeout") val idleSessionTimeout: String? = null,
+    @SerializedName("min_idle_session") val minIdleSession: Int? = null
 )
 
 @Keep

@@ -1309,7 +1309,7 @@ fun NodeDetailScreen(
                         title = stringResource(R.string.node_detail_tcp_fast_open),
                         checked = outbound.tcpFastOpen == true,
                         icon = Icons.Rounded.Bolt,
-                        onCheckedChange = { editingOutbound = outbound.copy(tcpFastOpen = it) }
+                        onCheckedChange = { editingOutbound = outbound.copy(tcpFastOpen = it.takeIf { it }) }
                     )
                 }
 
